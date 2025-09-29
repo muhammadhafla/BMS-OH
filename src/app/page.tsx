@@ -1,4 +1,7 @@
-import Link from 'next/link';
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,8 +14,42 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/shared/logo';
+import { useToast } from '@/hooks/use-toast';
+import { signIn } from '@/lib/services/auth'; // We will create this
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  const handleSignIn = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+
+    try {
+      const result = await signIn(email, password);
+      if (result.success) {
+        toast({
+          title: 'Login Berhasil',
+          description: 'Anda akan diarahkan ke dashboard.',
+        });
+        router.push('/dashboard');
+      } else {
+        throw new Error(result.error || 'Terjadi kesalahan saat login.');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Gagal',
+        description: error.message || 'Email atau password salah.',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
       <Card className="w-full max-w-sm">
@@ -23,23 +60,44 @@ export default function LoginPage() {
           <CardTitle className="text-2xl font-bold">Welcome to BMS</CardTitle>
           <CardDescription>Sign in to access your dashboard</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="m@example.com" required />
+        <form onSubmit={handleSignIn}>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required />
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button asChild className="w-full bg-accent hover:bg-accent/90">
-            <Link href="/dashboard">Sign In</Link>
-          </Button>
-        </CardFooter>
+          </CardContent>
+          <CardFooter>
+            <Button
+              type="submit"
+              className="w-full bg-accent hover:bg-accent/90"
+              disabled={loading}
+            >
+              {loading ? 'Signing In...' : 'Sign In'}
+            </Button>
+          </CardFooter>
+        </form>
       </Card>
     </main>
   );
