@@ -24,6 +24,46 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
+// Data produk yang diimpor dari file inventaris
+const inventoryItems = [
+  {
+    name: 'Vintage Leather Journal',
+    sku: 'BK-VLJ-001',
+    stock: 25,
+    price: 29.99,
+    status: 'In Stock',
+  },
+  {
+    name: 'Modern Desk Lamp',
+    sku: 'DSK-MDL-012',
+    stock: 10,
+    price: 75.5,
+    status: 'In Stock',
+  },
+  {
+    name: 'Ergonomic Office Chair',
+    sku: 'CHR-EOC-003',
+    stock: 5,
+    price: 350.0,
+    status: 'Low Stock',
+  },
+  {
+    name: 'Wireless Mechanical Keyboard',
+    sku: 'KBD-WMK-007',
+    stock: 0,
+    price: 120.0,
+    status: 'Out of Stock',
+  },
+  {
+    name: 'Ultra-Wide 4K Monitor',
+    sku: 'MON-UWK-004',
+    stock: 8,
+    price: 899.99,
+    status: 'In Stock',
+  },
+];
+
+
 type Product = {
   kts: string;
   name: string;
@@ -48,16 +88,14 @@ type HeldTransaction = {
   timestamp: Date;
 };
 
-const productCatalog: Product[] = [
-    { kts: 'ADS-SLP', name: 'Adidas Slop', price: 30000, stock: -1, unit: 'Pcs' },
-    { kts: 'AKS-001', name: 'Aksesoris 1', price: 1000, stock: -410, unit: 'Pcs' },
-    { kts: 'AKS-010', name: 'Aksesoris 10', price: 10000, stock: -1217, unit: 'Pcs' },
-    { kts: 'AKS-011', name: 'Aksesoris 11', price: 11000, stock: -301, unit: 'Pcs' },
-    { kts: 'AKS-012', name: 'Aksesoris 12', price: 12000, stock: 486, unit: 'Pcs' },
-    { kts: 'AKS-013', name: 'Aksesoris 13', price: 13000, stock: -739, unit: 'Pcs' },
-    { kts: 'AKS-017', name: 'Aksesoris 17', price: 17000, stock: 32, unit: 'Pcs' },
-    { kts: 'AKS-002', name: 'Aksesoris 2', price: 2000, stock: -1814, unit: 'Pcs' },
-];
+const productCatalog: Product[] = inventoryItems.map(item => ({
+    kts: item.sku,
+    name: item.name,
+    price: item.price,
+    stock: item.stock,
+    unit: 'Pcs'
+}));
+
 
 const initialItems: TransactionItem[] = [];
 
