@@ -81,3 +81,10 @@ export interface CashDrawerActivity {
   description: string;
   timestamp: Timestamp;
 }
+
+export interface ChartOfAccountsEntry {
+  id?: string; // Account number, e.g., "1110"
+  name: string; // Account name, e.g., "Cash"
+  type: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
+  description: string;
+}
