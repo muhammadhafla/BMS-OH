@@ -1,5 +1,6 @@
-
-import * as admin from 'firebase-admin';
+import {initializeApp, getApps, App, cert, getApp} from 'firebase-admin/app';
+import {getFirestore} from 'firebase-admin/firestore';
+import {getAuth} from 'firebase-admin/auth';
 
 // Decode the base64 encoded service account key
 const serviceAccountBase64 = process.env.GOOGLE_CREDENTIALS_BASE64;
@@ -23,13 +24,16 @@ const getServiceAccount = () => {
   }
 };
 
+let app: App;
 
-if (!admin.apps.length) {
+if (!getApps().length) {
   const serviceAccount = getServiceAccount();
-  admin.initializeApp({
-    credential: serviceAccount ? admin.credential.cert(serviceAccount) : undefined,
+  app = initializeApp({
+    credential: serviceAccount ? cert(serviceAccount) : undefined,
   });
+} else {
+  app = getApp();
 }
 
-export const firestore = admin.firestore();
-export const auth = admin.auth();
+export const firestore = getFirestore(app);
+export const auth = getAuth(app);
