@@ -38,6 +38,8 @@ import {
 import { useState } from 'react';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { modules } from '@/lib/modules';
 
 type UserRole = 'admin' | 'manager' | 'staff';
 
@@ -54,10 +56,20 @@ const initialUsers: User[] = [
   { id: '3', name: 'Staff User', email: 'staff@bms.app', role: 'staff' },
 ];
 
+const initialPermissions: Record<string, UserRole[]> = {
+  '/inventory': ['admin', 'manager'],
+  '/accounting': ['admin', 'manager'],
+  '/attendance': ['admin', 'manager', 'staff'],
+  '/pos': ['admin', 'staff'],
+  '/settings': ['admin'],
+  '/dashboard': ['admin', 'manager', 'staff'],
+};
+
 export default function SettingsPage() {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [permissions, setPermissions] = useState(initialPermissions);
 
   const openAddDialog = () => {
     setEditingUser(null);
@@ -89,6 +101,17 @@ export default function SettingsPage() {
 
   const deleteUser = (userId: string) => {
     setUsers(users.filter(u => u.id !== userId));
+  };
+  
+  const handlePermissionChange = (moduleHref: string, role: UserRole, checked: boolean) => {
+    setPermissions(prev => {
+      const currentRoles = prev[moduleHref] || [];
+      if (checked) {
+        return { ...prev, [moduleHref]: [...currentRoles, role] };
+      } else {
+        return { ...prev, [moduleHref]: currentRoles.filter(r => r !== role) };
+      }
+    });
   };
 
 
@@ -161,6 +184,45 @@ export default function SettingsPage() {
                        <Button variant="ghost" size="icon" onClick={() => deleteUser(user.id)} className="text-destructive hover:text-destructive/80">
                         <Trash2 className="h-4 w-4" />
                       </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Kontrol Akses Modul</CardTitle>
+            <CardDescription>
+              Atur modul mana yang dapat diakses oleh setiap peran. Admin selalu memiliki akses penuh.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Modul</TableHead>
+                  <TableHead className="text-center">Manager</TableHead>
+                  <TableHead className="text-center">Staff</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {modules.map(module => (
+                  <TableRow key={module.href}>
+                    <TableCell className="font-medium">{module.name}</TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={permissions[module.href]?.includes('manager')}
+                        onCheckedChange={(checked) => handlePermissionChange(module.href, 'manager', checked as boolean)}
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Checkbox
+                        checked={permissions[module.href]?.includes('staff')}
+                        onCheckedChange={(checked) => handlePermissionChange(module.href, 'staff', checked as boolean)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

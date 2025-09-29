@@ -1,10 +1,4 @@
-import {
-  Boxes,
-  BookCopy,
-  UserCheck,
-  ShoppingCart,
-  ArrowRight,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import {
   Card,
@@ -14,38 +8,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import type { Module } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { summarizeInventoryData } from '@/ai/flows/summarize-inventory-data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Sparkles, AlertTriangle } from 'lucide-react';
-
-const modules: Module[] = [
-  {
-    name: 'Inventory Management',
-    description: 'Track stock, process receipts with OCR, and manage items.',
-    href: '/inventory',
-    icon: <Boxes className="size-8 text-primary" />,
-  },
-  {
-    name: 'Accounting',
-    description: 'Manage journal entries and generate financial reports.',
-    href: '/accounting',
-    icon: <BookCopy className="size-8 text-primary" />,
-  },
-  {
-    name: 'Attendance',
-    description: 'Record employee attendance with geolocation and selfies.',
-    href: '/attendance',
-    icon: <UserCheck className="size-8 text-primary" />,
-  },
-  {
-    name: 'Point of Sale',
-    description: 'A desktop-optimized POS for seamless transactions.',
-    href: '/pos',
-    icon: <ShoppingCart className="size-8 text-primary" />,
-  },
-];
+import { modules } from '@/lib/modules';
 
 const sampleInventoryData = {
   items: [

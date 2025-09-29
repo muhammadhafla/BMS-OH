@@ -17,28 +17,11 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { usePathname } from 'next/navigation';
-import {
-  LayoutDashboard,
-  Boxes,
-  BookCopy,
-  UserCheck,
-  ShoppingCart,
-  LogOut,
-  ChevronRight,
-  Settings,
-} from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
-
-const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/inventory', label: 'Inventory', icon: Boxes },
-  { href: '/accounting', label: 'Accounting', icon: BookCopy },
-  { href: '/attendance', label: 'Attendance', icon: UserCheck },
-  { href: '/pos', label: 'Point of Sale', icon: ShoppingCart },
-  { href: '/settings', label: 'Pengaturan', icon: Settings },
-];
+import { modules } from '@/lib/modules';
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -65,17 +48,17 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
-          {menuItems.map(({ href, label, icon: Icon }) => (
-            <SidebarMenuItem key={href}>
+          {modules.map((mod) => (
+            <SidebarMenuItem key={mod.href}>
               <SidebarMenuButton
                 asChild
-                isActive={pathname === href || (href !== '/dashboard' && pathname.startsWith(href))}
-                tooltip={{ children: label, side: 'right' }}
+                isActive={pathname === mod.href || (mod.href !== '/dashboard' && pathname.startsWith(mod.href))}
+                tooltip={{ children: mod.name, side: 'right' }}
                 className="justify-start"
               >
-                <Link href={href}>
-                  <Icon className="shrink-0" />
-                  <span>{label}</span>
+                <Link href={mod.href}>
+                  {React.cloneElement(mod.icon as React.ReactElement, { className: "shrink-0"})}
+                  <span>{mod.name}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
