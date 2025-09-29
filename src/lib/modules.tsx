@@ -6,6 +6,7 @@ import {
   ShoppingCart,
   LayoutDashboard,
   Settings,
+  Truck,
 } from 'lucide-react';
 import type { Module } from '@/lib/types';
 
@@ -21,6 +22,12 @@ export const modules: Module[] = [
     description: 'Lacak stok, proses struk dengan OCR, dan kelola item.',
     href: '/inventory',
     icon: <Boxes className="size-8 text-primary" />,
+  },
+  {
+    name: 'Pembelian',
+    description: 'Catat pembelian barang dan perbarui stok secara otomatis.',
+    href: '/purchases',
+    icon: <Truck className="size-8 text-primary" />,
   },
   {
     name: 'Akuntansi',

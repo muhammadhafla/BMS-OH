@@ -89,3 +89,34 @@ export interface ChartOfAccountsEntry {
   type: 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense';
   description: string;
 }
+
+// Purchase Types
+export interface PurchaseItem {
+  id?: string;
+  productName: string;
+  quantity: number;
+  purchasePrice: number; // Harga beli per unit untuk item ini
+  total: number;
+  sku?: string;
+  unit?: string;
+}
+
+export interface Purchase {
+  id?: string;
+  supplier: string;
+  purchaseDate: Timestamp;
+  items: PurchaseItem[];
+  totalAmount: number;
+  notes?: string;
+}
+
+export interface PurchaseHistory {
+  id?: string;
+  productId: string;
+  productName: string;
+  sku: string;
+  quantity: number;
+  purchasePrice: number;
+  purchaseDate: Timestamp;
+  supplier: string;
+}
