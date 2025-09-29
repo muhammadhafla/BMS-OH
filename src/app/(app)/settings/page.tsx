@@ -35,11 +35,12 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { modules } from '@/lib/modules.tsx';
+import { useToast } from '@/hooks/use-toast';
 
 type UserRole = 'admin' | 'manager' | 'staff';
 
@@ -70,6 +71,27 @@ export default function SettingsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [permissions, setPermissions] = useState(initialPermissions);
+  const [posAuthPin, setPosAuthPin] = useState('');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const storedPin = localStorage.getItem('pos-auth-pin');
+    if (storedPin) {
+      setPosAuthPin(storedPin);
+    }
+  }, []);
+
+  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPosAuthPin(e.target.value);
+  };
+
+  const handleSaveSettings = () => {
+    localStorage.setItem('pos-auth-pin', posAuthPin);
+    toast({
+      title: "Pengaturan Disimpan",
+      description: "Pengaturan Anda telah berhasil disimpan.",
+    });
+  };
 
   const openAddDialog = () => {
     setEditingUser(null);
@@ -145,6 +167,32 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Pengaturan POS</CardTitle>
+            <CardDescription>
+              Kelola pengaturan untuk Point of Sale.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="pos-pin">PIN Otorisasi POS</Label>
+              <Input
+                id="pos-pin"
+                type="password"
+                value={posAuthPin}
+                onChange={handlePinChange}
+                maxLength={4}
+                placeholder="Masukkan 4 digit PIN"
+              />
+              <p className="text-sm text-muted-foreground">
+                PIN ini digunakan untuk mengotorisasi tindakan yang dibatasi di kasir, seperti mengubah harga.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -303,7 +351,7 @@ export default function SettingsPage() {
         </Card>
 
         <div className="flex justify-end">
-          <Button className="bg-accent hover:bg-accent/90">Simpan Perubahan</Button>
+          <Button onClick={handleSaveSettings} className="bg-accent hover:bg-accent/90">Simpan Perubahan</Button>
         </div>
       </div>
 

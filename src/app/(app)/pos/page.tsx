@@ -23,6 +23,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 // Data produk yang diimpor dari file inventaris
 const inventoryItems = [
@@ -464,7 +465,9 @@ export default function POSPage() {
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              recallTransaction(filteredHeldTransactions[0]?.id);
+              if (filteredHeldTransactions.length > 0) {
+                recallTransaction(filteredHeldTransactions[0]?.id);
+              }
             }
           }}
         >
@@ -509,7 +512,7 @@ export default function POSPage() {
             </div>
           </div>
           <DialogFooter className="mt-2">
-            <Button variant="pos" onClick={() => recallTransaction(filteredHeldTransactions[0]?.id)} className="relative">
+            <Button variant="pos" onClick={() => filteredHeldTransactions.length > 0 && recallTransaction(filteredHeldTransactions[0]?.id)} className="relative">
               OK <KeybindHint>Enter</KeybindHint>
             </Button>
             <Button variant="pos" onClick={() => setIsRecallDialogOpen(false)} className="relative">
@@ -627,16 +630,23 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
   const discountAmountRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const newDiscountAmount = (price * discountPercent) / 100;
-    setDiscountAmount(newDiscountAmount);
-  }, [discountPercent, price]);
+    // Recalculate discount percentage when discount amount or price changes
+    if (price > 0) {
+      setDiscountPercent(discountAmount / price * 100);
+    } else {
+      setDiscountPercent(0);
+    }
+  }, [discountAmount, price]);
+  
+  const handleDiscountPercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const percent = parseFloat(e.target.value) || 0;
+    setDiscountPercent(percent);
+    setDiscountAmount((price * percent) / 100);
+  };
   
   const handleDiscountAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const amount = parseFloat(e.target.value) || 0;
       setDiscountAmount(amount);
-      if (price > 0) {
-          setDiscountPercent((amount / price) * 100);
-      }
   };
 
   const calculatedTotal = (price - discountAmount) * quantity;
@@ -686,9 +696,8 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
   };
 
   const handleAuthorization = (pin: string) => {
-    // In a real app, you'd verify the PIN against a backend service.
-    // For this demo, we'll use a simple hardcoded PIN.
-    if (pin === '1234') { 
+    const storedPin = localStorage.getItem('pos-auth-pin') || '1234';
+    if (pin === storedPin) { 
       setIsPriceLocked(false);
       setIsAuthDialogOpen(false);
     } else {
@@ -716,7 +725,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
             
             <Label className="text-right">% | Potongan</Label>
             <div className="col-span-2 flex items-center gap-2">
-                <Input type="number" value={discountPercent} onChange={(e) => setDiscountPercent(parseFloat(e.target.value) || 0)} className="h-8 w-20" />
+                <Input type="number" value={discountPercent} onChange={handleDiscountPercentChange} className="h-8 w-20" />
                 <Input ref={discountAmountRef} type="number" value={discountAmount} onChange={handleDiscountAmountChange} className="h-8 flex-1" />
             </div>
 
@@ -838,7 +847,7 @@ const AuthorizationDialog = ({ isOpen, onClose, onAuthorize }: AuthorizationDial
   useEffect(() => {
     if (isOpen) {
       // Focus the input when the dialog opens
-      setTimeout(() => pinInputRef.current?.focus(), 100);
+      setTimeout(() => pinInputref.current?.focus(), 100);
     } else {
         setPin(''); // Reset PIN on close
     }
