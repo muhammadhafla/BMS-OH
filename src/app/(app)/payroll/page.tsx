@@ -181,7 +181,7 @@ const PaymentDialog = ({
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>Batal</Button>
-                    <Button onClick={handleSubmit} disabled={amount <= 0 || amount > remainingSalary}>
+                    <Button onClick={handleSubmit} disabled={amount <= 0 || amount > remainingSalary} className="bg-accent hover:bg-accent/90">
                         <Send className="mr-2 h-4 w-4"/> Konfirmasi Pembayaran
                     </Button>
                 </DialogFooter>
@@ -254,7 +254,7 @@ const AdvancePaymentDialog = ({
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={onClose}>Batal</Button>
-                    <Button onClick={handleSubmit}>
+                    <Button onClick={handleSubmit} className="bg-accent hover:bg-accent/90">
                        Simpan Catatan
                     </Button>
                 </DialogFooter>
@@ -510,7 +510,7 @@ export default function PayrollPage() {
                 <div className="text-lg font-bold">
                     Total Gaji Belum Dibayar: <span className="text-primary">Rp{totalUnpaidSalary.toLocaleString('id-ID')}</span>
                 </div>
-                <Button onClick={handlePayAll} disabled={totalUnpaidSalary <= 0}>
+                <Button onClick={handlePayAll} disabled={totalUnpaidSalary <= 0} className="bg-accent hover:bg-accent/90">
                     <Send className="mr-2 h-4 w-4"/>
                     Bayar Semua (Belum Dibayar)
                 </Button>
@@ -535,3 +535,4 @@ export default function PayrollPage() {
   );
 }
 
+    
