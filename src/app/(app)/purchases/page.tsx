@@ -279,7 +279,7 @@ export default function PurchasesPage() {
     
     setIsSubmitting(true);
     try {
-        const result = await recordPurchase({
+        const result = await recordPurchase({ //perlu diganti//
             supplier,
             notes,
             items
