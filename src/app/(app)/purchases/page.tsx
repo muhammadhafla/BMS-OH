@@ -21,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Trash2, Save, ImageUp, Camera, Upload } from 'lucide-react';
+import { PlusCircle, Trash2, Save, ImageUp, Camera, Upload, FileUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { PurchaseItem } from '@/lib/types';
 import { recordPurchase } from '@/lib/services/purchase';
@@ -46,6 +46,8 @@ import {
 } from '@/components/ui/dialog';
 import Image from 'next/image';
 import { extractReceiptItems } from '@/ai/flows/extract-receipt-items';
+import Papa from 'papaparse';
+
 
 const OcrDialog = ({
   isOpen,
@@ -215,6 +217,7 @@ export default function PurchasesPage() {
   const { toast } = useToast();
   const [isOcrDialogOpen, setIsOcrDialogOpen] = useState(false);
   const [ocrFile, setOcrFile] = useState<File | null>(null);
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAddItem = () => {
     const newItem: PurchaseItem = {
@@ -310,6 +313,73 @@ export default function PurchasesPage() {
     setItems(prevItems => [...prevItems, ...ocrItems]);
   }
 
+  const handleImportCsvClick = () => {
+    csvFileInputRef.current?.click();
+  };
+
+  const handleCsvFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        const requiredHeaders = ['productName', 'quantity', 'purchasePrice'];
+        const fileHeaders = results.meta.fields || [];
+        const hasAllHeaders = requiredHeaders.every(h => fileHeaders.includes(h));
+
+        if (!hasAllHeaders) {
+          toast({
+            variant: "destructive",
+            title: "Header CSV Tidak Sesuai",
+            description: `Pastikan file CSV memiliki kolom: ${requiredHeaders.join(', ')}. 'unit' adalah opsional.`,
+          });
+          return;
+        }
+
+        const newItems: PurchaseItem[] = results.data.map((row: any) => {
+          const quantity = parseFloat(row.quantity) || 0;
+          const purchasePrice = parseFloat(row.purchasePrice) || 0;
+          return {
+            id: `new-${Date.now()}-${Math.random()}`,
+            productName: row.productName || '',
+            quantity: quantity,
+            purchasePrice: purchasePrice,
+            total: quantity * purchasePrice,
+            unit: row.unit || 'pcs',
+          };
+        }).filter(item => item.productName);
+
+        if (newItems.length > 0) {
+          setItems(prev => [...prev, ...newItems]);
+          toast({
+            title: "Impor CSV Berhasil",
+            description: `${newItems.length} item berhasil ditambahkan dari file CSV.`
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Impor Gagal',
+            description: 'Tidak ada data valid yang ditemukan di file CSV.'
+          });
+        }
+      },
+      error: (error) => {
+        toast({
+          variant: "destructive",
+          title: "Gagal Membaca File CSV",
+          description: error.message,
+        });
+      }
+    });
+
+    // Reset file input
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
 
   return (
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
@@ -322,11 +392,24 @@ export default function PurchasesPage() {
             Rekam pembelian baru untuk memperbarui stok dan harga beli.
           </p>
         </div>
-         <Button variant="outline" onClick={() => setIsOcrDialogOpen(true)}>
-            <ImageUp className="mr-2 h-4 w-4" />
-            Pindai Struk (OCR)
-          </Button>
+        <div className="flex items-center gap-2">
+           <Button variant="outline" onClick={handleImportCsvClick}>
+              <FileUp className="mr-2 h-4 w-4" />
+              Impor dari CSV
+            </Button>
+           <Button variant="outline" onClick={() => setIsOcrDialogOpen(true)}>
+              <ImageUp className="mr-2 h-4 w-4" />
+              Pindai Struk (OCR)
+            </Button>
+        </div>
       </header>
+       <input
+        type="file"
+        ref={csvFileInputRef}
+        onChange={handleCsvFileChange}
+        className="hidden"
+        accept=".csv"
+      />
       
       <Card>
         <CardHeader>
@@ -418,7 +501,7 @@ export default function PurchasesPage() {
                     )) : (
                         <TableRow>
                             <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                                Belum ada item. Klik "Tambah Item" atau Pindai Struk untuk memulai.
+                                Belum ada item. Klik "Tambah Item" atau gunakan fitur impor.
                             </TableCell>
                         </TableRow>
                     )}
