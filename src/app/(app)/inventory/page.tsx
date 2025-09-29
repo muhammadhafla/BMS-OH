@@ -30,11 +30,20 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/lib/firebase-client'; // Import client-side firestore
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'; // Import firestore functions
+import Papa from 'papaparse';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
     const [name, setName] = useState('');
@@ -128,6 +137,213 @@ const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
     );
 };
 
+const databaseColumns = [
+    { value: 'name', label: 'Nama Produk' },
+    { value: 'sku', label: 'SKU' },
+    { value: 'price', label: 'Harga' },
+    { value: 'stock', label: 'Stok' },
+    { value: 'unit', label: 'Satuan' },
+];
+
+type ColumnMapping = Record<string, keyof Omit<Product, 'id'> | 'ignore'>;
+
+const ImportMappingDialog = ({ 
+  isOpen, 
+  onClose, 
+  csvHeaders, 
+  csvPreview,
+  fileContent
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  csvHeaders: string[], 
+  csvPreview: Record<string, string>[],
+  fileContent: string
+}) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mapping, setMapping] = useState<ColumnMapping>({});
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Auto-map based on header name similarity
+    const initialMapping: ColumnMapping = {};
+    csvHeaders.forEach(header => {
+      const lowerHeader = header.toLowerCase();
+      if (lowerHeader.includes('nama') || lowerHeader.includes('barang')) {
+        initialMapping[header] = 'name';
+      } else if (lowerHeader.includes('sku') || lowerHeader.includes('kode')) {
+        initialMapping[header] = 'sku';
+      } else if (lowerHeader.includes('harga')) {
+        initialMapping[header] = 'price';
+      } else if (lowerHeader.includes('stok') || lowerHeader.includes('qty')) {
+        initialMapping[header] = 'stock';
+      } else if (lowerHeader.includes('unit') || lowerHeader.includes('satuan')) {
+        initialMapping[header] = 'unit';
+      } else {
+        initialMapping[header] = 'ignore';
+      }
+    });
+    setMapping(initialMapping);
+  }, [csvHeaders]);
+
+  const handleMappingChange = (csvHeader: string, dbColumn: keyof Product | 'ignore') => {
+    setMapping(prev => ({ ...prev, [csvHeader]: dbColumn }));
+  };
+  
+  const handleImport = async () => {
+    const requiredColumns: (keyof Product)[] = ['name', 'sku', 'price', 'stock', 'unit'];
+    const mappedDbColumns = Object.values(mapping);
+
+    const missingColumns = requiredColumns.filter(
+        col => !mappedDbColumns.includes(col)
+    );
+
+    if (missingColumns.length > 0 && !missingColumns.every(m => m === 'unit')) { // Make unit optional for now
+         toast({
+            variant: "destructive",
+            title: "Pemetaan Tidak Lengkap",
+            description: `Kolom berikut harus dipetakan: ${missingColumns.join(', ')}`,
+        });
+        return;
+    }
+
+    setIsSubmitting(true);
+    const toastId = toast({
+      title: 'Mengimpor Produk',
+      description: 'Harap tunggu sementara produk sedang diproses...',
+    });
+
+    try {
+        const result = await importProductsFromCSV({
+            csvContent: fileContent,
+            columnMapping: mapping
+        });
+
+        if (result.success) {
+            toast({
+                id: toastId.id,
+                title: 'Impor Berhasil',
+                description: `${result.count} produk berhasil diimpor.`,
+            });
+            onClose();
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        console.error('Gagal mengimpor CSV:', error);
+        toast({
+            id: toastId.id,
+            variant: "destructive",
+            title: "Impor Gagal",
+            description: error instanceof Error ? error.message : "Terjadi kesalahan saat mengimpor file.",
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+  
+  // Create preview data based on current mapping
+  const previewData = csvPreview.map(row => {
+    const newRow: Partial<Product> = {};
+    for (const csvHeader in mapping) {
+        const dbColumn = mapping[csvHeader];
+        if (dbColumn !== 'ignore') {
+            (newRow as any)[dbColumn] = row[csvHeader];
+        }
+    }
+    return newRow;
+  });
+
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-4xl">
+            <DialogHeader>
+                <DialogTitle>Petakan Kolom CSV</DialogTitle>
+                <DialogDescription>
+                    Definisikan setiap kolom dari file CSV Anda ke kolom database yang sesuai.
+                </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid grid-cols-2 gap-8">
+                <div>
+                    <h3 className="font-semibold mb-2">Pemetaan Kolom</h3>
+                    <ScrollArea className="h-64 border rounded-md">
+                         <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Kolom Sumber (dari CSV)</TableHead>
+                                    <TableHead>Definisikan ke Kolom</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {csvHeaders.map(header => (
+                                    <TableRow key={header}>
+                                        <TableCell className="font-medium">{header}</TableCell>
+                                        <TableCell>
+                                            <Select 
+                                                value={mapping[header]}
+                                                onValueChange={(value) => handleMappingChange(header, value as any)}
+                                            >
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Pilih kolom..." />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="ignore">Abaikan</SelectItem>
+                                                    {databaseColumns.map(col => (
+                                                        <SelectItem key={col.value} value={col.value}>{col.label}</SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </ScrollArea>
+                </div>
+                <div>
+                     <h3 className="font-semibold mb-2">Pratinjau Data (5 Baris Pertama)</h3>
+                     <ScrollArea className="h-64 border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    {databaseColumns.map(col => {
+                                        if (Object.values(mapping).includes(col.value)) {
+                                            return <TableHead key={col.value}>{col.label}</TableHead>
+                                        }
+                                        return null;
+                                    })}
+                                </TableRow>
+                            </TableHeader>
+                             <TableBody>
+                                {previewData.map((row, index) => (
+                                    <TableRow key={index}>
+                                       {databaseColumns.map(col => {
+                                           if (Object.values(mapping).includes(col.value)) {
+                                               return <TableCell key={col.value}>{(row as any)[col.value]}</TableCell>
+                                           }
+                                           return null;
+                                       })}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                     </ScrollArea>
+                </div>
+            </div>
+
+            <DialogFooter>
+                <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Batal</Button>
+                <Button onClick={handleImport} className="bg-accent hover:bg-accent/90" disabled={isSubmitting}>
+                    {isSubmitting ? 'Mengimpor...' : 'Mulai Impor'}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+  );
+};
+
 
 export default function InventoryPage() {
   const [inventoryItems, setInventoryItems] = useState<Product[]>([]);
@@ -135,6 +351,13 @@ export default function InventoryPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // State for import mapping
+  const [isImportMappingDialogOpen, setIsImportMappingDialogOpen] = useState(false);
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
+  const [csvPreview, setCsvPreview] = useState<any[]>([]);
+  const [csvFileContent, setCsvFileContent] = useState('');
+
 
   useEffect(() => {
     setLoading(true);
@@ -160,41 +383,40 @@ export default function InventoryPage() {
     fileInputRef.current?.click();
   };
 
-  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    const toastId = toast({
-      title: 'Mengimpor Produk',
-      description: 'Harap tunggu sementara produk sedang diproses...',
-    });
+    setCsvFileContent('');
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const content = e.target?.result as string;
+        setCsvFileContent(content);
 
-    try {
-      const fileContent = await file.text();
-      const result = await importProductsFromCSV(fileContent);
-
-      if (result.success) {
-        toast({
-          id: toastId.id,
-          title: 'Impor Berhasil',
-          description: `${result.count} produk berhasil diimpor.`,
+        Papa.parse(content, {
+            header: true,
+            preview: 5, // Only parse first 5 rows for preview
+            complete: (results) => {
+                if (results.meta.fields) {
+                    setCsvHeaders(results.meta.fields);
+                    setCsvPreview(results.data);
+                    setIsImportMappingDialogOpen(true);
+                } else {
+                    toast({
+                        variant: "destructive",
+                        title: "Gagal Membaca File",
+                        description: "Tidak dapat menemukan header di file CSV.",
+                    });
+                }
+            }
         });
-      } else {
-        throw new Error(result.error);
-      }
-    } catch (error) {
-      console.error('Gagal mengimpor CSV:', error);
-      toast({
-        id: toastId.id,
-        variant: "destructive",
-        title: "Impor Gagal",
-        description: error instanceof Error ? error.message : "Terjadi kesalahan saat mengimpor file.",
-      });
-    } finally {
-        // Reset file input value to allow re-uploading the same file
-        if (event.target) {
-            event.target.value = '';
-        }
+    };
+    reader.readAsText(file);
+
+    // Reset file input value to allow re-uploading the same file
+    if (event.target) {
+        event.target.value = '';
     }
   };
 
@@ -240,7 +462,7 @@ export default function InventoryPage() {
           <input 
             type="file" 
             ref={fileInputRef} 
-            onChange={handleFileImport}
+            onChange={handleFileChange}
             className="hidden" 
             accept=".csv"
           />
@@ -316,6 +538,13 @@ export default function InventoryPage() {
       <AddItemDialog 
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
+      />
+      <ImportMappingDialog
+        isOpen={isImportMappingDialogOpen}
+        onClose={() => setIsImportMappingDialogOpen(false)}
+        csvHeaders={csvHeaders}
+        csvPreview={csvPreview}
+        fileContent={csvFileContent}
       />
     </div>
   );

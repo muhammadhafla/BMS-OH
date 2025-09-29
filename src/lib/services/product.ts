@@ -4,6 +4,7 @@
 import { firestore } from '@/lib/firebase-admin';
 import type { Product } from '@/lib/types';
 import { WriteBatch } from 'firebase-admin/firestore';
+import Papa from 'papaparse';
 
 const productsCollection = firestore.collection('products');
 
@@ -65,41 +66,44 @@ export async function addProduct(productData: Omit<Product, 'id'>): Promise<Prod
   }
 }
 
+type ColumnMapping = Record<string, keyof Omit<Product, 'id'> | 'ignore'>;
+
+interface ImportProductsInput {
+    csvContent: string;
+    columnMapping: ColumnMapping;
+}
+
 /**
- * Imports products from a CSV string into Firestore using a batch write.
- * Assumes CSV has headers: name,sku,price,stock,unit
- * @param {string} csvContent - The content of the CSV file.
+ * Imports products from a CSV string into Firestore using a batch write and a dynamic column mapping.
+ * @param {ImportProductsInput} input - The CSV content and column mapping.
  * @returns {Promise<{success: boolean; count: number; error?: string}>} Result of the import operation.
  */
-export async function importProductsFromCSV(csvContent: string): Promise<{success: boolean; count: number; error?: string}> {
+export async function importProductsFromCSV({ csvContent, columnMapping }: ImportProductsInput): Promise<{success: boolean; count: number; error?: string}> {
   try {
-    const lines = csvContent.trim().split('\n');
-    if (lines.length <= 1) {
-      return { success: false, count: 0, error: 'File CSV kosong atau hanya berisi header.' };
+    const parseResult = Papa.parse(csvContent, { header: true, skipEmptyLines: true });
+    const jsonData = parseResult.data as Record<string, string>[];
+
+    if (!jsonData.length) {
+      return { success: false, count: 0, error: 'File CSV kosong atau tidak berisi data.' };
+    }
+    
+    // Invert mapping for easier lookup: dbField -> csvHeader
+    const dbToCsvMapping: Record<string, string> = {};
+    for(const csvHeader in columnMapping) {
+        const dbField = columnMapping[csvHeader];
+        if (dbField !== 'ignore') {
+            dbToCsvMapping[dbField] = csvHeader;
+        }
     }
 
-    const header = lines[0].split(',').map(h => h.trim());
-    const requiredHeaders = ['name', 'sku', 'price', 'stock', 'unit'];
-    const missingHeaders = requiredHeaders.filter(h => !header.includes(h));
+    const productsToAdd: Omit<Product, 'id'>[] = jsonData.map(row => {
+      const name = row[dbToCsvMapping['name']] || '';
+      const sku = row[dbToCsvMapping['sku']] || '';
+      const price = parseFloat(row[dbToCsvMapping['price']]?.replace(/[^0-9.-]+/g,"")) || 0;
+      const stock = parseInt(row[dbToCsvMapping['stock']], 10) || 0;
+      const unit = row[dbToCsvMapping['unit']] || 'pcs';
 
-    if (missingHeaders.length > 0) {
-      return { success: false, count: 0, error: `Header CSV tidak lengkap. Header yang dibutuhkan: ${missingHeaders.join(', ')}.` };
-    }
-
-    const productsToAdd: Omit<Product, 'id'>[] = lines.slice(1).map(line => {
-      const values = line.split(',');
-      const product: any = {};
-      header.forEach((h, i) => {
-        product[h] = values[i].trim();
-      });
-      
-      return {
-        name: product.name,
-        sku: product.sku,
-        price: parseFloat(product.price) || 0,
-        stock: { main: parseInt(product.stock, 10) || 0 },
-        unit: product.unit,
-      };
+      return { name, sku, price, stock: { main: stock }, unit };
     });
 
     const batch: WriteBatch = firestore.batch();
