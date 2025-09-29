@@ -433,11 +433,11 @@ export default function POSPage() {
       for (const item of transaction.items) {
           const itemTotal = (item.quantity * item.price).toLocaleString('id-ID');
           let line1 = `${item.name.padEnd(20)}${itemTotal.padStart(12)}\n`;
-          let line2 = `${item.quantity} x @ ${item.price.toLocaleString('id-ID')}\n`;
+          let line2 = `  ${item.quantity} x @ ${item.price.toLocaleString('id-ID')}\n`;
           dataToPrint.push(line1);
           dataToPrint.push(line2);
           if (item.discount > 0) {
-              dataToPrint.push(`Diskon ${item.discount.toLocaleString('id-ID')}\n`);
+              dataToPrint.push(`  Diskon ${item.discount.toLocaleString('id-ID')}\n`);
           }
       }
       
@@ -560,7 +560,7 @@ export default function POSPage() {
             setIsPaymentDialogOpen(true);
         }
     }
-  }, [items, heldTransactions, selectedItemIndex, keybinds, isLocked, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, isCashDrawerDialogOpen, isShiftReportDialogOpen, isPaymentDialogOpen]);
+  }, [items, heldTransactions, selectedItemIndex, keybinds, isLocked, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, isCashDrawerDialogOpen, isShiftReportDialogOpen, isPaymentDialogOpen, clearTransaction, holdTransaction, openEditDialog, deleteSelectedItem, lockScreen]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -871,6 +871,8 @@ export default function POSPage() {
         isOpen={isShiftReportDialogOpen}
         onClose={() => setIsShiftReportDialogOpen(false)}
         currentUserRole={currentUserRole}
+        cashierName={currentCashier}
+        toast={toast}
       />
 
        <PaymentDialog
@@ -906,7 +908,8 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
   useEffect(() => {
     // Recalculate discount percentage when discount amount or price changes
     if (price > 0) {
-      setDiscountPercent(discountAmount / price * 100);
+      const newDiscPercent = (discountAmount / price) * 100;
+      setDiscountPercent(parseFloat(newDiscPercent.toFixed(2)));
     } else {
       setDiscountPercent(0);
     }
@@ -915,7 +918,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
   const handleDiscountPercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const percent = parseFloat(e.target.value) || 0;
     setDiscountPercent(percent);
-    setDiscountAmount((price * percent) / 100);
+    setDiscountAmount(parseFloat(((price * percent) / 100).toFixed(2)));
   };
   
   const handleDiscountAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -958,7 +961,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
     }
     
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, quantity, price, discountAmount, discountPercent, isPriceLocked, isAuthDialogOpen, onClose, handleSubmit]);
+  }, [isOpen, isAuthDialogOpen, onClose, handleSubmit]);
   
   
   const handleUnlockPrice = () => {
@@ -1329,6 +1332,8 @@ type ShiftReportDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   currentUserRole: UserRole;
+  cashierName: string;
+  toast: ReturnType<typeof useToast>['toast'];
 };
 
 const ReportRow = ({ label, value }: { label: string; value: number }) => (
@@ -1342,7 +1347,7 @@ const ReportRow = ({ label, value }: { label: string; value: number }) => (
   </div>
 );
 
-const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDialogProps) => {
+const ShiftReportDialog = ({ isOpen, onClose, currentUserRole, cashierName, toast }: ShiftReportDialogProps) => {
   const [reportData, setReportData] = useState({
     totalSales: 0,
     cashPayment: 0,
@@ -1403,6 +1408,84 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDial
   }, [isOpen]);
   
   const totalInDrawer = reportData.initialCash + reportData.cashPayment - reportData.cashWithdrawal;
+
+  const handlePrintShiftReport = async () => {
+    const qz = (window as any).qz;
+    if (!qz || !qz.websocket.isActive()) {
+        toast({
+            variant: "destructive",
+            title: "QZ Tray Tidak Terhubung",
+            description: "Tidak dapat mencetak laporan. Pastikan QZ Tray berjalan."
+        });
+        return;
+    }
+
+    const printerName = "POS-58"; // TODO: Make this configurable
+    let dataToPrint = [];
+
+    const center = '\x1B\x61\x31';
+    const left = '\x1B\x61\x30';
+    const reset = '\x1B\x40';
+    const bold = '\x1B\x45\x01';
+    const boldOff = '\x1B\x45\x00';
+    const line = '--------------------------------\n';
+    
+    const formatRow = (label: string, value: number) => {
+        return `${label.padEnd(15)}: ${value.toLocaleString('id-ID').padStart(15)}\n`;
+    }
+
+    dataToPrint.push(reset);
+    dataToPrint.push(center);
+    dataToPrint.push(bold);
+    dataToPrint.push('LAPORAN KASIR\n');
+    dataToPrint.push(boldOff);
+    dataToPrint.push(line);
+    dataToPrint.push(left);
+    dataToPrint.push(`Kasir: ${cashierName}\n`);
+    dataToPrint.push(`Waktu: ${new Date().toLocaleString('id-ID')}\n`);
+    dataToPrint.push(line);
+
+    dataToPrint.push('>> Total Belanjaan\n');
+    dataToPrint.push(formatRow('Total', reportData.totalSales));
+    dataToPrint.push('\n');
+    
+    dataToPrint.push('>> Rincian Pembayaran\n');
+    dataToPrint.push(formatRow('Tunai', reportData.cashPayment));
+    dataToPrint.push(formatRow('Kartu Debit', reportData.debitCard));
+    dataToPrint.push(formatRow('Kartu Kredit', reportData.creditCard));
+    dataToPrint.push(formatRow('QRIS', reportData.qris));
+    dataToPrint.push('\n');
+
+    dataToPrint.push('>> Uang Tunai dalam Laci\n');
+    dataToPrint.push(formatRow('Uang Awal', reportData.initialCash));
+    dataToPrint.push(formatRow('Pembayaran Tunai', reportData.cashPayment));
+    dataToPrint.push(formatRow('Tarik Uang', reportData.cashWithdrawal));
+    dataToPrint.push(line);
+    dataToPrint.push(bold);
+    dataToPrint.push(formatRow('Total', totalInDrawer));
+    dataToPrint.push(boldOff);
+    dataToPrint.push('\n\n\n');
+
+    // Cut paper command
+    dataToPrint.push('\x1D\x56\x42\x00'); 
+    
+    const config = qz.configs.create(printerName);
+      
+    try {
+        await qz.print(config, dataToPrint);
+        toast({
+            title: "Laporan Terkirim",
+            description: "Laporan kasir sedang dicetak."
+        });
+    } catch (e) {
+        console.error("QZ Print Error:", e);
+         toast({
+            variant: "destructive",
+            title: "Gagal Mencetak Laporan",
+            description: e instanceof Error ? e.message : "Terjadi kesalahan dengan QZ Tray."
+        });
+    }
+  };
   
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1413,14 +1496,13 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDial
       }
        if (event.key.toLowerCase() === 'p') { // Keybind for Print (Cetak)
         event.preventDefault();
-        // Print logic here
-        console.log("Printing report...");
+        handlePrintShiftReport();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, handlePrintShiftReport]);
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -1454,7 +1536,7 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDial
         </div>
 
         <DialogFooter className="bg-zinc-800 p-2 gap-2 justify-end rounded-b-lg">
-          <Button variant="pos" className="w-auto px-6 h-10 relative">
+          <Button variant="pos" className="w-auto px-6 h-10 relative" onClick={handlePrintShiftReport}>
             Cetak
             <KeybindHint>P</KeybindHint>
           </Button>
@@ -1660,79 +1742,3 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
     </Dialog>
   );
 };
-    
-
-const ReceiptTemplate = ({ transaction }: { transaction: CompletedTransaction }) => {
-  const { items, totalAmount, paymentMethod, timestamp, change, amountPaid } = transaction;
-
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-
-  return (
-    <div className="w-[240px] bg-white text-black p-2 font-mono text-xs">
-      <div className="text-center mb-2">
-        {/* Simplified Logo */}
-        <div className="text-4xl font-bold leading-none">B</div>
-        <div className="font-semibold">BAGUS</div>
-      </div>
-      
-      <div className="border-t border-dashed border-black pt-1">
-        {items.map((item, index) => (
-          <div key={index} className="mb-1">
-            <div className="flex justify-between">
-                <span>{item.name}</span>
-                <span>{(item.quantity * item.price).toLocaleString('id-ID')}*</span>
-            </div>
-            <div>{item.quantity} x @ {item.price.toLocaleString('id-ID')}</div>
-            {item.discount > 0 && (
-              <div>Diskon {item.discount.toLocaleString('id-ID')}</div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="border-t border-dashed border-black my-1 pt-1">
-          <p>Total barang dibeli: {totalItems}</p>
-      </div>
-
-      <div className="border-t border-dashed border-black my-1 pt-1 space-y-1">
-        <div className="flex justify-between font-bold">
-          <span>TOTAL</span>
-          <span>{totalAmount.toLocaleString('id-ID')}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>TUNAI</span>
-          <span>{paymentMethod === 'Tunai' ? amountPaid.toLocaleString('id-ID') : '0'}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>NON TUNAI</span>
-          <span>{paymentMethod !== 'Tunai' ? amountPaid.toLocaleString('id-ID') : '0'}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>KEMBALI</span>
-          <span>{change.toLocaleString('id-ID')}</span>
-        </div>
-        {/* Placeholder for rounding */}
-        <div className="flex justify-between">
-          <span>PEMBULATAN</span>
-          <span>0</span>
-        </div>
-      </div>
-      
-      <div className="flex justify-between text-[10px] mt-2">
-        <span>{new Date(timestamp).toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'})}</span>
-        <span>{new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-      </div>
-
-      <div className="text-center mt-2">
-        <p>Terima Kasih</p>
-      </div>
-    </div>
-  );
-};
-
-
-    
-
-
-
-
