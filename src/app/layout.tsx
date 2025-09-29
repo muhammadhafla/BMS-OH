@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { cn } from '@/lib/utils';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'BMS',
@@ -26,6 +27,7 @@ export default function RootLayout({
       <body className={cn('font-body antialiased', 'min-h-screen bg-background font-sans')}>
         {children}
         <Toaster />
+        <Script src="https://cdnjs.cloudflare.com/ajax/libs/qz-tray/2.1.6/qz-tray.js" strategy="afterInteractive" />
       </body>
     </html>
   );
