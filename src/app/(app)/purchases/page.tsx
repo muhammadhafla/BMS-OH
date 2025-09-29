@@ -45,6 +45,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { extractReceiptItems } from '@/ai/flows/extract-receipt-items';
 
 const OcrDialog = ({
   isOpen,
@@ -103,27 +104,75 @@ const OcrDialog = ({
 const OcrProcessingDialog = ({
   file,
   onClose,
+  onOcrComplete
 }: {
   file: File | null;
   onClose: () => void;
+  onOcrComplete: (items: PurchaseItem[]) => void;
 }) => {
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const imageUrl = useMemo(() => file ? URL.createObjectURL(file) : null, [file]);
 
-  // TODO: Implement actual OCR processing by calling a Genkit flow
   const processReceipt = useCallback(async () => {
      if (!file) return;
      setIsProcessing(true);
      setError(null);
-     // This is where you would convert the file to a data URI and call the AI flow.
-     // For now, we'll just simulate a delay and an error.
-     setTimeout(() => {
-        setError("Fitur OCR belum terimplementasi sepenuhnya.");
+     
+     try {
+       // Convert file to data URI
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = async () => {
+            const dataUri = reader.result as string;
+            
+            const toastId = toast({
+              title: "Memproses Struk...",
+              description: "Harap tunggu sementara AI menganalisis struk Anda."
+            });
+
+            try {
+              const result = await extractReceiptItems({ receiptImage: dataUri });
+              
+              if (result && result.items.length > 0) {
+                 toast({
+                    id: toastId.id,
+                    title: "Analisis Berhasil!",
+                    description: `${result.items.length} item berhasil diekstraksi dari struk.`
+                 });
+                 const processedItems = result.items.map(item => ({...item, id: `new-${Date.now()}-${Math.random()}`}));
+                 onOcrComplete(processedItems);
+                 onClose();
+              } else {
+                 throw new Error("Tidak ada item yang dapat diekstraksi dari struk.");
+              }
+            } catch (aiError) {
+              console.error("OCR AI Error:", aiError);
+              const errorMessage = aiError instanceof Error ? aiError.message : "Terjadi kesalahan saat AI menganalisis gambar.";
+              toast({
+                 id: toastId.id,
+                 variant: 'destructive',
+                 title: 'Analisis Gagal',
+                 description: errorMessage,
+              });
+              setError(errorMessage);
+            } finally {
+                setIsProcessing(false);
+            }
+        };
+        reader.onerror = (error) => {
+            console.error("File Reader Error:", error);
+            setError("Gagal membaca file gambar.");
+            setIsProcessing(false);
+        };
+
+     } catch (e) {
+        setError("Terjadi kesalahan tak terduga saat memulai pemrosesan.");
         setIsProcessing(false);
-     }, 2000);
-  }, [file]);
+     }
+  }, [file, onClose, onOcrComplete, toast]);
 
   useEffect(() => {
     if (file) {
@@ -220,7 +269,7 @@ export default function PurchasesPage() {
         toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Tambahkan setidaknya satu item pembelian.' });
         return;
     }
-    if (items.some(item => !item.productName || item.quantity <= 0 || item.purchasePrice <= 0)) {
+    if (items.some(item => !item.productName || item.quantity <= 0 || item.purchasePrice < 0)) {
         toast({ variant: 'destructive', title: 'Validasi Gagal', description: 'Pastikan semua detail item (Nama, Kuantitas, Harga) diisi dengan benar.' });
         return;
     }
@@ -256,6 +305,10 @@ export default function PurchasesPage() {
     setIsOcrDialogOpen(false);
     setOcrFile(file);
   };
+  
+  const handleOcrComplete = (ocrItems: PurchaseItem[]) => {
+    setItems(prevItems => [...prevItems, ...ocrItems]);
+  }
 
 
   return (
@@ -349,7 +402,7 @@ export default function PurchasesPage() {
                           <Input
                             placeholder="pcs"
                             value={item.unit}
-                            onChange={e => handleItemChange(item.id!, 'unit', e.target.value)}
+                            onChange={e => handleItemChange(item.id!, 'unit', e.target.value || 'pcs')}
                             className="w-20"
                           />
                         </TableCell>
@@ -365,7 +418,7 @@ export default function PurchasesPage() {
                     )) : (
                         <TableRow>
                             <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                                Belum ada item. Klik "Tambah Item" untuk memulai.
+                                Belum ada item. Klik "Tambah Item" atau Pindai Struk untuk memulai.
                             </TableCell>
                         </TableRow>
                     )}
@@ -416,6 +469,7 @@ export default function PurchasesPage() {
       <OcrProcessingDialog
         file={ocrFile}
         onClose={() => setOcrFile(null)}
+        onOcrComplete={handleOcrComplete}
       />
 
     </div>

@@ -98,7 +98,7 @@ export interface PurchaseItem {
   purchasePrice: number; // Harga beli per unit untuk item ini
   total: number;
   sku?: string;
-  unit?: string;
+  unit: string;
 }
 
 export interface Purchase {
