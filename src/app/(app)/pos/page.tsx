@@ -160,7 +160,20 @@ export default function POSPage() {
       sessionId = `sesi-${cashierName.replace(/\s+/g, '-')}-${datePart}-${timePart}`;
       sessionStorage.setItem('pos-session-id', sessionId);
     }
-  }, [router]);
+
+    // Auto-connect to QZ Tray
+    if (typeof (window as any).qz !== 'undefined') {
+      (window as any).qz.websocket.connect().catch((err: any) => {
+        console.error("QZ Tray connection error:", err);
+        toast({
+          variant: 'destructive',
+          title: 'QZ Tray Tidak Tersambung',
+          description: 'Pastikan aplikasi QZ Tray berjalan dan coba muat ulang halaman.',
+        });
+      });
+    }
+
+  }, [router, toast]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -1644,4 +1657,5 @@ const ReceiptTemplate = ({ transaction }: { transaction: CompletedTransaction })
 
 
     
+
 
