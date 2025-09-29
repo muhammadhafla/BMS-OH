@@ -17,10 +17,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, FileUp, ImageUp, Edit } from 'lucide-react';
+import { PlusCircle, FileUp, ImageUp, Edit, Trash2 } from 'lucide-react';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import type { Product } from '@/lib/types';
-import { addProduct, importProductsFromCSV, updateProduct } from '@/lib/services/product';
+import { addProduct, importProductsFromCSV, updateProduct, deleteAllProducts } from '@/lib/services/product';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,17 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
   Select,
   SelectContent,
@@ -544,6 +555,33 @@ export default function InventoryPage() {
     setEditingProduct(product);
     setIsEditDialogOpen(true);
   };
+  
+  const handleDeleteAllClick = async () => {
+    const toastId = toast({
+      title: 'Menghapus Produk',
+      description: 'Harap tunggu sementara semua produk sedang dihapus...',
+    });
+    try {
+        const result = await deleteAllProducts();
+         if (result.success) {
+            toast({
+                id: toastId.id,
+                title: 'Semua Produk Dihapus',
+                description: `${result.count} produk berhasil dihapus.`,
+            });
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        console.error('Gagal menghapus semua produk:', error);
+        toast({
+            id: toastId.id,
+            variant: "destructive",
+            title: "Gagal Menghapus",
+            description: error instanceof Error ? error.message : "Terjadi kesalahan saat menghapus produk.",
+        });
+    }
+  };
 
   const filteredItems = useMemo(() => {
     if (!searchQuery) {
@@ -617,12 +655,34 @@ export default function InventoryPage() {
                 Daftar semua produk dalam inventaris Anda.
               </CardDescription>
             </div>
-            <div className="w-full max-w-sm">
-              <Input 
-                placeholder="Cari berdasarkan nama atau SKU..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            <div className="flex items-center gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" disabled={inventoryItems.length === 0}>
+                      <Trash2 className="mr-2 h-4 w-4" /> Hapus Semua Produk
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Apakah Anda benar-benar yakin?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Tindakan ini tidak dapat dibatalkan. Ini akan menghapus semua 
+                        data produk Anda secara permanen dari server.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Batal</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteAllClick}>Lanjutkan</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <div className="w-full max-w-sm">
+                  <Input 
+                    placeholder="Cari berdasarkan nama atau SKU..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
             </div>
           </div>
         </CardHeader>

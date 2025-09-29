@@ -143,3 +143,28 @@ export async function importProductsFromCSV({ csvContent, columnMapping }: Impor
     return { success: false, count: 0, error: 'Gagal memproses file CSV di server.' };
   }
 }
+
+/**
+ * Deletes all products from the Firestore collection.
+ * @returns {Promise<{success: boolean; count: number; error?: string}>} Result of the delete operation.
+ */
+export async function deleteAllProducts(): Promise<{success: boolean; count: number; error?: string}> {
+    try {
+        const snapshot = await productsCollection.get();
+        if (snapshot.empty) {
+            return { success: true, count: 0 };
+        }
+
+        const batch: WriteBatch = firestore.batch();
+        snapshot.docs.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+
+        await batch.commit();
+
+        return { success: true, count: snapshot.size };
+    } catch (error) {
+        console.error('Error deleting all products:', error);
+        return { success: false, count: 0, error: 'Gagal menghapus semua produk dari server.' };
+    }
+}
