@@ -14,20 +14,26 @@ import { summarizeInventoryData } from '@/ai/flows/summarize-inventory-data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Sparkles, AlertTriangle } from 'lucide-react';
 import { modules } from '@/lib/modules.tsx';
+import { getAllProducts } from '@/lib/services/product';
+import type { Product } from '@/lib/types';
 
-const sampleInventoryData = {
-  items: [
-    { id: '1', name: 'Laptop', quantity: 5, value: 1200 },
-    { id: '2', name: 'Mouse', quantity: 2, value: 25 },
-    { id: '3', name: 'Keyboard', quantity: 20, value: 75 },
-    { id: '4', name: 'Monitor', quantity: 1, value: 300 },
-  ],
-};
 
-async function AISummary() {
+async function AISummary({ inventoryData }: { inventoryData: Product[] }) {
+  if (inventoryData.length === 0) {
+    return (
+      <Alert>
+        <Sparkles className="h-4 w-4" />
+        <AlertTitle>Ringkasan Inventaris AI</AlertTitle>
+        <AlertDescription>
+          Belum ada data inventaris untuk dianalisis. Tambahkan produk terlebih dahulu.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   try {
     const { summary } = await summarizeInventoryData({
-      inventoryData: JSON.stringify(sampleInventoryData),
+      inventoryData: JSON.stringify(inventoryData),
     });
 
     return (
@@ -38,6 +44,7 @@ async function AISummary() {
       </Alert>
     );
   } catch (error) {
+    console.error("AI Summary Error:", error);
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
@@ -51,8 +58,9 @@ async function AISummary() {
   }
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   const otherModules = modules.filter(mod => mod.href !== '/dashboard');
+  const inventoryData = await getAllProducts();
 
   return (
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
@@ -66,7 +74,7 @@ export default function DashboardPage() {
       </header>
 
       <div className="mb-8">
-        <AISummary />
+        <AISummary inventoryData={inventoryData} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
