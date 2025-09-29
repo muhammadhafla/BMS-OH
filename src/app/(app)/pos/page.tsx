@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Power } from 'lucide-react';
+import { Lock, Power } from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -109,6 +109,7 @@ const KeybindHint = ({ children }: { children: React.ReactNode }) => (
 export default function POSPage() {
   const [currentTime, setCurrentTime] = useState('');
   const [items, setItems] = useState<TransactionItem[]>(initialItems);
+  const [selectedItemIndex, setSelectedItemIndex] = useState<number | null>(null);
   const [total, setTotal] = useState(0);
   const [heldTransactions, setHeldTransactions] = useState<HeldTransaction[]>([]);
   const [isRecallDialogOpen, setIsRecallDialogOpen] = useState(false);
@@ -116,6 +117,8 @@ export default function POSPage() {
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [productSearch, setProductSearch] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<TransactionItem & { index: number } | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -147,6 +150,7 @@ export default function POSPage() {
   const clearTransaction = () => {
     setItems([]);
     setTotal(0);
+    setSelectedItemIndex(null);
     if (searchInputRef.current) searchInputRef.current.value = '';
     searchInputRef.current?.focus();
   };
@@ -169,6 +173,7 @@ export default function POSPage() {
     if (transactionToRecall) {
       setItems(transactionToRecall.items);
       setTotal(transactionToRecall.total);
+      setSelectedItemIndex(transactionToRecall.items.length > 0 ? 0 : null);
       setHeldTransactions(prev => prev.filter(t => t.id !== transactionId));
       setIsRecallDialogOpen(false);
     }
@@ -192,13 +197,15 @@ export default function POSPage() {
   const addItemToTransaction = (product: Product, quantity: number = 1) => {
     setItems(prevItems => {
         const existingItemIndex = prevItems.findIndex(item => item.sku === product.sku);
-        const newItems = [...prevItems];
+        let newItems = [...prevItems];
+        let newSelectedItemIndex;
 
         if (existingItemIndex > -1) {
             const existingItem = newItems[existingItemIndex];
             const newQuantity = existingItem.quantity + quantity;
             existingItem.quantity = newQuantity;
             existingItem.total = (existingItem.price - existingItem.discount) * newQuantity;
+            newSelectedItemIndex = existingItemIndex;
         } else {
             const newItem: TransactionItem = {
                 sku: product.sku,
@@ -209,7 +216,9 @@ export default function POSPage() {
                 total: (product.price - 0) * quantity,
             };
             newItems.push(newItem);
+            newSelectedItemIndex = newItems.length - 1;
         }
+        setSelectedItemIndex(newSelectedItemIndex);
         return newItems;
     });
 };
@@ -224,14 +233,39 @@ export default function POSPage() {
     if (searchInputRef.current) searchInputRef.current.value = '';
     searchInputRef.current?.focus();
   };
+  
+  const openEditDialog = () => {
+    if (selectedItemIndex !== null && items[selectedItemIndex]) {
+      setEditingItem({ ...items[selectedItemIndex], index: selectedItemIndex });
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  const handleItemUpdate = (updatedItem: TransactionItem, index: number) => {
+    const newItems = [...items];
+    newItems[index] = updatedItem;
+    setItems(newItems);
+    setIsEditDialogOpen(false);
+    setEditingItem(null);
+  };
+  
+  const handleItemRowClick = (index: number) => {
+    setSelectedItemIndex(index);
+  };
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    // Prevent keybinds from firing when a dialog is open
+    if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen) return;
+
     if (event.key === 'F2') {
       event.preventDefault();
       holdTransaction();
     } else if (event.key === 'F3') {
       event.preventDefault();
       setIsRecallDialogOpen(true);
+    } else if (event.key === 'F7') {
+        event.preventDefault();
+        openEditDialog();
     } else if (event.key === 'F11') {
       event.preventDefault();
     } else if (event.key === 'F4') {
@@ -240,7 +274,7 @@ export default function POSPage() {
     } else if (event.key === 'F9') {
         event.preventDefault();
     }
-  }, [items, heldTransactions]);
+  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -325,7 +359,11 @@ export default function POSPage() {
                 </TableHeader>
                 <TableBody>
                   {items.map((item, index) => (
-                    <TableRow key={index}>
+                    <TableRow key={index}
+                        onClick={() => handleItemRowClick(index)}
+                        onDoubleClick={openEditDialog}
+                        className={selectedItemIndex === index ? 'bg-yellow-200' : 'hover:bg-yellow-100'}
+                    >
                       <TableCell className="text-center">{item.quantity}</TableCell>
                       <TableCell>{item.name}</TableCell>
                       <TableCell className="text-right">{item.price.toLocaleString('id-ID')}</TableCell>
@@ -343,8 +381,12 @@ export default function POSPage() {
           </div>
           <footer className="mt-auto flex items-center justify-between border-t-2 border-zinc-400 bg-zinc-200 px-4 py-2">
             <div className="flex items-center gap-2">
-               <Button variant="posAction">Ubah</Button>
-               <Button variant="posAction">Hapus</Button>
+               <Button variant="posAction" className="relative" onClick={openEditDialog}>
+                 Ubah <KeybindHint>F7</KeybindHint>
+               </Button>
+               <Button variant="posAction" className="relative">
+                 Hapus <KeybindHint>F8</KeybindHint>
+               </Button>
             </div>
              <div className="flex items-center gap-4 rounded-md bg-zinc-800 px-3 py-1 text-sm text-white">
                 <span>Administrator</span>
@@ -479,6 +521,125 @@ export default function POSPage() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {editingItem && (
+        <EditItemDialog
+          item={editingItem}
+          isOpen={isEditDialogOpen}
+          onClose={() => {
+            setIsEditDialogOpen(false);
+            setEditingItem(null);
+          }}
+          onUpdate={handleItemUpdate}
+        />
+      )}
     </div>
   );
 }
+
+// Edit Item Dialog Component
+type EditItemDialogProps = {
+  item: TransactionItem & { index: number };
+  isOpen: boolean;
+  onClose: () => void;
+  onUpdate: (item: TransactionItem, index: number) => void;
+};
+
+const EditItemDialog = ({ item, isOpen, onClose, onUpdate }: EditItemDialogProps) => {
+  const [quantity, setQuantity] = useState(item.quantity);
+  const [price, setPrice] = useState(item.price);
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(item.discount);
+  
+  const discountAmountRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Recalculate discount amount when percentage changes
+    const newDiscountAmount = (price * discountPercent) / 100;
+    setDiscountAmount(newDiscountAmount);
+  }, [discountPercent, price]);
+  
+  const handleDiscountAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const amount = parseFloat(e.target.value) || 0;
+      setDiscountAmount(amount);
+      if (price > 0) {
+          setDiscountPercent((amount / price) * 100);
+      }
+  };
+
+  const calculatedTotal = (price - discountAmount) * quantity;
+
+  const handleSubmit = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    const updatedItem: TransactionItem = {
+      ...item,
+      quantity,
+      price,
+      discount: discountAmount,
+      total: calculatedTotal,
+    };
+    onUpdate(updatedItem, item.index);
+  };
+  
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (event.key === 'F5') {
+        event.preventDefault();
+        handleSubmit();
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, quantity, price, discountAmount, discountPercent]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-lg p-0" onKeyDown={(e) => e.stopPropagation()}>
+        <DialogHeader className="bg-zinc-700 p-2 px-4 rounded-t-lg">
+          <DialogTitle className="text-white text-sm">PERUBAHAN DETIL STRUK</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="p-4 grid grid-cols-3 gap-x-4 gap-y-2 items-center">
+            <Label className="text-right">Nama Barang</Label>
+            <Input value={item.name} readOnly className="col-span-2 h-8" />
+
+            <Label className="text-right">Kuantitas</Label>
+            <Input type="number" value={quantity} onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)} className="col-span-2 h-8 bg-yellow-200 border-yellow-400" />
+            
+            <Label className="text-right">Harga @</Label>
+            <Input type="number" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} className="col-span-2 h-8" />
+            
+            <Label className="text-right">% | Potongan</Label>
+            <div className="col-span-2 flex items-center gap-2">
+                <Input type="number" value={discountPercent} onChange={(e) => setDiscountPercent(parseFloat(e.target.value) || 0)} className="h-8 w-20" />
+                <Input ref={discountAmountRef} type="number" value={discountAmount} onChange={handleDiscountAmountChange} className="h-8 flex-1" />
+            </div>
+
+            <Label className="text-right">Harga Total</Label>
+            <Input value={calculatedTotal.toLocaleString('id-ID')} readOnly className="col-span-2 h-8" />
+          </div>
+
+          <DialogFooter className="bg-zinc-300 p-2 flex justify-between items-center rounded-b-lg">
+            <Button type="button" variant="pos" className="w-auto px-4 h-10">
+                <Lock className="w-5 h-5"/>
+            </Button>
+            <div className="flex gap-2">
+                <Button type="submit" variant="pos" className="w-auto px-6 h-10 relative">
+                    OK
+                    <KeybindHint>F5</KeybindHint>
+                </Button>
+                <Button type="button" variant="pos" onClick={onClose} className="w-auto px-6 h-10 relative">
+                    Batal
+                    <KeybindHint>Esc</KeybindHint>
+                </Button>
+            </div>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
