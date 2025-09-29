@@ -66,34 +66,6 @@ export default function DashboardPage() {
         <AISummary />
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-        {modules.map((mod) => (
-          <Card
-            key={mod.name}
-            className="flex flex-col transition-all hover:shadow-lg hover:-translate-y-1"
-          >
-            <CardHeader className="flex-row items-start gap-4 space-y-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
-                {mod.icon}
-              </div>
-              <div className="flex-1">
-                <CardTitle className="font-headline">{mod.name}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <CardDescription>{mod.description}</CardDescription>
-            </CardContent>
-            <CardFooter>
-              <Button asChild variant="ghost" className="w-full justify-start text-accent">
-                <Link href={mod.href}>
-                  Go to {mod.name.split(' ')[0]}
-                  <ArrowRight className="ml-2 size-4" />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
     </div>
   );
 }
