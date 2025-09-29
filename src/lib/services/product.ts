@@ -1,3 +1,4 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase-admin';
@@ -23,7 +24,7 @@ export async function getAllProducts(): Promise<Product[]> {
     } as Product));
     return products;
   } catch (error) {
-    console.error('Error getting all products:', error);
+    // console.error('Error getting all products:', error);
     throw new Error('Gagal mengambil data produk dari server.');
   }
 }
