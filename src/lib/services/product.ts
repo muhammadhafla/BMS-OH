@@ -53,10 +53,11 @@ export async function getProductById(id: string): Promise<Product | null> {
 export async function addProduct(productData: Omit<Product, 'id'>): Promise<Product> {
   try {
     const docRef = await productsCollection.add(productData);
+    const newDoc = await docRef.get();
     return {
-      id: docRef.id,
-      ...productData,
-    };
+      id: newDoc.id,
+      ...newDoc.data(),
+    } as Product;
   } catch (error) {
     console.error('Error adding product:', error);
     throw new Error('Gagal menambahkan produk baru ke server.');

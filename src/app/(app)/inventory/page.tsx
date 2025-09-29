@@ -52,7 +52,7 @@ const AddItemDialog = ({ isOpen, onClose, onProductAdded }: { isOpen: boolean, o
                 name,
                 sku,
                 price: parseFloat(price) || 0,
-                stock: { main: parseInt(stock, 10) || 0 },
+                stock: { main: parseInt(stock, 10) || 0 }, // Assuming 'main' is the default branch
                 unit,
             };
             const newProduct = await addProduct(newProductData);
