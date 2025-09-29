@@ -18,7 +18,23 @@ import { getAllProducts } from '@/lib/services/product';
 import type { Product } from '@/lib/types';
 
 
-async function AISummary({ inventoryData }: { inventoryData: Product[] }) {
+async function AISummary({ inventoryPromise }: { inventoryPromise: Promise<Product[]> }) {
+  let inventoryData: Product[];
+  try {
+    inventoryData = await inventoryPromise;
+  } catch (error) {
+    console.error("AI Summary - Failed to fetch inventory data:", error);
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Gagal Memuat Data Inventaris</AlertTitle>
+        <AlertDescription>
+          Tidak dapat mengambil data inventaris untuk ringkasan AI karena terjadi error. Mungkin kuota database Anda telah terlampaui. Silakan coba lagi nanti.
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  
   if (inventoryData.length === 0) {
     return (
       <Alert>
@@ -44,13 +60,13 @@ async function AISummary({ inventoryData }: { inventoryData: Product[] }) {
       </Alert>
     );
   } catch (error) {
-    console.error("AI Summary Error:", error);
+    console.error("AI Summary Generation Error:", error);
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Ringkasan AI Tidak Tersedia</AlertTitle>
         <AlertDescription>
-          Ringkasan inventaris yang didukung AI untuk sementara tidak tersedia. Silakan
+          Ringkasan inventaris yang didukung AI untuk sementara tidak tersedia karena terjadi kesalahan pada layanan AI. Silakan
           coba lagi nanti.
         </AlertDescription>
       </Alert>
@@ -60,13 +76,7 @@ async function AISummary({ inventoryData }: { inventoryData: Product[] }) {
 
 export default async function DashboardPage() {
   const otherModules = modules.filter(mod => mod.href !== '/dashboard');
-  let inventoryData: Product[] = [];
-  try {
-    inventoryData = await getAllProducts();
-  } catch (error) {
-    console.error("Dashboard Page - Failed to fetch inventory data:", error);
-    // Data will be an empty array, and the AISummary will handle it gracefully.
-  }
+  const inventoryPromise = getAllProducts();
 
 
   return (
@@ -81,7 +91,7 @@ export default async function DashboardPage() {
       </header>
 
       <div className="mb-8">
-        <AISummary inventoryData={inventoryData} />
+        <AISummary inventoryPromise={inventoryPromise} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
