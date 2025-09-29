@@ -14,6 +14,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Power } from 'lucide-react';
 import Link from 'next/link';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 type TransactionItem = {
   kts: string;
@@ -23,8 +31,16 @@ type TransactionItem = {
   total: number;
 };
 
+type HeldTransaction = {
+  id: number;
+  items: TransactionItem[];
+  total: number;
+  customer: string;
+  timestamp: Date;
+};
+
 const initialItems: TransactionItem[] = [
-  // Data contoh bisa ditambahkan di sini jika perlu
+  // Contoh data bisa ditambahkan di sini jika perlu
 ];
 
 const KeybindHint = ({ children }: { children: React.ReactNode }) => (
@@ -37,6 +53,10 @@ export default function POSPage() {
   const [currentTime, setCurrentTime] = useState('');
   const [items, setItems] = useState<TransactionItem[]>(initialItems);
   const [total, setTotal] = useState(0);
+  const [heldTransactions, setHeldTransactions] = useState<HeldTransaction[]>([]);
+  const [isRecallDialogOpen, setIsRecallDialogOpen] = useState(false);
+  const [recallSearch, setRecallSearch] = useState('');
+
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -62,32 +82,56 @@ export default function POSPage() {
     return () => clearInterval(timer);
   }, []);
 
+  const clearTransaction = () => {
+    setItems([]);
+    setTotal(0);
+    if (searchInputRef.current) searchInputRef.current.value = '';
+    searchInputRef.current?.focus();
+  };
+  
+  const holdTransaction = () => {
+    if (items.length === 0) return;
+    const newHeldTransaction: HeldTransaction = {
+      id: Date.now(),
+      items,
+      total: calculateTotal(items),
+      customer: 'Umum',
+      timestamp: new Date(),
+    };
+    setHeldTransactions(prev => [...prev, newHeldTransaction]);
+    clearTransaction();
+    console.log('Tunda action triggered', newHeldTransaction);
+  };
+  
+  const recallTransaction = (transactionId: number) => {
+    const transactionToRecall = heldTransactions.find(t => t.id === transactionId);
+    if (transactionToRecall) {
+      setItems(transactionToRecall.items);
+      setTotal(transactionToRecall.total);
+      setHeldTransactions(prev => prev.filter(t => t.id !== transactionId));
+      setIsRecallDialogOpen(false);
+    }
+  };
+
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key === 'F2') {
       event.preventDefault();
-      // Fungsi untuk 'Tunda'
-      console.log('Tunda action triggered');
+      holdTransaction();
     } else if (event.key === 'F3') {
       event.preventDefault();
-      // Fungsi untuk 'Panggil'
-      console.log('Panggil action triggered');
+      setIsRecallDialogOpen(true);
     } else if (event.key === 'F11') {
       event.preventDefault();
-      // Fungsi untuk 'Kasir'
       console.log('Kasir action triggered');
     } else if (event.key === 'F4') {
         event.preventDefault();
-        // Fungsi untuk 'Clear'
-        setItems([]);
-        setTotal(0);
-        if(searchInputRef.current) searchInputRef.current.value = '';
+        clearTransaction();
         console.log('Clear action triggered');
     } else if (event.key === 'F9') {
         event.preventDefault();
-        // Fungsi untuk 'Bayar'
         console.log('Bayar action triggered');
     }
-  }, []);
+  }, [items, heldTransactions]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -99,6 +143,17 @@ export default function POSPage() {
   const calculateTotal = (items: TransactionItem[]) => {
     return items.reduce((acc, item) => acc + item.total, 0);
   }
+  
+  useEffect(() => {
+    setTotal(calculateTotal(items));
+  }, [items]);
+
+  const filteredHeldTransactions = heldTransactions.filter(
+    (t) =>
+      t.customer.toLowerCase().includes(recallSearch.toLowerCase()) ||
+      (t.items[0]?.name.toLowerCase().includes(recallSearch.toLowerCase()))
+  );
+
 
   return (
     <div className="flex h-screen w-full flex-col bg-zinc-300 text-black">
@@ -114,20 +169,16 @@ export default function POSPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar */}
         <aside className="w-48 flex-shrink-0 space-y-2 border-r-2 border-zinc-400 bg-zinc-200 p-2">
-          <Button variant="pos" className="relative">
+          <Button variant="pos" className="relative" onClick={holdTransaction}>
             Tunda <KeybindHint>F2</KeybindHint>
           </Button>
-          <Button variant="pos" className="relative">
+          <Button variant="pos" className="relative" onClick={() => setIsRecallDialogOpen(true)}>
             Panggil <KeybindHint>F3</KeybindHint>
           </Button>
           <Button variant="pos" className="relative">
             Kasir <KeybindHint>F11</KeybindHint>
           </Button>
-          <Button variant="pos" className="relative" onClick={() => {
-              setItems([]);
-              setTotal(0);
-              if(searchInputRef.current) searchInputRef.current.value = '';
-          }}>
+          <Button variant="pos" className="relative" onClick={clearTransaction}>
             Clear <KeybindHint>F4</KeybindHint>
           </Button>
 
@@ -147,7 +198,7 @@ export default function POSPage() {
           <div className="flex items-center justify-between border-b-2 border-zinc-400 bg-zinc-800 p-2 text-white">
             <span className="text-2xl font-semibold">Total</span>
             <span className="font-mono text-7xl font-bold text-yellow-400">
-                {calculateTotal(items).toLocaleString('id-ID')}
+                {total.toLocaleString('id-ID')}
             </span>
           </div>
           <div className="flex-1 flex flex-col bg-white overflow-y-auto">
@@ -203,6 +254,64 @@ export default function POSPage() {
             </Link>
          </Button>
        </div>
+       
+      <Dialog open={isRecallDialogOpen} onOpenChange={setIsRecallDialogOpen}>
+        <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-md">
+          <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
+            <DialogTitle className="text-white">PANGGIL PESANAN</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+                <Label htmlFor="recall-search" className="font-bold">Cari</Label>
+                <Input
+                  id="recall-search"
+                  type="text"
+                  value={recallSearch}
+                  onChange={(e) => setRecallSearch(e.target.value)}
+                  className="h-8 border-2 border-yellow-400 bg-yellow-200 text-black focus:ring-yellow-500"
+                />
+            </div>
+            <div className="border-2 border-zinc-400 h-64 overflow-y-auto bg-white">
+              <Table>
+                <TableHeader className="bg-zinc-700 sticky top-0">
+                  <TableRow>
+                    <TableHead className="text-white">Deskripsi</TableHead>
+                    <TableHead className="text-white">Pelanggan</TableHead>
+                    <TableHead className="text-right text-white">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredHeldTransactions.map((t) => (
+                    <TableRow key={t.id} onClick={() => recallTransaction(t.id)} className="cursor-pointer hover:bg-yellow-200">
+                      <TableCell>{t.items[0]?.name || 'N/A'}</TableCell>
+                      <TableCell>{t.customer}</TableCell>
+                      <TableCell className="text-right">{t.total.toLocaleString('id-ID')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+               {filteredHeldTransactions.length === 0 && (
+                <div className="flex items-center justify-center h-full text-zinc-400">
+                  Tidak ada pesanan yang ditunda
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="mt-2">
+            <Button variant="pos" onClick={() => recallTransaction(filteredHeldTransactions[0]?.id)} className="relative">
+              OK <span className="absolute -top-2 -right-2 bg-zinc-600 text-white text-[10px] font-bold px-1 rounded-sm border border-zinc-500">
+                Enter
+              </span>
+            </Button>
+            <Button variant="pos" onClick={() => setIsRecallDialogOpen(false)} className="relative">
+              Batal <span className="absolute -top-2 -right-2 bg-zinc-600 text-white text-[10px] font-bold px-1 rounded-sm border border-zinc-500">
+                Esc
+              </span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
     </div>
   );
