@@ -81,6 +81,8 @@ export interface CompletedTransaction {
   paymentMethod: PaymentMethod;
   timestamp: string;
   sessionId: string;
+  cashierName: string;
+  change: number;
 }
 
 const initialItems: TransactionItem[] = [];
@@ -125,6 +127,7 @@ export default function POSPage() {
   const router = useRouter();
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const { toast } = useToast();
+  const [transactionToPrint, setTransactionToPrint] = useState<CompletedTransaction | null>(null);
 
 
   
@@ -375,7 +378,7 @@ export default function POSPage() {
     router.push('/dashboard');
   }
 
-  const handleCompleteTransaction = (paymentMethod: PaymentMethod) => {
+  const handleCompleteTransaction = (paymentMethod: PaymentMethod, change: number) => {
     const sessionId = sessionStorage.getItem('pos-session-id') || 'sesi-unknown';
     
     const newTransaction: CompletedTransaction = {
@@ -385,6 +388,8 @@ export default function POSPage() {
       paymentMethod: paymentMethod,
       timestamp: new Date().toISOString(),
       sessionId: sessionId,
+      cashierName: currentCashier,
+      change: change,
     };
 
     try {
@@ -397,17 +402,29 @@ export default function POSPage() {
         title: "Gagal Menyimpan Transaksi",
         description: "Tidak dapat menyimpan data transaksi ke penyimpanan lokal."
       });
-      // Optionally, don't clear the transaction if saving fails
-      // return; 
+      return; 
     }
     
-    clearTransaction();
-    setIsPaymentDialogOpen(false);
     toast({
       title: "Transaksi Berhasil",
       description: `Pembayaran dengan ${paymentMethod} telah berhasil.`
     });
+    
+    // Set transaction to be printed
+    setTransactionToPrint(newTransaction);
+    setIsPaymentDialogOpen(false);
+    
+    // Clearing transaction is now handled in useEffect after printing
   };
+
+  useEffect(() => {
+    if (transactionToPrint) {
+      window.print();
+      // Reset after printing
+      setTransactionToPrint(null);
+      clearTransaction();
+    }
+  }, [transactionToPrint]);
 
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
@@ -476,8 +493,9 @@ export default function POSPage() {
 
 
   return (
-    <div className="flex h-screen w-full flex-col bg-zinc-300 text-black">
-      <header className="flex items-center justify-between bg-zinc-200 px-4 py-1 border-b-2 border-zinc-400">
+    <>
+    <div className="flex h-screen w-full flex-col bg-zinc-300 text-black print-area">
+      <header className="flex items-center justify-between bg-zinc-200 px-4 py-1 border-b-2 border-zinc-400 no-print">
         <h1 className="text-lg font-bold text-red-600">RENE Cashier</h1>
         <div className="flex items-center gap-2">
             <div className="text-right text-xs font-semibold">
@@ -490,7 +508,7 @@ export default function POSPage() {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden no-print">
         <aside className="w-48 flex-shrink-0 space-y-2 border-r-2 border-zinc-400 bg-zinc-200 p-2">
           <Button variant="pos" className="relative" onClick={holdTransaction}>
             Tunda <KeybindHint>{keybinds.hold}</KeybindHint>
@@ -581,11 +599,12 @@ export default function POSPage() {
         </main>
       </div>
 
-       <div className="fixed bottom-2 left-2">
+       <div className="fixed bottom-2 left-2 no-print">
          <Button size="icon" className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700 shadow-lg" onClick={handlePowerOff}>
             <Power />
          </Button>
        </div>
+    </div>
        
       <Dialog open={isRecallDialogOpen} onOpenChange={setIsRecallDialogOpen}>
         <DialogContent
@@ -762,8 +781,14 @@ export default function POSPage() {
         totalAmount={total}
         onCompleteTransaction={handleCompleteTransaction}
       />
+      
+      {transactionToPrint && (
+        <div className="print-only">
+          <ReceiptTemplate transaction={transactionToPrint} />
+        </div>
+      )}
 
-    </div>
+    </>
   );
 }
 
@@ -1401,7 +1426,7 @@ type PaymentDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   totalAmount: number;
-  onCompleteTransaction: (paymentMethod: PaymentMethod) => void;
+  onCompleteTransaction: (paymentMethod: PaymentMethod, change: number) => void;
 };
 
 const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: PaymentDialogProps) => {
@@ -1453,7 +1478,8 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
         });
         return;
     }
-    onCompleteTransaction(paymentMethod);
+    const finalChange = paymentMethod === 'Tunai' ? change : 0;
+    onCompleteTransaction(paymentMethod, finalChange);
   }
   
   return (
@@ -1534,7 +1560,7 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
         <DialogFooter className="bg-zinc-300 p-2 flex justify-end rounded-b-lg">
           <Button variant="pos" onClick={onClose} className="w-auto px-6 h-10">Batal</Button>
           <Button onClick={handleFinishTransaction} className="bg-green-600 hover:bg-green-700 text-white w-auto px-6 h-10 font-bold">
-            Selesaikan Transaksi
+            Selesaikan Transaksi & Cetak
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1543,7 +1569,70 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
 };
     
 
+const ReceiptTemplate = ({ transaction }: { transaction: CompletedTransaction }) => {
+  const { id, items, totalAmount, paymentMethod, timestamp, cashierName, change } = transaction;
 
+  const totalDiscount = items.reduce((sum, item) => sum + item.discount * item.quantity, 0);
+  
+  return (
+    <div className="w-[300px] bg-white text-black p-4 font-mono text-xs">
+      <div className="text-center mb-4">
+        <h2 className="text-sm font-bold">TOKO BAGUS</h2>
+        <p>Ruko Gaden Plaza No. 9B</p>
+        <p>Jl. Raya Wonopringgo</p>
+        <p>082324703076</p>
+      </div>
+      
+      <div className="flex justify-between border-t border-b border-dashed border-black py-1">
+        <span>{new Date(timestamp).toLocaleDateString('id-ID')}</span>
+        <span>{new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+      </div>
+      <div className="flex justify-between pb-1">
+        <span>No. Struk: {id.slice(-6)}</span>
+        <span>Kasir: {cashierName}</span>
+      </div>
+
+      <div className="border-t border-black pt-1">
+        {items.map(item => (
+          <div key={item.sku}>
+            <p>{item.name}</p>
+            <div className="flex justify-between">
+              <span>{item.quantity} x {item.price.toLocaleString('id-ID')}</span>
+              <span>{item.total.toLocaleString('id-ID')}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="border-t border-dashed border-black mt-2 pt-2 space-y-1">
+        <div className="flex justify-between">
+          <span className="font-bold">TOTAL</span>
+          <span className="font-bold">{totalAmount.toLocaleString('id-ID')}</span>
+        </div>
+        {totalDiscount > 0 && (
+           <div className="flex justify-between">
+            <span>DISKON</span>
+            <span>- {totalDiscount.toLocaleString('id-ID')}</span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span>{paymentMethod}</span>
+          <span>{totalAmount.toLocaleString('id-ID')}</span>
+        </div>
+        {paymentMethod === 'Tunai' && change > 0 && (
+          <div className="flex justify-between">
+            <span>KEMBALI</span>
+            <span>{change.toLocaleString('id-ID')}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="text-center mt-4 pt-2 border-t border-dashed border-black">
+        <p>Terima kasih telah berbelanja!</p>
+      </div>
+    </div>
+  );
+};
 
 
     
