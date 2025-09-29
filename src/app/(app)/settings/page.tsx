@@ -75,7 +75,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const storedPin = localStorage.getItem('pos-auth-pin');
+    const storedPin = localStorage.getItem('pos-auth-pin'); //perlu diganti//
     if (storedPin) {
       setPosAuthPin(storedPin);
     }
@@ -86,7 +86,7 @@ export default function SettingsPage() {
   };
 
   const handleSaveSettings = () => {
-    localStorage.setItem('pos-auth-pin', posAuthPin);
+    localStorage.setItem('pos-auth-pin', posAuthPin); //perlu diganti//
     toast({
       title: "Pengaturan Disimpan",
       description: "Pengaturan Anda telah berhasil disimpan.",

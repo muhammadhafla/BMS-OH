@@ -217,7 +217,7 @@ const CashierReport = () => {
   useEffect(() => {
     // This code runs on the client side, so localStorage is available.
     try {
-      const storedData = localStorage.getItem('cashDrawerTransactions');
+      const storedData = localStorage.getItem('cashDrawerTransactions'); //perlu diganti//
       if (storedData) {
         const allTransactions: CashDrawerTransaction[] = JSON.parse(storedData);
         setTransactions(allTransactions);
@@ -311,7 +311,7 @@ export default function AccountingPage() {
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const accounts = await getChartOfAccounts();
+        const accounts = await getChartOfAccounts(); //perlu diganti//
         setChartOfAccounts(accounts);
       } catch (error) {
         console.error("Gagal mengambil daftar akun:", error);

@@ -77,7 +77,7 @@ const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
                 stock: { main: parseInt(stock, 10) || 0 },
                 unit,
             };
-            const newProduct = await addProduct(newProductData);
+            const newProduct = await addProduct(newProductData); //perlu diganti//
             toast({
                 title: "Produk Ditambahkan",
                 description: `${newProduct.name} telah berhasil ditambahkan ke inventaris.`,
@@ -189,7 +189,7 @@ const EditItemDialog = ({ isOpen, onClose, product }: { isOpen: boolean, onClose
                 stock: { ...product.stock, main: parseInt(stock, 10) || 0 },
                 unit,
             };
-            await updateProduct(product.id!, updatedData);
+            await updateProduct(product.id!, updatedData); //perlu diganti//
             toast({
                 title: "Produk Diperbarui",
                 description: `${name} telah berhasil diperbarui.`,
@@ -336,7 +336,7 @@ const ImportMappingDialog = ({
     });
 
     try {
-        const result = await importProductsFromCSV({
+        const result = await importProductsFromCSV({ //perlu diganti//
             csvContent: fileContent,
             columnMapping: mapping
         });
@@ -489,10 +489,10 @@ export default function InventoryPage() {
 
   useEffect(() => {
     setLoading(true);
-    const productsQuery = query(collection(firestore, 'products'), orderBy('name'));
+    const productsQuery = query(collection(firestore, 'products'), orderBy('name')); //perlu diganti//
 
-    const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
-      const products: Product[] = snapshot.docs.map(doc => ({
+    const unsubscribe = onSnapshot(productsQuery, (snapshot) => { //perlu diganti//
+      const products: Product[] = snapshot.docs.map(doc => ({ //perlu diganti//
         id: doc.id,
         ...doc.data(),
       } as Product));
@@ -562,7 +562,7 @@ export default function InventoryPage() {
       description: 'Harap tunggu sementara semua produk sedang dihapus...',
     });
     try {
-        const result = await deleteAllProducts();
+        const result = await deleteAllProducts(); //perlu diganti//
          if (result.success) {
             toast({
                 id: toastId.id,

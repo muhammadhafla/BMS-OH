@@ -5,9 +5,9 @@ import { firestore } from '@/lib/firebase-admin';
 import type { Product, PurchaseItem } from '@/lib/types';
 import { FieldValue } from 'firebase-admin/firestore';
 
-const productsCollection = firestore.collection('products');
-const purchaseHistoryCollection = firestore.collection('purchaseHistory');
-const purchasesCollection = firestore.collection('purchases');
+const productsCollection = firestore.collection('products'); //perlu diganti//
+const purchaseHistoryCollection = firestore.collection('purchaseHistory'); //perlu diganti//
+const purchasesCollection = firestore.collection('purchases'); //perlu diganti//
 
 
 interface RecordPurchaseInput {
@@ -27,10 +27,10 @@ export async function recordPurchase({ supplier, notes, items }: RecordPurchaseI
   const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
 
   try {
-    const result = await firestore.runTransaction(async (transaction) => {
+    const result = await firestore.runTransaction(async (transaction) => { //perlu diganti//
       // 1. Create the main purchase document
-      const purchaseRef = purchasesCollection.doc();
-      transaction.set(purchaseRef, {
+      const purchaseRef = purchasesCollection.doc(); //perlu diganti//
+      transaction.set(purchaseRef, { //perlu diganti//
         supplier,
         notes: notes || '',
         items,
@@ -42,27 +42,27 @@ export async function recordPurchase({ supplier, notes, items }: RecordPurchaseI
         const { productName, quantity, purchasePrice, unit, sku } = item;
         
         // Find product by name
-        const productQuery = productsCollection.where('name', '==', productName.trim());
-        const productSnapshot = await transaction.get(productQuery);
+        const productQuery = productsCollection.where('name', '==', productName.trim()); //perlu diganti//
+        const productSnapshot = await transaction.get(productQuery); //perlu diganti//
         
         let productRef;
         let existingData: Partial<Product> = {};
 
-        if (!productSnapshot.empty) {
+        if (!productSnapshot.empty) { //perlu diganti//
           // Product exists, get its reference and data
-          const productDoc = productSnapshot.docs[0];
+          const productDoc = productSnapshot.docs[0]; //perlu diganti//
           productRef = productDoc.ref;
           existingData = productDoc.data();
           
           // Update existing product
-          transaction.update(productRef, {
+          transaction.update(productRef, { //perlu diganti//
             stock: { main: FieldValue.increment(quantity) },
             hargaBeli: purchasePrice, // Update to the latest purchase price
           });
 
         } else {
           // Product does not exist, create a new one
-          productRef = productsCollection.doc();
+          productRef = productsCollection.doc(); //perlu diganti//
           const newProduct: Omit<Product, 'id'> = {
             name: productName.trim(),
             sku: sku || `NEW-${Date.now()}`,
@@ -71,12 +71,12 @@ export async function recordPurchase({ supplier, notes, items }: RecordPurchaseI
             stock: { main: quantity },
             unit: unit || 'pcs',
           };
-          transaction.set(productRef, newProduct);
+          transaction.set(productRef, newProduct); //perlu diganti//
         }
 
         // 2. Log this purchase in purchaseHistory
-        const historyRef = purchaseHistoryCollection.doc();
-        transaction.set(historyRef, {
+        const historyRef = purchaseHistoryCollection.doc(); //perlu diganti//
+        transaction.set(historyRef, { //perlu diganti//
           productId: productRef.id,
           productName: productName.trim(),
           sku: existingData.sku || sku || `NEW-${Date.now()}`,

@@ -136,8 +136,8 @@ export default function POSPage() {
 
   useEffect(() => {
      // Check if POS session is authenticated
-    const posAuthenticated = sessionStorage.getItem('pos-authenticated') === 'true';
-    const cashierName = sessionStorage.getItem('pos-cashier-name');
+    const posAuthenticated = sessionStorage.getItem('pos-authenticated') === 'true'; //perlu diganti//
+    const cashierName = sessionStorage.getItem('pos-cashier-name'); //perlu diganti//
 
     if (!posAuthenticated || !cashierName) {
       router.push('/pos/auth');
@@ -147,20 +147,20 @@ export default function POSPage() {
     setCurrentCashier(cashierName);
 
     // Initialize session ID if it doesn't exist for this session
-    let sessionId = sessionStorage.getItem('pos-session-id');
+    let sessionId = sessionStorage.getItem('pos-session-id'); //perlu diganti//
     if (!sessionId) {
       const now = new Date();
       const datePart = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
       const timePart = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
       sessionId = `sesi-${cashierName.replace(/\s+/g, '-')}-${datePart}-${timePart}`;
-      sessionStorage.setItem('pos-session-id', sessionId);
+      sessionStorage.setItem('pos-session-id', sessionId); //perlu diganti//
     }
 
     // Auto-connect to QZ Tray
     if (typeof (window as any).qz !== 'undefined') {
         const qz = (window as any).qz;
         if (!qz.websocket.isActive()) {
-            qz.websocket.connect()
+            qz.websocket.connect() //perlu diganti//
             .then(() => {
                 console.log("QZ Tray connected!");
                 toast({
@@ -200,7 +200,7 @@ export default function POSPage() {
 
     const fetchProducts = async () => {
         try {
-            const products = await getAllProducts();
+            const products = await getAllProducts(); //perlu diganti//
             setProductCatalog(products);
         } catch (error) {
             console.error("Failed to fetch products:", error);
@@ -351,7 +351,7 @@ export default function POSPage() {
   };
 
   const handleCashDrawerSubmit = (amount: number, description: string) => {
-    const sessionId = sessionStorage.getItem('pos-session-id') || 'sesi-unknown';
+    const sessionId = sessionStorage.getItem('pos-session-id') || 'sesi-unknown'; //perlu diganti//
     const newTransaction: CashDrawerTransaction = {
       id: `cd-${Date.now()}`,
       type: cashDrawerDialogType,
@@ -363,8 +363,8 @@ export default function POSPage() {
 
     // Save to localStorage
     try {
-      const existingTransactions: CashDrawerTransaction[] = JSON.parse(localStorage.getItem('cashDrawerTransactions') || '[]');
-      localStorage.setItem('cashDrawerTransactions', JSON.stringify([...existingTransactions, newTransaction]));
+      const existingTransactions: CashDrawerTransaction[] = JSON.parse(localStorage.getItem('cashDrawerTransactions') || '[]'); //perlu diganti//
+      localStorage.setItem('cashDrawerTransactions', JSON.stringify([...existingTransactions, newTransaction])); //perlu diganti//
     } catch (error) {
       console.error('Failed to save cash drawer transaction to localStorage', error);
     }
@@ -383,7 +383,7 @@ export default function POSPage() {
   }
 
   const unlockScreen = () => {
-    const storedPin = localStorage.getItem('pos-access-pin') || '1234';
+    const storedPin = localStorage.getItem('pos-access-pin') || '1234'; //perlu diganti//
     const pin = prompt('Masukkan PIN untuk membuka kunci:');
     if (pin === storedPin) {
       setIsLocked(false);
@@ -394,9 +394,9 @@ export default function POSPage() {
   };
   
   const handlePowerOff = () => {
-    sessionStorage.removeItem('pos-authenticated');
-    sessionStorage.removeItem('pos-session-id');
-    sessionStorage.removeItem('pos-cashier-name');
+    sessionStorage.removeItem('pos-authenticated'); //perlu diganti//
+    sessionStorage.removeItem('pos-session-id'); //perlu diganti//
+    sessionStorage.removeItem('pos-cashier-name'); //perlu diganti//
     router.push('/dashboard');
   }
 
@@ -465,7 +465,7 @@ export default function POSPage() {
       const config = qz.configs.create(printerName);
       
       try {
-          await qz.print(config, dataToPrint);
+          await qz.print(config, dataToPrint); //perlu diganti//
           toast({
               title: "Struk Terkirim",
               description: "Struk sedang dicetak dan laci kasir terbuka."
@@ -482,7 +482,7 @@ export default function POSPage() {
 
 
   const handleCompleteTransaction = async (paymentMethod: PaymentMethod, change: number, amountPaid: number) => {
-    const sessionId = sessionStorage.getItem('pos-session-id') || 'sesi-unknown';
+    const sessionId = sessionStorage.getItem('pos-session-id') || 'sesi-unknown'; //perlu diganti//
     
     const newTransaction: CompletedTransaction = {
       id: `txn-${Date.now()}`,
@@ -497,8 +497,8 @@ export default function POSPage() {
     };
 
     try {
-      const existingTransactions: CompletedTransaction[] = JSON.parse(localStorage.getItem('pos-transactions') || '[]');
-      localStorage.setItem('pos-transactions', JSON.stringify([...existingTransactions, newTransaction]));
+      const existingTransactions: CompletedTransaction[] = JSON.parse(localStorage.getItem('pos-transactions') || '[]'); //perlu diganti//
+      localStorage.setItem('pos-transactions', JSON.stringify([...existingTransactions, newTransaction])); //perlu diganti//
     } catch (error) {
       console.error('Failed to save completed transaction to localStorage', error);
       toast({
@@ -978,7 +978,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
 
   const handleAuthorization = (pin: string) => {
     // This is the PIN for authorizing actions within the POS, set in the main settings page.
-    const storedPin = localStorage.getItem('pos-auth-pin') || '1234';
+    const storedPin = localStorage.getItem('pos-auth-pin') || '1234'; //perlu diganti//
     if (pin === storedPin) { 
       setIsPriceLocked(false);
       setIsAuthDialogOpen(false);
@@ -1340,12 +1340,12 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole, cashierName, toas
     if (!isOpen) return;
 
     // This logic runs on the client, so localStorage is available.
-    const sessionId = sessionStorage.getItem('pos-session-id');
+    const sessionId = sessionStorage.getItem('pos-session-id'); //perlu diganti//
     if (!sessionId) return;
 
     try {
       // Get cash drawer activities
-      const storedDrawerData = localStorage.getItem('cashDrawerTransactions');
+      const storedDrawerData = localStorage.getItem('cashDrawerTransactions'); //perlu diganti//
       const allDrawerTransactions: CashDrawerTransaction[] = storedDrawerData ? JSON.parse(storedDrawerData) : [];
       const sessionDrawerTransactions = allDrawerTransactions.filter(t => t.sessionId === sessionId);
       
@@ -1358,7 +1358,7 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole, cashierName, toas
         .reduce((sum, t) => sum + t.amount, 0);
       
       // Get completed transactions
-      const storedSalesData = localStorage.getItem('pos-transactions');
+      const storedSalesData = localStorage.getItem('pos-transactions'); //perlu diganti//
       const allSales: CompletedTransaction[] = storedSalesData ? JSON.parse(storedSalesData) : [];
       const sessionSales = allSales.filter(t => t.sessionId === sessionId);
 
@@ -1450,7 +1450,7 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole, cashierName, toas
     const config = qz.configs.create(printerName);
       
     try {
-        await qz.print(config, dataToPrint);
+        await qz.print(config, dataToPrint); //perlu diganti//
         toast({
             title: "Laporan Terkirim",
             description: "Laporan kasir sedang dicetak."
@@ -1539,7 +1539,7 @@ const PosLockScreen = ({ onUnlock }: { onUnlock: () => void }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // This uses the same access PIN as the main auth screen.
-    const accessPin = localStorage.getItem('pos-access-pin') || '1234';
+    const accessPin = localStorage.getItem('pos-access-pin') || '1234'; //perlu diganti//
     if (pin === accessPin) {
       onUnlock();
     } else {

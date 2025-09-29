@@ -5,7 +5,7 @@ import type { Product } from '@/lib/types';
 import { WriteBatch } from 'firebase-admin/firestore';
 import Papa from 'papaparse';
 
-const productsCollection = firestore.collection('products');
+const productsCollection = firestore.collection('products'); //perlu diganti//
 
 /**
  * Mengambil semua produk dari Firestore.
@@ -13,11 +13,11 @@ const productsCollection = firestore.collection('products');
  */
 export async function getAllProducts(): Promise<Product[]> {
   try {
-    const snapshot = await productsCollection.orderBy('name').get();
-    if (snapshot.empty) {
+    const snapshot = await productsCollection.orderBy('name').get(); //perlu diganti//
+    if (snapshot.empty) { //perlu diganti//
       return [];
     }
-    const products: Product[] = snapshot.docs.map(doc => ({
+    const products: Product[] = snapshot.docs.map(doc => ({ //perlu diganti//
       id: doc.id,
       ...doc.data(),
     } as Product));
@@ -35,11 +35,11 @@ export async function getAllProducts(): Promise<Product[]> {
  */
 export async function getProductById(id: string): Promise<Product | null> {
   try {
-    const doc = await productsCollection.doc(id).get();
-    if (!doc.exists) {
+    const doc = await productsCollection.doc(id).get(); //perlu diganti//
+    if (!doc.exists) { //perlu diganti//
       return null;
     }
-    return { id: doc.id, ...doc.data() } as Product;
+    return { id: doc.id, ...doc.data() } as Product; //perlu diganti//
   } catch (error) {
     console.error(`Error getting product by ID (${id}):`, error);
     throw new Error('Gagal mengambil detail produk dari server.');
@@ -53,8 +53,8 @@ export async function getProductById(id: string): Promise<Product | null> {
  */
 export async function addProduct(productData: Omit<Product, 'id'>): Promise<Product> {
   try {
-    const docRef = await productsCollection.add(productData);
-    const newDoc = await docRef.get();
+    const docRef = await productsCollection.add(productData); //perlu diganti//
+    const newDoc = await docRef.get(); //perlu diganti//
     return {
       id: newDoc.id,
       ...newDoc.data(),
@@ -73,7 +73,7 @@ export async function addProduct(productData: Omit<Product, 'id'>): Promise<Prod
  */
 export async function updateProduct(id: string, productData: Partial<Product>): Promise<void> {
   try {
-    await productsCollection.doc(id).update(productData);
+    await productsCollection.doc(id).update(productData); //perlu diganti//
   } catch (error) {
     console.error(`Error updating product (${id}):`, error);
     throw new Error('Gagal memperbarui produk di server.');
@@ -122,16 +122,16 @@ export async function importProductsFromCSV({ csvContent, columnMapping }: Impor
       return { name, sku, price, hargaBeli, stock: { main: stock }, unit };
     });
 
-    const batch: WriteBatch = firestore.batch();
+    const batch: WriteBatch = firestore.batch(); //perlu diganti//
     
     productsToAdd.forEach(productData => {
       if (productData.name && productData.sku) { // Basic validation
-          const docRef = productsCollection.doc(); // Create a new doc with a random ID
-          batch.set(docRef, productData);
+          const docRef = productsCollection.doc(); //perlu diganti//
+          batch.set(docRef, productData); //perlu diganti//
       }
     });
 
-    await batch.commit();
+    await batch.commit(); //perlu diganti//
 
     return { success: true, count: productsToAdd.length };
 
@@ -150,17 +150,17 @@ export async function importProductsFromCSV({ csvContent, columnMapping }: Impor
  */
 export async function deleteAllProducts(): Promise<{success: boolean; count: number; error?: string}> {
     try {
-        const snapshot = await productsCollection.get();
-        if (snapshot.empty) {
+        const snapshot = await productsCollection.get(); //perlu diganti//
+        if (snapshot.empty) { //perlu diganti//
             return { success: true, count: 0 };
         }
 
-        const batch: WriteBatch = firestore.batch();
-        snapshot.docs.forEach(doc => {
-            batch.delete(doc.ref);
+        const batch: WriteBatch = firestore.batch(); //perlu diganti//
+        snapshot.docs.forEach(doc => { //perlu diganti//
+            batch.delete(doc.ref); //perlu diganti//
         });
 
-        await batch.commit();
+        await batch.commit(); //perlu diganti//
 
         return { success: true, count: snapshot.size };
     } catch (error) {

@@ -4,7 +4,7 @@
 import { firestore } from '@/lib/firebase-admin';
 import type { ChartOfAccountsEntry } from '@/lib/types';
 
-const chartOfAccountsCollection = firestore.collection('chartOfAccounts');
+const chartOfAccountsCollection = firestore.collection('chartOfAccounts'); //perlu diganti//
 
 const defaultAccounts: ChartOfAccountsEntry[] = [
     // Assets
@@ -39,19 +39,19 @@ const defaultAccounts: ChartOfAccountsEntry[] = [
  */
 export async function seedChartOfAccounts(): Promise<{ success: boolean; message: string }> {
   try {
-    const batch = firestore.batch();
+    const batch = firestore.batch(); //perlu diganti//
 
     defaultAccounts.forEach(account => {
       // The document ID will be the account number (e.g., '1110')
-      const docRef = chartOfAccountsCollection.doc(account.id!);
-      batch.set(docRef, {
+      const docRef = chartOfAccountsCollection.doc(account.id!); //perlu diganti//
+      batch.set(docRef, { //perlu diganti//
         name: account.name,
         type: account.type,
         description: account.description,
       });
     });
 
-    await batch.commit();
+    await batch.commit(); //perlu diganti//
 
     console.log('Successfully seeded Chart of Accounts.');
     return { success: true, message: 'Daftar Akun berhasil diinisialisasi.' };
@@ -67,17 +67,17 @@ export async function seedChartOfAccounts(): Promise<{ success: boolean; message
  */
 export async function getChartOfAccounts(): Promise<ChartOfAccountsEntry[]> {
     try {
-        const snapshot = await chartOfAccountsCollection.orderBy('__name__').get();
-        if (snapshot.empty) {
+        const snapshot = await chartOfAccountsCollection.orderBy('__name__').get(); //perlu diganti//
+        if (snapshot.empty) { //perlu diganti//
             // If empty, let's seed the data
-            await seedChartOfAccounts();
-            const seededSnapshot = await chartOfAccountsCollection.orderBy('__name__').get();
-            return seededSnapshot.docs.map(doc => ({
+            await seedChartOfAccounts(); //perlu diganti//
+            const seededSnapshot = await chartOfAccountsCollection.orderBy('__name__').get(); //perlu diganti//
+            return seededSnapshot.docs.map(doc => ({ //perlu diganti//
                 id: doc.id,
                 ...doc.data(),
             } as ChartOfAccountsEntry));
         }
-        const accounts: ChartOfAccountsEntry[] = snapshot.docs.map(doc => ({
+        const accounts: ChartOfAccountsEntry[] = snapshot.docs.map(doc => ({ //perlu diganti//
             id: doc.id,
             ...doc.data(),
         } as ChartOfAccountsEntry));
