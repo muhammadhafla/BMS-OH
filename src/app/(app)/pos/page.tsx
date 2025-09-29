@@ -25,6 +25,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 
 
 // Data produk yang diimpor dari file inventaris
@@ -105,6 +106,16 @@ type Keybinds = {
 
 type UserRole = 'admin' | 'manager' | 'staff';
 
+export type CashDrawerTransaction = {
+  id: string;
+  type: 'Uang Awal' | 'Uang Keluar';
+  amount: number;
+  description: string;
+  timestamp: string;
+  sessionId: string;
+};
+
+
 const productCatalog: Product[] = inventoryItems.map(item => ({
     sku: item.sku,
     name: item.name,
@@ -147,6 +158,9 @@ export default function POSPage() {
     pay: 'F9',
     lock: 'F5',
   });
+  const [isCashDrawerDialogOpen, setIsCashDrawerDialogOpen] = useState(false);
+  const [cashDrawerDialogType, setCashDrawerDialogType] = useState<'Uang Awal' | 'Uang Keluar'>('Uang Awal');
+
   
   // Hardcoded current user role for demonstration. In a real app, this would come from an auth context.
   const [currentUserRole, setCurrentUserRole] = useState<UserRole>('staff');
@@ -301,8 +315,35 @@ export default function POSPage() {
     });
   };
 
+  const openCashDrawerDialog = (type: 'Uang Awal' | 'Uang Keluar') => {
+    setCashDrawerDialogType(type);
+    setIsCashDrawerDialogOpen(true);
+    setIsCashierMenuOpen(false); // Close the cashier menu
+  };
+
+  const handleCashDrawerSubmit = (amount: number, description: string) => {
+    const newTransaction: CashDrawerTransaction = {
+      id: `cd-${Date.now()}`,
+      type: cashDrawerDialogType,
+      amount,
+      description,
+      timestamp: new Date().toISOString(),
+      sessionId: 'sesi-01', // Placeholder for session management
+    };
+
+    // Save to localStorage
+    try {
+      const existingTransactions: CashDrawerTransaction[] = JSON.parse(localStorage.getItem('cashDrawerTransactions') || '[]');
+      localStorage.setItem('cashDrawerTransactions', JSON.stringify([...existingTransactions, newTransaction]));
+    } catch (error) {
+      console.error('Failed to save cash drawer transaction to localStorage', error);
+    }
+
+    setIsCashDrawerDialogOpen(false);
+  };
+
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen) return;
+    if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen || isCashDrawerDialogOpen) return;
 
     const key = event.key;
     
@@ -327,7 +368,7 @@ export default function POSPage() {
     } else if (key === keybinds.pay) {
         event.preventDefault();
     }
-  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, keybinds]);
+  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, isCashDrawerDialogOpen, keybinds]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -614,7 +655,15 @@ export default function POSPage() {
        <CashierMenuDialog
         isOpen={isCashierMenuOpen}
         onClose={() => setIsCashierMenuOpen(false)}
+        onOpenCashDrawerDialog={openCashDrawerDialog}
        />
+
+      <CashDrawerDialog
+        isOpen={isCashDrawerDialogOpen}
+        onClose={() => setIsCashDrawerDialogOpen(false)}
+        type={cashDrawerDialogType}
+        onSubmit={handleCashDrawerSubmit}
+      />
     </div>
   );
 }
@@ -907,9 +956,10 @@ const AuthorizationDialog = ({ isOpen, onClose, onAuthorize }: AuthorizationDial
 type CashierMenuDialogProps = {
   isOpen: boolean;
   onClose: () => void;
+  onOpenCashDrawerDialog: (type: 'Uang Awal' | 'Uang Keluar') => void;
 };
 
-const CashierMenuDialog = ({ isOpen, onClose }: CashierMenuDialogProps) => {
+const CashierMenuDialog = ({ isOpen, onClose, onOpenCashDrawerDialog }: CashierMenuDialogProps) => {
     useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isOpen) return;
@@ -933,8 +983,8 @@ const CashierMenuDialog = ({ isOpen, onClose }: CashierMenuDialogProps) => {
             <div className="space-y-1">
                 <Label>&raquo; Memasukkan Uang Awal / Keluar Uang</Label>
                 <div className="flex gap-2">
-                    <Button variant="pos" className="w-full h-9">Uang Awal</Button>
-                    <Button variant="pos" className="w-full h-9">Uang Keluar</Button>
+                    <Button variant="pos" className="w-full h-9" onClick={() => onOpenCashDrawerDialog('Uang Awal')}>Uang Awal</Button>
+                    <Button variant="pos" className="w-full h-9" onClick={() => onOpenCashDrawerDialog('Uang Keluar')}>Uang Keluar</Button>
                 </div>
             </div>
             <div className="space-y-1">
@@ -964,6 +1014,91 @@ const CashierMenuDialog = ({ isOpen, onClose }: CashierMenuDialogProps) => {
                 <KeybindHint>Esc</KeybindHint>
             </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+
+// Cash Drawer Dialog Component
+type CashDrawerDialogProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  type: 'Uang Awal' | 'Uang Keluar';
+  onSubmit: (amount: number, description: string) => void;
+};
+
+const CashDrawerDialog = ({ isOpen, onClose, type, onSubmit }: CashDrawerDialogProps) => {
+  const [amount, setAmount] = useState('');
+  const [description, setDescription] = useState('');
+  const amountInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => amountInputRef.current?.focus(), 100);
+    } else {
+      setAmount('');
+      setDescription('');
+    }
+  }, [isOpen]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      toast({
+        variant: 'destructive',
+        title: 'Nominal tidak valid',
+        description: 'Harap masukkan nominal yang benar.',
+      });
+      return;
+    }
+    onSubmit(numericAmount, description);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-md">
+        <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
+          <DialogTitle className="text-white">{type}</DialogTitle>
+          <DialogDescription className="text-zinc-300 pt-1">
+            Masukkan nominal dan keterangan untuk transaksi laci kasir.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="cash-drawer-amount">Nominal</Label>
+              <Input
+                ref={amountInputRef}
+                id="cash-drawer-amount"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="h-10 border-2 border-yellow-400 bg-yellow-200"
+                placeholder="0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cash-drawer-description">Keterangan</Label>
+              <Textarea
+                id="cash-drawer-description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Opsional..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="pos" onClick={onClose}>
+              Batal
+            </Button>
+            <Button type="submit" variant="pos" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              Simpan
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

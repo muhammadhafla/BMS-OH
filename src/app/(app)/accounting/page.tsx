@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -20,8 +22,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { PlusCircle, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import type { CashDrawerTransaction } from '@/app/(app)/pos/page';
+import { useState, useEffect } from 'react';
 
 const journalEntries = [
   {
@@ -76,6 +87,100 @@ const financialReports = [
   'Changes in Equity',
 ];
 
+const CashierReport = () => {
+  const [transactions, setTransactions] = useState<CashDrawerTransaction[]>([]);
+  const [sessions, setSessions] = useState<string[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string>('all');
+
+  useEffect(() => {
+    // This code runs on the client side, so localStorage is available.
+    try {
+      const storedData = localStorage.getItem('cashDrawerTransactions');
+      if (storedData) {
+        const allTransactions: CashDrawerTransaction[] = JSON.parse(storedData);
+        setTransactions(allTransactions);
+        // Extract unique session IDs
+        const uniqueSessions = [...new Set(allTransactions.map(t => t.sessionId))];
+        setSessions(uniqueSessions);
+      }
+    } catch (error) {
+      console.error('Failed to load cash drawer transactions from localStorage', error);
+    }
+  }, []);
+
+  const filteredTransactions = transactions.filter(t => selectedSession === 'all' || t.sessionId === selectedSession);
+
+  const formatTimestamp = (isoString: string) => {
+    return new Date(isoString).toLocaleString('id-ID', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Laporan Kasir</CardTitle>
+          <CardDescription>
+            Riwayat transaksi uang masuk dan keluar dari kasir.
+          </CardDescription>
+        </div>
+        <div className="w-48">
+          <Select value={selectedSession} onValueChange={setSelectedSession}>
+            <SelectTrigger>
+              <SelectValue placeholder="Pilih Sesi" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Sesi</SelectItem>
+              {sessions.map(session => (
+                <SelectItem key={session} value={session}>{session}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Waktu</TableHead>
+              <TableHead>Tipe</TableHead>
+              <TableHead>Keterangan</TableHead>
+              <TableHead className="text-right">Nominal</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTransactions.length > 0 ? (
+              filteredTransactions.map(entry => (
+                <TableRow key={entry.id}>
+                  <TableCell>{formatTimestamp(entry.timestamp)}</TableCell>
+                  <TableCell>
+                    <Badge variant={entry.type === 'Uang Awal' ? 'secondary' : 'destructive'}>
+                      {entry.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{entry.description || '-'}</TableCell>
+                  <TableCell className="text-right font-medium">
+                    Rp{entry.amount.toLocaleString('id-ID')}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center h-24">
+                  Tidak ada data laporan kasir.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
+
+
 export default function AccountingPage() {
   return (
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
@@ -92,6 +197,7 @@ export default function AccountingPage() {
         <TabsList className="mb-4">
           <TabsTrigger value="journal">Journal Entries</TabsTrigger>
           <TabsTrigger value="reports">Financial Reports</TabsTrigger>
+          <TabsTrigger value="cashier-report">Laporan Kasir</TabsTrigger>
         </TabsList>
         <TabsContent value="journal">
           <Card>
@@ -164,6 +270,9 @@ export default function AccountingPage() {
               ))}
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="cashier-report">
+          <CashierReport />
         </TabsContent>
       </Tabs>
     </div>
