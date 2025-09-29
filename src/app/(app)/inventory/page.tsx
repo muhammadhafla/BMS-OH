@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { PlusCircle, FileUp, ImageUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Product } from '@/lib/types';
-import { getAllProducts, addProduct } from '@/lib/services/product';
+import { addProduct } from '@/lib/services/product';
 import {
   Dialog,
   DialogContent,
@@ -33,7 +33,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-
+import { firestore } from '@/lib/firebase-client'; // Import client-side firestore
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'; // Import firestore functions
 
 const AddItemDialog = ({ isOpen, onClose, onProductAdded }: { isOpen: boolean, onClose: () => void, onProductAdded: (newProduct: Product) => void }) => {
     const [name, setName] = useState('');
@@ -56,7 +57,7 @@ const AddItemDialog = ({ isOpen, onClose, onProductAdded }: { isOpen: boolean, o
                 unit,
             };
             const newProduct = await addProduct(newProductData);
-            onProductAdded(newProduct);
+            // onProductAdded is no longer needed as onSnapshot will handle the update
             toast({
                 title: "Produk Ditambahkan",
                 description: `${newProduct.name} telah berhasil ditambahkan ke inventaris.`,
@@ -135,24 +136,29 @@ export default function InventoryPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        const products = await getAllProducts();
-        setInventoryItems(products);
-      } catch (error) {
-        console.error('Failed to fetch inventory:', error);
-        // Optionally, show a toast or error message to the user
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(true);
+    const productsQuery = query(collection(firestore, 'products'), orderBy('name'));
 
-    fetchProducts();
+    const unsubscribe = onSnapshot(productsQuery, (snapshot) => {
+      const products: Product[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Product));
+      setInventoryItems(products);
+      setLoading(false);
+    }, (error) => {
+      console.error('Failed to subscribe to inventory updates:', error);
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   const handleProductAdded = (newProduct: Product) => {
-    setInventoryItems(prevItems => [...prevItems, newProduct]);
+    // This function is no longer necessary because onSnapshot handles updates,
+    // but we can keep it for now.
+    // setInventoryItems(prevItems => [...prevItems, newProduct]);
   };
 
   const getStatus = (stock: number) => {
