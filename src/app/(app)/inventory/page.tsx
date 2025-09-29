@@ -19,9 +19,9 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, FileUp, ImageUp } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { Product } from '@/lib/types';
-import { addProduct } from '@/lib/services/product';
+import { addProduct, importProductsFromCSV } from '@/lib/services/product';
 import {
   Dialog,
   DialogContent,
@@ -53,7 +53,7 @@ const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
                 name,
                 sku,
                 price: parseFloat(price) || 0,
-                stock: { main: parseInt(stock, 10) || 0 }, // Assuming 'main' is the default branch
+                stock: { main: parseInt(stock, 10) || 0 }, // Anggap 'main' adalah cabang default
                 unit,
             };
             const newProduct = await addProduct(newProductData);
@@ -63,7 +63,7 @@ const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
             });
             onClose();
         } catch (error) {
-            console.error("Failed to add product:", error);
+            console.error("Gagal menambahkan produk:", error);
             toast({
                 variant: "destructive",
                 title: "Gagal Menambahkan Produk",
@@ -133,6 +133,8 @@ export default function InventoryPage() {
   const [inventoryItems, setInventoryItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     setLoading(true);
@@ -153,6 +155,48 @@ export default function InventoryPage() {
     // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const toastId = toast({
+      title: 'Mengimpor Produk',
+      description: 'Harap tunggu sementara produk sedang diproses...',
+    });
+
+    try {
+      const fileContent = await file.text();
+      const result = await importProductsFromCSV(fileContent);
+
+      if (result.success) {
+        toast({
+          id: toastId.id,
+          title: 'Impor Berhasil',
+          description: `${result.count} produk berhasil diimpor.`,
+        });
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error) {
+      console.error('Gagal mengimpor CSV:', error);
+      toast({
+        id: toastId.id,
+        variant: "destructive",
+        title: "Impor Gagal",
+        description: error instanceof Error ? error.message : "Terjadi kesalahan saat mengimpor file.",
+      });
+    } finally {
+        // Reset file input value to allow re-uploading the same file
+        if (event.target) {
+            event.target.value = '';
+        }
+    }
+  };
 
   const getStatus = (stock: number) => {
     if (stock === 0) return 'Stok Habis';
@@ -189,10 +233,17 @@ export default function InventoryPage() {
             <ImageUp />
             Pindai Struk (OCR)
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleImportClick}>
             <FileUp />
             Impor dari CSV
           </Button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileImport}
+            className="hidden" 
+            accept=".csv"
+          />
           <Button className="bg-accent hover:bg-accent/90" onClick={() => setIsAddDialogOpen(true)}>
             <PlusCircle />
             Tambah Item
