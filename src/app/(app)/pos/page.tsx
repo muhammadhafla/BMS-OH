@@ -1,121 +1,206 @@
+'use client';
+
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Logo } from '@/components/shared/logo';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Search, Plus, Minus, X, History, User } from 'lucide-react';
-import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Power } from 'lucide-react';
 
-const products = [
-  { name: 'Leather Journal', price: 29.99, image: PlaceHolderImages[1] },
-  { name: 'Desk Lamp', price: 75.5, image: PlaceHolderImages[2] },
-  { name: 'Office Chair', price: 350.0, image: PlaceHolderImages[3] },
-  { name: 'Wireless Keyboard', price: 120.0, image: PlaceHolderImages[4] },
-  { name: '4K Monitor', price: 899.99, image: PlaceHolderImages[1] },
-  { name: 'Mousepad', price: 15.0, image: PlaceHolderImages[2] },
-  { name: 'USB-C Hub', price: 49.99, image: PlaceHolderImages[3] },
-  { name: 'Laptop Stand', price: 45.0, image: PlaceHolderImages[4] },
+type TransactionItem = {
+  kts: string;
+  name: string;
+  price: number;
+  discount: number;
+  total: number;
+};
+
+const initialItems: TransactionItem[] = [
+  // Data contoh bisa ditambahkan di sini jika perlu
 ];
 
-const transactionItems = [
-  { name: 'Leather Journal', price: 29.99, qty: 1 },
-  { name: 'Desk Lamp', price: 75.5, qty: 2 },
-];
+const KeybindHint = ({ children }: { children: React.ReactNode }) => (
+  <span className="absolute -top-2 -right-2 bg-zinc-600 text-white text-[10px] font-bold px-1 rounded-sm border border-zinc-500">
+    {children}
+  </span>
+);
 
 export default function POSPage() {
+  const [currentTime, setCurrentTime] = useState('');
+  const [items, setItems] = useState<TransactionItem[]>(initialItems);
+  const [total, setTotal] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleDateString('id-ID', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }) +
+          ' ' +
+          now.toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+      );
+    }, 1000);
+
+    // Focus search input on mount
+    searchInputRef.current?.focus();
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'F2') {
+      event.preventDefault();
+      // Fungsi untuk 'Tunda'
+      console.log('Tunda action triggered');
+    } else if (event.key === 'F3') {
+      event.preventDefault();
+      // Fungsi untuk 'Panggil'
+      console.log('Panggil action triggered');
+    } else if (event.key === 'F11') {
+      event.preventDefault();
+      // Fungsi untuk 'Kasir'
+      console.log('Kasir action triggered');
+    } else if (event.key === 'F4') {
+        event.preventDefault();
+        // Fungsi untuk 'Clear'
+        setItems([]);
+        setTotal(0);
+        if(searchInputRef.current) searchInputRef.current.value = '';
+        console.log('Clear action triggered');
+    } else if (event.key === 'F9') {
+        event.preventDefault();
+        // Fungsi untuk 'Bayar'
+        console.log('Bayar action triggered');
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
+  const calculateTotal = (items: TransactionItem[]) => {
+    return items.reduce((acc, item) => acc + item.total, 0);
+  }
+
   return (
-    <main className="flex h-[calc(100vh-2rem)] m-2 bg-background">
-      <div className="grid grid-cols-12 gap-4 flex-1">
-        {/* Items Grid */}
-        <div className="col-span-7 flex flex-col">
-          <div className="p-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input placeholder="Search products..." className="pl-10 h-12 text-lg" />
-            </div>
-          </div>
-          <ScrollArea className="flex-1">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
-              {products.map((product) => (
-                <Card key={product.name} className="overflow-hidden cursor-pointer hover:border-accent transition-colors">
-                  <div className="relative aspect-square w-full">
-                    <Image
-                      src={product.image.imageUrl}
-                      alt={product.image.description}
-                      data-ai-hint={product.image.imageHint}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="p-2 text-center">
-                    <p className="text-sm font-medium truncate">{product.name}</p>
-                    <p className="text-xs text-muted-foreground">${product.price.toFixed(2)}</p>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </ScrollArea>
+    <div className="flex h-screen w-full flex-col bg-zinc-300 text-black">
+      {/* Header */}
+      <header className="flex items-center justify-between bg-zinc-200 px-4 py-1 border-b-2 border-zinc-400">
+        <h1 className="text-lg font-bold text-red-600">RENE Cashier</h1>
+        <div className="text-right text-xs font-semibold">
+          <p>TOKO BAGUS, Ruko Gaden Plaza No. 9B Jl. Raya Wonopringgo</p>
+          <p>082324703076</p>
         </div>
+      </header>
 
-        {/* Transaction Panel */}
-        <div className="col-span-5 bg-card border rounded-lg flex flex-col">
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Current Order</CardTitle>
-            <div className="flex gap-2">
-              <Button variant="outline" size="icon"><History className="h-4 w-4"/></Button>
-              <Button variant="outline" size="icon"><User className="h-4 w-4"/></Button>
-            </div>
-          </CardHeader>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar */}
+        <aside className="w-48 flex-shrink-0 space-y-2 border-r-2 border-zinc-400 bg-zinc-200 p-2">
+          <Button variant="pos" className="relative">
+            Tunda <KeybindHint>F2</KeybindHint>
+          </Button>
+          <Button variant="pos" className="relative">
+            Panggil <KeybindHint>F3</KeybindHint>
+          </Button>
+          <Button variant="pos" className="relative">
+            Kasir <KeybindHint>F11</KeybindHint>
+          </Button>
+          <Button variant="pos" className="relative" onClick={() => {
+              setItems([]);
+              setTotal(0);
+              if(searchInputRef.current) searchInputRef.current.value = '';
+          }}>
+            Clear <KeybindHint>F4</KeybindHint>
+          </Button>
 
-          <ScrollArea className="flex-1 px-6">
-            <div className="space-y-4">
-              {transactionItems.map((item, index) => (
-                <div key={index} className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" className="h-6 w-6"><Minus className="h-3 w-3"/></Button>
-                    <span>{item.qty}</span>
-                    <Button variant="outline" size="icon" className="h-6 w-6"><Plus className="h-3 w-3"/></Button>
-                  </div>
-                  <p className="font-semibold w-20 text-right">${(item.price * item.qty).toFixed(2)}</p>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive"><X className="h-4 w-4"/></Button>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
+          <div className="py-2">
+             <div className="bg-primary/80 h-24 w-full flex items-center justify-center rounded-md">
+                <Logo className="!h-20 !w-20 !bg-primary-foreground !text-primary" />
+             </div>
+          </div>
           
-          <div className="p-6 mt-auto border-t">
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-sm">
-                <span>Subtotal</span>
-                <span>$180.99</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>Tax (10%)</span>
-                <span>$18.10</span>
-              </div>
-              <Separator />
-              <div className="flex justify-between text-xl font-bold">
-                <span>Total</span>
-                <span>$199.09</span>
-              </div>
-            </div>
-            <Button className="w-full h-16 text-2xl font-bold bg-accent hover:bg-accent/90">
-              Pay
-            </Button>
+          <Input ref={searchInputRef} type="text" className="h-8 border-2 border-yellow-400 bg-yellow-200 text-black focus:ring-yellow-500" />
+          <div className="h-16 bg-zinc-800 rounded-md" />
+          <div className="h-16 bg-zinc-800 rounded-md" />
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex flex-1 flex-col">
+          <div className="flex items-center justify-between border-b-2 border-zinc-400 bg-zinc-800 p-2 text-white">
+            <span className="text-2xl font-semibold">Total</span>
+            <span className="font-mono text-7xl font-bold text-yellow-400">
+                {calculateTotal(items).toLocaleString('id-ID')}
+            </span>
           </div>
-        </div>
+          <div className="flex-1 flex flex-col bg-white overflow-y-auto">
+              <Table className="flex-1">
+                <TableHeader className="sticky top-0 bg-zinc-700">
+                  <TableRow className="border-zinc-500">
+                    <TableHead className="w-24 text-white font-bold">KTS</TableHead>
+                    <TableHead className="text-white font-bold">NAMA BARANG</TableHead>
+                    <TableHead className="w-40 text-right text-white font-bold">@ HARGA</TableHead>
+                    <TableHead className="w-40 text-right text-white font-bold">DISKON</TableHead>
+                    <TableHead className="w-48 text-right text-white font-bold">TOTAL</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{item.kts}</TableCell>
+                      <TableCell>{item.name}</TableCell>
+                      <TableCell className="text-right">{item.price.toLocaleString('id-ID')}</TableCell>
+                      <TableCell className="text-right">{item.discount.toLocaleString('id-ID')}</TableCell>
+                      <TableCell className="text-right">{item.total.toLocaleString('id-ID')}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {items.length === 0 && (
+                <div className="flex-1 flex items-center justify-center text-zinc-400">
+                    Belum ada item
+                </div>
+              )}
+          </div>
+          <footer className="mt-auto flex items-center justify-between border-t-2 border-zinc-400 bg-zinc-200 px-4 py-2">
+            <div className="flex items-center gap-2">
+               <Button variant="posAction">Ubah</Button>
+               <Button variant="posAction">Hapus</Button>
+            </div>
+             <div className="flex items-center gap-4 rounded-md bg-zinc-800 px-3 py-1 text-sm text-white">
+                <span>Administrator</span>
+                <span>{currentTime}</span>
+             </div>
+            <Button className="relative h-12 w-32 bg-yellow-400 text-black font-bold text-xl hover:bg-yellow-500">
+                BAYAR
+                <KeybindHint>F9</KeybindHint>
+            </Button>
+          </footer>
+        </main>
       </div>
-    </main>
+
+       <div className="fixed bottom-2 left-2">
+         <Button size="icon" className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700 shadow-lg">
+           <Power />
+         </Button>
+       </div>
+
+    </div>
   );
 }
