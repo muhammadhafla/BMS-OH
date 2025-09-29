@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Lock, Power, Settings, Unlock, HardDrive } from 'lucide-react';
+import { Lock, Power, Settings, Unlock, HardDrive, Printer } from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -160,6 +160,7 @@ export default function POSPage() {
   });
   const [isCashDrawerDialogOpen, setIsCashDrawerDialogOpen] = useState(false);
   const [cashDrawerDialogType, setCashDrawerDialogType] = useState<'Uang Awal' | 'Uang Keluar'>('Uang Awal');
+  const [isShiftReportDialogOpen, setIsShiftReportDialogOpen] = useState(false);
 
   
   // Hardcoded current user role for demonstration. In a real app, this would come from an auth context.
@@ -341,9 +342,14 @@ export default function POSPage() {
 
     setIsCashDrawerDialogOpen(false);
   };
+  
+  const openShiftReportDialog = () => {
+    setIsCashierMenuOpen(false);
+    setIsShiftReportDialogOpen(true);
+  };
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen || isCashDrawerDialogOpen) return;
+    if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen || isCashDrawerDialogOpen || isShiftReportDialogOpen) return;
 
     const key = event.key;
     
@@ -368,7 +374,7 @@ export default function POSPage() {
     } else if (key === keybinds.pay) {
         event.preventDefault();
     }
-  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, isCashDrawerDialogOpen, keybinds]);
+  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, isCashDrawerDialogOpen, isShiftReportDialogOpen, keybinds]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -656,6 +662,7 @@ export default function POSPage() {
         isOpen={isCashierMenuOpen}
         onClose={() => setIsCashierMenuOpen(false)}
         onOpenCashDrawerDialog={openCashDrawerDialog}
+        onOpenShiftReportDialog={openShiftReportDialog}
        />
 
       <CashDrawerDialog
@@ -664,6 +671,13 @@ export default function POSPage() {
         type={cashDrawerDialogType}
         onSubmit={handleCashDrawerSubmit}
       />
+      
+      <ShiftReportDialog
+        isOpen={isShiftReportDialogOpen}
+        onClose={() => setIsShiftReportDialogOpen(false)}
+        currentUserRole={currentUserRole}
+      />
+
     </div>
   );
 }
@@ -957,9 +971,10 @@ type CashierMenuDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   onOpenCashDrawerDialog: (type: 'Uang Awal' | 'Uang Keluar') => void;
+  onOpenShiftReportDialog: () => void;
 };
 
-const CashierMenuDialog = ({ isOpen, onClose, onOpenCashDrawerDialog }: CashierMenuDialogProps) => {
+const CashierMenuDialog = ({ isOpen, onClose, onOpenCashDrawerDialog, onOpenShiftReportDialog }: CashierMenuDialogProps) => {
     useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isOpen) return;
@@ -993,7 +1008,7 @@ const CashierMenuDialog = ({ isOpen, onClose, onOpenCashDrawerDialog }: CashierM
             </div>
             <div className="space-y-1">
                 <Label>&raquo; Laporan Akhir Shift</Label>
-                <Button variant="pos" className="w-full h-9">Laporan</Button>
+                <Button variant="pos" className="w-full h-9" onClick={onOpenShiftReportDialog}>Laporan</Button>
             </div>
              <div className="space-y-1">
                 <Label>&raquo; Kunci Layar</Label>
@@ -1099,6 +1114,104 @@ const CashDrawerDialog = ({ isOpen, onClose, type, onSubmit }: CashDrawerDialogP
             </Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+
+// Shift Report Dialog Component
+type ShiftReportDialogProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  currentUserRole: UserRole;
+};
+
+const ReportRow = ({ label, value }: { label: string; value: number }) => (
+  <div className="flex justify-between items-center">
+    <Label>{label}</Label>
+    <Input
+      readOnly
+      value={value.toLocaleString('id-ID')}
+      className="h-8 w-48 text-right bg-zinc-800 text-white border-zinc-500 font-mono"
+    />
+  </div>
+);
+
+const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDialogProps) => {
+  
+  // Dummy data for the report
+  const reportData = {
+    totalSales: 355000,
+    cashPayment: 355000,
+    debitCard: 0,
+    creditCard: 0,
+    voucher: 0,
+    initialCash: 598000,
+    cashWithdrawal: 39000,
+  };
+
+  const totalInDrawer = reportData.initialCash + reportData.cashPayment - reportData.cashWithdrawal;
+  
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+       if (event.key.toLowerCase() === 'p') { // Keybind for Print (Cetak)
+        event.preventDefault();
+        // Print logic here
+        console.log("Printing report...");
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-700 border-zinc-500 text-white max-w-md p-0" onKeyDown={(e) => e.stopPropagation()}>
+        <DialogHeader className="bg-zinc-800 p-2 px-4 rounded-t-lg">
+          <DialogTitle className="text-white text-base">
+            LAPORAN KASIR [{currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1)}]
+          </DialogTitle>
+        </DialogHeader>
+        <div className="p-4 space-y-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">&raquo; Total Belanjaan</Label>
+            <ReportRow label="Total" value={reportData.totalSales} />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">&raquo; Rincian Pembayaran</Label>
+            <ReportRow label="Tunai" value={reportData.cashPayment} />
+            <ReportRow label="Kartu Debit" value={reportData.debitCard} />
+            <ReportRow label="Kartu Kredit" value={reportData.creditCard} />
+            <ReportRow label="Voucher Belanja" value={reportData.voucher} />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">&raquo; Uang Tunai dalam Laci</Label>
+            <ReportRow label="Uang Awal" value={reportData.initialCash} />
+            <ReportRow label="Pembayaran Tunai" value={reportData.cashPayment} />
+            <ReportRow label="Tarik Uang" value={reportData.cashWithdrawal} />
+            <ReportRow label="Total" value={totalInDrawer} />
+          </div>
+        </div>
+
+        <DialogFooter className="bg-zinc-800 p-2 gap-2 justify-end rounded-b-lg">
+          <Button variant="pos" className="w-auto px-6 h-10 relative">
+            Cetak
+            <KeybindHint>P</KeybindHint>
+          </Button>
+          <Button variant="pos" onClick={onClose} className="w-auto px-6 h-10 relative">
+            Tutup
+            <KeybindHint>Esc</KeybindHint>
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
