@@ -2,10 +2,6 @@
 import {initializeApp, getApps, App, cert, getApp} from 'firebase-admin/app';
 import {getFirestore} from 'firebase-admin/firestore';
 import {getAuth} from 'firebase-admin/auth';
-import { config } from 'dotenv';
-
-// Load environment variables from .env file
-config();
 
 // Decode the base64 encoded service account key
 const serviceAccountBase64 = process.env.GOOGLE_CREDENTIALS_BASE64;
