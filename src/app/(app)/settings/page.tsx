@@ -9,6 +9,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
 export default function SettingsPage() {
@@ -39,6 +46,51 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" defaultValue="admin@bms.app" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Peran & Hak Akses</CardTitle>
+            <CardDescription>
+              Kelola peran pengguna dan hak aksesnya.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="role">Peran</Label>
+              <Select defaultValue="admin">
+                <SelectTrigger id="role">
+                  <SelectValue placeholder="Pilih peran" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="staff">Staff</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Keamanan</CardTitle>
+            <CardDescription>Ubah kata sandi Anda.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="current-password">Password Saat Ini</Label>
+              <Input id="current-password" type="password" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-password">Password Baru</Label>
+              <Input id="new-password" type="password" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Konfirmasi Password Baru</Label>
+              <Input id="confirm-password" type="password" />
             </div>
           </CardContent>
         </Card>
