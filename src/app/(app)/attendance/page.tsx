@@ -10,6 +10,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -18,7 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Camera, MapPin, CheckCircle, XCircle, Calendar as CalendarIcon, Users, User, Search } from 'lucide-react';
+import { Camera, MapPin, CheckCircle, XCircle, Calendar as CalendarIcon, Users, User, Search, Video, VideoOff, RefreshCcw } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +39,7 @@ import { id as indonesiaLocale } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import Image from 'next/image';
 
 type UserRole = 'staff' | 'manager' | 'admin';
 
@@ -222,6 +231,145 @@ const TeamMonitoringTab = () => {
   );
 }
 
+// =================================================================
+// Komponen Modal Kamera
+// =================================================================
+const CameraClockInModal = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  isClockingIn,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (imageData: string) => void;
+  isClockingIn: boolean;
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isOpen) {
+      // Cleanup when modal is closed
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+      setCapturedImage(null);
+      return;
+    };
+
+    const getCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Akses Kamera Ditolak',
+          description: 'Harap izinkan akses kamera di pengaturan browser Anda untuk menggunakan fitur ini.',
+        });
+        onClose();
+      }
+    };
+
+    getCameraPermission();
+
+  }, [isOpen, onClose, toast]);
+
+  const handleCapture = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    // Set canvas dimensions to video dimensions
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw video frame to canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Add timestamp
+    const now = new Date();
+    const timestamp = format(now, "dd MMMM yyyy, HH:mm:ss", { locale: indonesiaLocale });
+    context.font = 'bold 36px Arial';
+    context.fillStyle = 'white';
+    context.shadowColor = 'black';
+    context.shadowBlur = 7;
+    context.fillText(timestamp, 20, canvas.height - 30);
+    
+    // Get image data URL and set it
+    const imageDataUrl = canvas.toDataURL('image/jpeg');
+    setCapturedImage(imageDataUrl);
+
+    // Stop video stream
+    const stream = video.srcObject as MediaStream;
+    stream.getTracks().forEach(track => track.stop());
+  };
+
+  const handleConfirm = () => {
+    if (capturedImage) {
+      onConfirm(capturedImage);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Ambil Foto untuk {isClockingIn ? 'Clock In' : 'Clock Out'}</DialogTitle>
+          <DialogDescription>Posisikan wajah Anda di depan kamera dan ambil gambar.</DialogDescription>
+        </DialogHeader>
+        <div className="relative aspect-video w-full rounded-md bg-muted flex items-center justify-center">
+          {capturedImage ? (
+            <Image src={capturedImage} alt="Captured" layout="fill" objectFit="contain" className="rounded-md" />
+          ) : (
+            <>
+              <video ref={videoRef} className="w-full h-full object-cover rounded-md" autoPlay muted playsInline />
+              {hasCameraPermission === false && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+                  <VideoOff className="w-10 h-10 text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">Akses kamera diperlukan</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Batal</Button>
+          {capturedImage ? (
+            <>
+              <Button variant="secondary" onClick={() => setCapturedImage(null)}>
+                <RefreshCcw className="mr-2"/> Ambil Ulang
+              </Button>
+              <Button onClick={handleConfirm} className="bg-accent hover:bg-accent/90">
+                <CheckCircle className="mr-2"/> Konfirmasi
+              </Button>
+            </>
+          ) : (
+            <Button onClick={handleCapture} disabled={hasCameraPermission !== true}>
+              <Camera className="mr-2"/> Ambil Gambar
+            </Button>
+          )}
+        </DialogFooter>
+        <canvas ref={canvasRef} className="hidden" />
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 
 // =================================================================
 // Komponen untuk Tab Absensi Pribadi (Staf)
@@ -229,43 +377,12 @@ const TeamMonitoringTab = () => {
 const MyAttendanceTab = () => {
     const [isClockedIn, setIsClockedIn] = useState(false);
     const [attendanceHistory, setAttendanceHistory] = useState<AttendanceEntry[]>([]);
-    const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
-    const videoRef = useRef<HTMLVideoElement>(null);
+    const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
     const { toast } = useToast();
 
-     useEffect(() => {
-        const getCameraPermission = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            setHasCameraPermission(true);
-
-            if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            }
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            setHasCameraPermission(false);
-            toast({
-            variant: 'destructive',
-            title: 'Akses Kamera Ditolak',
-            description: 'Harap izinkan akses kamera di pengaturan browser Anda untuk menggunakan fitur ini.',
-            });
-        }
-        };
-
-        getCameraPermission();
-    }, [toast]);
-
-    const handleClockInOut = () => {
-        if (!hasCameraPermission) {
-        toast({
-            variant: 'destructive',
-            title: 'Aksi Gagal',
-            description: 'Tidak dapat melakukan absensi tanpa izin akses kamera.',
-        });
-        return;
-        }
-
+    const handleClockInOut = (imageData: string) => {
+        setIsCameraModalOpen(false); // Close modal first
+        
         const now = new Date();
         const date = format(now, 'yyyy-MM-dd');
         const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -313,7 +430,7 @@ const MyAttendanceTab = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <Button size="lg" className="w-full h-24 text-2xl bg-accent hover:bg-accent/90" onClick={handleClockInOut} disabled={hasCameraPermission === null}>
+              <Button size="lg" className="w-full h-24 text-2xl bg-accent hover:bg-accent/90" onClick={() => setIsCameraModalOpen(true)}>
                 {isClockedIn ? 'Clock Out' : 'Clock In'}
               </Button>
               <p className="mt-4 text-sm text-muted-foreground flex items-center justify-center gap-2">
@@ -321,31 +438,6 @@ const MyAttendanceTab = () => {
                 <MapPin className="size-4" />
                 <span>Selfie & GPS akan direkam.</span>
               </p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-                <CardTitle>Pratinjau Kamera</CardTitle>
-            </CardHeader>
-             <CardContent>
-                <div className="relative aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center">
-                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
-                    {hasCameraPermission === false && (
-                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
-                            <Camera className="w-10 h-10 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">Akses kamera diperlukan</p>
-                         </div>
-                    )}
-                </div>
-                 {hasCameraPermission === false && (
-                    <Alert variant="destructive" className="mt-4">
-                      <AlertTitle>Akses Kamera Diperlukan</AlertTitle>
-                      <AlertDescription>
-                        Harap izinkan akses kamera untuk menggunakan fitur absensi.
-                      </AlertDescription>
-                    </Alert>
-                )}
             </CardContent>
           </Card>
         </div>
@@ -403,6 +495,12 @@ const MyAttendanceTab = () => {
             </CardContent>
           </Card>
         </div>
+        <CameraClockInModal 
+            isOpen={isCameraModalOpen}
+            onClose={() => setIsCameraModalOpen(false)}
+            onConfirm={handleClockInOut}
+            isClockingIn={!isClockedIn}
+        />
       </div>
     );
 };
@@ -461,3 +559,4 @@ export default function AttendancePage() {
     </div>
   );
 }
+
