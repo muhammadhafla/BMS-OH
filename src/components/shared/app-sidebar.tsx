@@ -21,7 +21,8 @@ import { LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from './logo';
 import { cn } from '@/lib/utils';
-import { modules } from '@/lib/modules';
+import { modules } from '@/lib/modules.tsx';
+import React from 'react';
 
 export function AppSidebar() {
   const pathname = usePathname();

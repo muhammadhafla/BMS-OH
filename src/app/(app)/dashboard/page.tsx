@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { summarizeInventoryData } from '@/ai/flows/summarize-inventory-data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Sparkles, AlertTriangle } from 'lucide-react';
-import { modules } from '@/lib/modules';
+import { modules } from '@/lib/modules.tsx';
 
 const sampleInventoryData = {
   items: [

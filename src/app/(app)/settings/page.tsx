@@ -39,7 +39,7 @@ import { useState } from 'react';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { modules } from '@/lib/modules';
+import { modules } from '@/lib/modules.tsx';
 
 type UserRole = 'admin' | 'manager' | 'staff';
 
