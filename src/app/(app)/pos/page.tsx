@@ -512,8 +512,12 @@ export default function POSPage() {
           </div>
           
           <Input ref={searchInputRef} type="text" className="h-8 border-2 border-yellow-400 bg-yellow-200 text-black focus:ring-yellow-500" onKeyDown={handleSearchSubmit} />
-          <div className="h-16 bg-zinc-800 rounded-md" />
-          <div className="h-16 bg-zinc-800 rounded-md" />
+          <div className="h-16 bg-zinc-800 rounded-md flex items-center justify-center text-zinc-400">
+            <Printer className="w-8 h-8" />
+          </div>
+          <div className="h-16 bg-zinc-800 rounded-md flex items-center justify-center text-zinc-400">
+            <HardDrive className="w-8 h-8" />
+          </div>
         </aside>
 
         <main className="flex flex-1 flex-col">
@@ -1540,3 +1544,6 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
     
 
 
+
+
+    
