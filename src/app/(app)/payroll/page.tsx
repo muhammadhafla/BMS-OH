@@ -127,7 +127,7 @@ export default function PayrollPage() {
           <div>
             <CardTitle>Proses Penggajian</CardTitle>
             <CardDescription>
-              Pilih periode dan mulai perhitungan gaji otomatis.
+              Pilih periode penggajian yang fleksibel (misalnya, mingguan, bulanan) dan mulai perhitungan gaji otomatis.
             </CardDescription>
           </div>
           <div className="flex items-center gap-4">
