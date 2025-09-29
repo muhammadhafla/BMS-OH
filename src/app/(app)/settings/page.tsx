@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -43,18 +44,21 @@ import { modules } from '@/lib/modules.tsx';
 import { useToast } from '@/hooks/use-toast';
 
 type UserRole = 'admin' | 'manager' | 'staff';
+type SalaryType = 'Bulanan' | 'Per Jam';
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  salaryType: SalaryType;
+  baseSalary: number;
 }
 
 const initialUsers: User[] = [
-  { id: '1', name: 'Pengguna Admin', email: 'admin@bms.app', role: 'admin' },
-  { id: '2', name: 'Pengguna Manajer', email: 'manager@bms.app', role: 'manager' },
-  { id: '3', name: 'Pengguna Staf', email: 'staff@bms.app', role: 'staff' },
+  { id: '1', name: 'Pengguna Admin', email: 'admin@bms.app', role: 'admin', salaryType: 'Bulanan', baseSalary: 10000000 },
+  { id: '2', name: 'Pengguna Manajer', email: 'manager@bms.app', role: 'manager', salaryType: 'Bulanan', baseSalary: 7500000 },
+  { id: '3', name: 'Pengguna Staf', email: 'staff@bms.app', role: 'staff', salaryType: 'Per Jam', baseSalary: 50000 },
 ];
 
 const initialPermissions: Record<string, UserRole[]> = {
@@ -111,6 +115,8 @@ export default function SettingsPage() {
       name: formData.get('name') as string,
       email: formData.get('email') as string,
       role: formData.get('role') as UserRole,
+      salaryType: formData.get('salaryType') as SalaryType,
+      baseSalary: Number(formData.get('baseSalary')),
     };
 
     if (editingUser) {
@@ -214,6 +220,7 @@ export default function SettingsPage() {
                   <TableHead>Nama</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Peran</TableHead>
+                  <TableHead>Gaji</TableHead>
                   <TableHead className="text-right">Tindakan</TableHead>
                 </TableRow>
               </TableHeader>
@@ -224,6 +231,10 @@ export default function SettingsPage() {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>{user.role}</Badge>
+                    </TableCell>
+                    <TableCell>
+                        Rp{user.baseSalary.toLocaleString('id-ID')}
+                        <span className="text-xs text-muted-foreground">/{user.salaryType === 'Bulanan' ? 'bln' : 'jam'}</span>
                     </TableCell>
                     <TableCell className="text-right">
                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)}>
@@ -385,6 +396,24 @@ export default function SettingsPage() {
                     <SelectItem value="staff">Staf</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                    <Label htmlFor="user-salaryType">Jenis Gaji</Label>
+                    <Select name="salaryType" defaultValue={editingUser?.salaryType || 'Bulanan'}>
+                      <SelectTrigger id="user-salaryType">
+                        <SelectValue placeholder="Pilih jenis gaji" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Bulanan">Bulanan</SelectItem>
+                        <SelectItem value="Per Jam">Per Jam</SelectItem>
+                      </SelectContent>
+                    </Select>
+                 </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="user-baseSalary">Gaji Pokok / Tarif</Label>
+                    <Input id="user-baseSalary" name="baseSalary" type="number" defaultValue={editingUser?.baseSalary || 0} required />
+                 </div>
               </div>
             </div>
             <DialogFooter>
