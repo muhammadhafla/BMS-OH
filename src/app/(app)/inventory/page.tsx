@@ -48,6 +48,7 @@ const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
     const [name, setName] = useState('');
     const [sku, setSku] = useState('');
     const [price, setPrice] = useState('');
+    const [purchasePrice, setPurchasePrice] = useState('');
     const [stock, setStock] = useState('');
     const [unit, setUnit] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,6 +62,7 @@ const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
                 name,
                 sku,
                 price: parseFloat(price) || 0,
+                hargaBeli: parseFloat(purchasePrice) || 0,
                 stock: { main: parseInt(stock, 10) || 0 },
                 unit,
             };
@@ -87,6 +89,7 @@ const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
             setName('');
             setSku('');
             setPrice('');
+            setPurchasePrice('');
             setStock('');
             setUnit('');
         }
@@ -112,7 +115,11 @@ const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
                             <Input id="sku" value={sku} onChange={e => setSku(e.target.value)} className="col-span-3" required />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="price" className="text-right">Harga</Label>
+                            <Label htmlFor="purchasePrice" className="text-right">Harga Beli</Label>
+                            <Input id="purchasePrice" type="number" value={purchasePrice} onChange={e => setPurchasePrice(e.target.value)} className="col-span-3" required />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="price" className="text-right">Harga Jual</Label>
                             <Input id="price" type="number" value={price} onChange={e => setPrice(e.target.value)} className="col-span-3" required />
                         </div>
                          <div className="grid grid-cols-4 items-center gap-4">
@@ -140,6 +147,7 @@ const EditItemDialog = ({ isOpen, onClose, product }: { isOpen: boolean, onClose
     const [name, setName] = useState('');
     const [sku, setSku] = useState('');
     const [price, setPrice] = useState('');
+    const [purchasePrice, setPurchasePrice] = useState('');
     const [stock, setStock] = useState('');
     const [unit, setUnit] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -150,6 +158,7 @@ const EditItemDialog = ({ isOpen, onClose, product }: { isOpen: boolean, onClose
             setName(product.name);
             setSku(product.sku);
             setPrice(String(product.price));
+            setPurchasePrice(String(product.hargaBeli || 0));
             setStock(String(product.stock['main'] || 0));
             setUnit(product.unit);
         }
@@ -165,6 +174,7 @@ const EditItemDialog = ({ isOpen, onClose, product }: { isOpen: boolean, onClose
                 name,
                 sku,
                 price: parseFloat(price) || 0,
+                hargaBeli: parseFloat(purchasePrice) || 0,
                 stock: { ...product.stock, main: parseInt(stock, 10) || 0 },
                 unit,
             };
@@ -206,7 +216,11 @@ const EditItemDialog = ({ isOpen, onClose, product }: { isOpen: boolean, onClose
                             <Input id="edit-sku" value={sku} onChange={e => setSku(e.target.value)} className="col-span-3" required />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="edit-price" className="text-right">Harga</Label>
+                            <Label htmlFor="edit-purchasePrice" className="text-right">Harga Beli</Label>
+                            <Input id="edit-purchasePrice" type="number" value={purchasePrice} onChange={e => setPurchasePrice(e.target.value)} className="col-span-3" required />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-price" className="text-right">Harga Jual</Label>
                             <Input id="edit-price" type="number" value={price} onChange={e => setPrice(e.target.value)} className="col-span-3" required />
                         </div>
                          <div className="grid grid-cols-4 items-center gap-4">
@@ -234,7 +248,8 @@ const EditItemDialog = ({ isOpen, onClose, product }: { isOpen: boolean, onClose
 const databaseColumns = [
     { value: 'name', label: 'Nama Produk' },
     { value: 'sku', label: 'SKU' },
-    { value: 'price', label: 'Harga' },
+    { value: 'hargaBeli', label: 'Harga Beli' },
+    { value: 'price', label: 'Harga Jual' },
     { value: 'stock', label: 'Stok' },
     { value: 'unit', label: 'Satuan' },
 ];
@@ -267,8 +282,10 @@ const ImportMappingDialog = ({
         initialMapping[header] = 'name';
       } else if (lowerHeader.includes('sku') || lowerHeader.includes('kode')) {
         initialMapping[header] = 'sku';
-      } else if (lowerHeader.includes('harga')) {
+      } else if (lowerHeader.includes('harga jual') || lowerHeader.includes('price')) {
         initialMapping[header] = 'price';
+      } else if (lowerHeader.includes('harga beli') || lowerHeader.includes('cost')) {
+        initialMapping[header] = 'hargaBeli';
       } else if (lowerHeader.includes('stok') || lowerHeader.includes('qty')) {
         initialMapping[header] = 'stock';
       } else if (lowerHeader.includes('unit') || lowerHeader.includes('satuan')) {
@@ -285,14 +302,14 @@ const ImportMappingDialog = ({
   };
   
   const handleImport = async () => {
-    const requiredColumns: (keyof Product)[] = ['name', 'sku', 'price', 'stock', 'unit'];
+    const requiredColumns: (keyof Product)[] = ['name', 'sku', 'price', 'stock', 'hargaBeli'];
     const mappedDbColumns = Object.values(mapping);
 
     const missingColumns = requiredColumns.filter(
-        col => !mappedDbColumns.includes(col)
+        col => !mappedDbColumns.includes(col as any)
     );
 
-    if (missingColumns.length > 0 && !missingColumns.every(m => m === 'unit')) { // Make unit optional for now
+    if (missingColumns.length > 0) {
          toast({
             variant: "destructive",
             title: "Pemetaan Tidak Lengkap",
@@ -403,7 +420,7 @@ const ImportMappingDialog = ({
                             <TableHeader>
                                 <TableRow>
                                     {databaseColumns.map(col => {
-                                        if (Object.values(mapping).includes(col.value)) {
+                                        if (Object.values(mapping).includes(col.value as any)) {
                                             return <TableHead key={col.value}>{col.label}</TableHead>
                                         }
                                         return null;
@@ -414,7 +431,7 @@ const ImportMappingDialog = ({
                                 {previewData.map((row, index) => (
                                     <TableRow key={index}>
                                        {databaseColumns.map(col => {
-                                           if (Object.values(mapping).includes(col.value)) {
+                                           if (Object.values(mapping).includes(col.value as any)) {
                                                return <TableCell key={col.value}>{(row as any)[col.value]}</TableCell>
                                            }
                                            return null;
@@ -617,14 +634,15 @@ export default function InventoryPage() {
                 <TableHead>SKU</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Stok</TableHead>
-                <TableHead className="text-right">Harga</TableHead>
+                <TableHead className="text-right">Harga Beli</TableHead>
+                <TableHead className="text-right">Harga Jual</TableHead>
                 <TableHead className="text-right">Tindakan</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center h-24">
+                  <TableCell colSpan={7} className="text-center h-24">
                     Memuat inventaris...
                   </TableCell>
                 </TableRow>
@@ -648,6 +666,9 @@ export default function InventoryPage() {
                       </TableCell>
                       <TableCell>{stock}</TableCell>
                       <TableCell className="text-right">
+                        Rp{(item.hargaBeli || 0).toLocaleString('id-ID')}
+                      </TableCell>
+                      <TableCell className="text-right">
                         Rp{item.price.toLocaleString('id-ID')}
                       </TableCell>
                       <TableCell className="text-right">
@@ -660,7 +681,7 @@ export default function InventoryPage() {
                 })
               ) : (
                  <TableRow>
-                  <TableCell colSpan={6} className="text-center h-24">
+                  <TableCell colSpan={7} className="text-center h-24">
                     {searchQuery ? 'Produk tidak ditemukan.' : 'Tidak ada produk. Tambah item baru untuk memulai.'}
                   </TableCell>
                 </TableRow>

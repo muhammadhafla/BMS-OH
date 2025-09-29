@@ -115,10 +115,11 @@ export async function importProductsFromCSV({ csvContent, columnMapping }: Impor
       const name = row[dbToCsvMapping['name']] || '';
       const sku = row[dbToCsvMapping['sku']] || '';
       const price = parseFloat(row[dbToCsvMapping['price']]?.replace(/[^0-9.-]+/g,"")) || 0;
+      const hargaBeli = parseFloat(row[dbToCsvMapping['hargaBeli']]?.replace(/[^0-9.-]+/g,"")) || 0;
       const stock = parseInt(row[dbToCsvMapping['stock']], 10) || 0;
       const unit = row[dbToCsvMapping['unit']] || 'pcs';
 
-      return { name, sku, price, stock: { main: stock }, unit };
+      return { name, sku, price, hargaBeli, stock: { main: stock }, unit };
     });
 
     const batch: WriteBatch = firestore.batch();

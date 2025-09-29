@@ -32,7 +32,8 @@ export interface Product {
   id?: string;
   name: string;
   sku: string;
-  price: number;
+  price: number; // Harga Jual
+  hargaBeli: number; // Harga Beli
   stock: {
     [branchId: string]: number; // Stok per cabang
   };
