@@ -60,7 +60,14 @@ async function AISummary({ inventoryData }: { inventoryData: Product[] }) {
 
 export default async function DashboardPage() {
   const otherModules = modules.filter(mod => mod.href !== '/dashboard');
-  const inventoryData = await getAllProducts();
+  let inventoryData: Product[] = [];
+  try {
+    inventoryData = await getAllProducts();
+  } catch (error) {
+    console.error("Dashboard Page - Failed to fetch inventory data:", error);
+    // Data will be an empty array, and the AISummary will handle it gracefully.
+  }
+
 
   return (
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
