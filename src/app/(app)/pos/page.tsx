@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Lock, Power, Settings, Unlock, HardDrive, Printer } from 'lucide-react';
+import { Lock, Power, Settings, Unlock, HardDrive, Printer, QrCode } from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -29,6 +29,7 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Product as ProductType } from '@/lib/types';
 import { getAllProducts } from '@/lib/services/product';
 import { useRouter } from 'next/navigation';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 
 type TransactionItem = {
@@ -70,6 +71,7 @@ export type CashDrawerTransaction = {
   sessionId: string;
 };
 
+type PaymentMethod = 'Tunai' | 'Kartu Debit' | 'Kartu Kredit' | 'QRIS';
 
 const initialItems: TransactionItem[] = [];
 
@@ -111,6 +113,7 @@ export default function POSPage() {
   const [isLocked, setIsLocked] = useState(false);
   const [currentCashier, setCurrentCashier] = useState('');
   const router = useRouter();
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
 
 
   
@@ -213,18 +216,18 @@ export default function POSPage() {
 
   const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-        const searchTerm = e.currentTarget.value.trim();
+        const searchTerm = e.currentTarget.value.trim().toLowerCase();
         if (!searchTerm) return;
 
         // Prioritize exact match on SKU first, then name
-        const foundProduct = productCatalog.find(p => p.sku.toLowerCase() === searchTerm.toLowerCase()) || productCatalog.find(p => p.name.toLowerCase() === searchTerm.toLowerCase());
+        const foundProduct = productCatalog.find(p => p.sku.toLowerCase() === searchTerm) || productCatalog.find(p => p.name.toLowerCase() === searchTerm);
 
         if (foundProduct) {
             addItemToTransaction(foundProduct);
             e.currentTarget.value = '';
         } else {
             // If no exact match, open search dialog with the term
-            setProductSearch(searchTerm);
+            setProductSearch(e.currentTarget.value.trim());
             setIsSearchDialogOpen(true);
         }
     }
@@ -361,8 +364,20 @@ export default function POSPage() {
     router.push('/dashboard');
   }
 
+  const handleCompleteTransaction = (paymentMethod: PaymentMethod) => {
+    // In a real app, this is where you would save the transaction to a database.
+    console.log('Transaction complete. Payment method:', paymentMethod);
+    // For now, we'll just clear the transaction.
+    clearTransaction();
+    setIsPaymentDialogOpen(false);
+    useToast().toast({
+      title: "Transaksi Berhasil",
+      description: `Pembayaran dengan ${paymentMethod} telah berhasil.`
+    });
+  };
+
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (isLocked || isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen || isCashDrawerDialogOpen || isShiftReportDialogOpen) return;
+    if (isLocked || isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen || isCashDrawerDialogOpen || isShiftReportDialogOpen || isPaymentDialogOpen) return;
 
     const key = event.key;
     
@@ -389,8 +404,11 @@ export default function POSPage() {
         lockScreen();
     } else if (key === keybinds.pay) {
         event.preventDefault();
+        if (items.length > 0) {
+            setIsPaymentDialogOpen(true);
+        }
     }
-  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, isCashDrawerDialogOpen, isShiftReportDialogOpen, keybinds, isLocked]);
+  }, [items, heldTransactions, selectedItemIndex, keybinds, isLocked, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, isCashDrawerDialogOpen, isShiftReportDialogOpen, isPaymentDialogOpen]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -514,7 +532,7 @@ export default function POSPage() {
                 <span>{currentCashier}</span>
                 <span>{currentTime}</span>
              </div>
-            <Button className="relative h-12 w-32 bg-yellow-400 text-black font-bold text-xl hover:bg-yellow-500">
+            <Button className="relative h-12 w-32 bg-yellow-400 text-black font-bold text-xl hover:bg-yellow-500" onClick={() => items.length > 0 && setIsPaymentDialogOpen(true)}>
                 BAYAR
                 <KeybindHint>{keybinds.pay}</KeybindHint>
             </Button>
@@ -695,6 +713,13 @@ export default function POSPage() {
         isOpen={isShiftReportDialogOpen}
         onClose={() => setIsShiftReportDialogOpen(false)}
         currentUserRole={currentUserRole}
+      />
+
+       <PaymentDialog
+        isOpen={isPaymentDialogOpen}
+        onClose={() => setIsPaymentDialogOpen(false)}
+        totalAmount={total}
+        onCompleteTransaction={handleCompleteTransaction}
       />
 
     </div>
@@ -1318,6 +1343,152 @@ const PosLockScreen = ({ onUnlock }: { onUnlock: () => void }) => {
             </Button>
         </form>
     </div>
+  );
+};
+
+
+// Payment Dialog Component
+type PaymentDialogProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  totalAmount: number;
+  onCompleteTransaction: (paymentMethod: PaymentMethod) => void;
+};
+
+const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: PaymentDialogProps) => {
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Tunai');
+  const [amountPaid, setAmountPaid] = useState('');
+  const [change, setChange] = useState(0);
+  const amountInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Reset state on open
+      setPaymentMethod('Tunai');
+      setAmountPaid('');
+      setChange(0);
+      // Focus the input if payment method is cash
+      setTimeout(() => {
+        if (paymentMethod === 'Tunai') {
+          amountInputRef.current?.focus();
+        }
+      }, 100);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (paymentMethod === 'Tunai') {
+      const paid = parseFloat(amountPaid) || 0;
+      const newChange = paid - totalAmount;
+      setChange(newChange < 0 ? 0 : newChange);
+    } else {
+      setAmountPaid(String(totalAmount));
+      setChange(0);
+    }
+  }, [amountPaid, totalAmount, paymentMethod]);
+  
+  useEffect(() => {
+    if(isOpen && paymentMethod === 'Tunai') {
+        amountInputRef.current?.focus();
+        setAmountPaid('');
+    }
+  }, [paymentMethod, isOpen]);
+
+  const handleFinishTransaction = () => {
+    if (paymentMethod === 'Tunai' && (parseFloat(amountPaid) || 0) < totalAmount) {
+        useToast().toast({
+            variant: "destructive",
+            title: "Pembayaran Kurang",
+            description: "Jumlah yang dibayarkan kurang dari total belanja."
+        });
+        return;
+    }
+    onCompleteTransaction(paymentMethod);
+  }
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-2xl p-0" onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          handleFinishTransaction();
+        }
+      }}>
+        <DialogHeader className="bg-zinc-700 p-3 px-6 rounded-t-lg">
+          <DialogTitle className="text-white text-lg">Pembayaran</DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-6 p-6">
+          {/* Left Side: Payment Details */}
+          <div className="space-y-4">
+            <div>
+              <Label className="text-base font-bold">Total Belanja</Label>
+              <div className="text-5xl font-mono font-bold text-red-600 mt-1">
+                {totalAmount.toLocaleString('id-ID')}
+              </div>
+            </div>
+
+            <div className={paymentMethod === 'Tunai' ? 'space-y-2' : 'space-y-2 opacity-50'}>
+              <Label htmlFor="amount-paid" className="font-bold">Jumlah Bayar</Label>
+              <Input
+                ref={amountInputRef}
+                id="amount-paid"
+                type="number"
+                value={amountPaid}
+                onChange={(e) => setAmountPaid(e.target.value)}
+                disabled={paymentMethod !== 'Tunai'}
+                className="h-12 text-2xl font-mono border-2 border-yellow-400 bg-yellow-200"
+                placeholder="0"
+              />
+            </div>
+
+             <div className={paymentMethod === 'Tunai' ? 'space-y-2' : 'space-y-2 opacity-50'}>
+              <Label className="font-bold">Kembali</Label>
+              <div className="text-4xl font-mono font-bold text-blue-600">
+                {change > 0 ? change.toLocaleString('id-ID') : '0'}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side: Payment Method Selection */}
+          <div className="space-y-4">
+            <Label className="text-base font-bold">Metode Pembayaran</Label>
+             <RadioGroup
+              value={paymentMethod}
+              onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
+              className="grid grid-cols-2 gap-4"
+            >
+              <Label htmlFor="pay-tunai" className={`flex flex-col items-center justify-center p-4 border-2 rounded-md cursor-pointer hover:bg-zinc-300 ${paymentMethod === 'Tunai' ? 'border-blue-500 bg-blue-100' : 'border-zinc-300'}`}>
+                <RadioGroupItem value="Tunai" id="pay-tunai" className="sr-only"/>
+                <HardDrive className="w-8 h-8 mb-2" />
+                <span>Tunai</span>
+              </Label>
+              <Label htmlFor="pay-debit" className={`flex flex-col items-center justify-center p-4 border-2 rounded-md cursor-pointer hover:bg-zinc-300 ${paymentMethod === 'Kartu Debit' ? 'border-blue-500 bg-blue-100' : 'border-zinc-300'}`}>
+                <RadioGroupItem value="Kartu Debit" id="pay-debit" className="sr-only" />
+                <HardDrive className="w-8 h-8 mb-2" />
+                <span>Kartu Debit</span>
+              </Label>
+              <Label htmlFor="pay-kredit" className={`flex flex-col items-center justify-center p-4 border-2 rounded-md cursor-pointer hover:bg-zinc-300 ${paymentMethod === 'Kartu Kredit' ? 'border-blue-500 bg-blue-100' : 'border-zinc-300'}`}>
+                <RadioGroupItem value="Kartu Kredit" id="pay-kredit" className="sr-only" />
+                <HardDrive className="w-8 h-8 mb-2" />
+                <span>Kartu Kredit</span>
+              </Label>
+              <Label htmlFor="pay-qris" className={`flex flex-col items-center justify-center p-4 border-2 rounded-md cursor-pointer hover:bg-zinc-300 ${paymentMethod === 'QRIS' ? 'border-blue-500 bg-blue-100' : 'border-zinc-300'}`}>
+                 <RadioGroupItem value="QRIS" id="pay-qris" className="sr-only"/>
+                <QrCode className="w-8 h-8 mb-2" />
+                <span>QRIS</span>
+              </Label>
+            </RadioGroup>
+          </div>
+        </div>
+
+        <DialogFooter className="bg-zinc-300 p-2 flex justify-end rounded-b-lg">
+          <Button variant="pos" onClick={onClose} className="w-auto px-6 h-10">Batal</Button>
+          <Button onClick={handleFinishTransaction} className="bg-green-600 hover:bg-green-700 text-white w-auto px-6 h-10 font-bold">
+            Selesaikan Transaksi
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
     
