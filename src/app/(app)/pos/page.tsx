@@ -129,8 +129,7 @@ export default function POSPage() {
   const router = useRouter();
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const { toast } = useToast();
-  const [transactionToPrint, setTransactionToPrint] = useState<CompletedTransaction | null>(null);
-
+  
 
   
   // Hardcoded current user role for demonstration. In a real app, this would come from an auth context.
@@ -163,14 +162,25 @@ export default function POSPage() {
 
     // Auto-connect to QZ Tray
     if (typeof (window as any).qz !== 'undefined') {
-      (window as any).qz.websocket.connect().catch((err: any) => {
-        console.error("QZ Tray connection error:", err);
-        toast({
-          variant: 'destructive',
-          title: 'QZ Tray Tidak Tersambung',
-          description: 'Pastikan aplikasi QZ Tray berjalan dan coba muat ulang halaman.',
-        });
-      });
+        const qz = (window as any).qz;
+        if (!qz.websocket.isActive()) {
+            qz.websocket.connect()
+            .then(() => {
+                console.log("QZ Tray connected!");
+                toast({
+                    title: 'QZ Tray Terhubung',
+                    description: 'Printer dan laci kasir siap digunakan.',
+                });
+            })
+            .catch((err: any) => {
+                console.error("QZ Tray connection error:", err);
+                toast({
+                    variant: 'destructive',
+                    title: 'QZ Tray Gagal Terhubung',
+                    description: 'Pastikan aplikasi QZ Tray berjalan dan coba muat ulang halaman.',
+                });
+            });
+        }
     }
 
   }, [router, toast]);
@@ -394,7 +404,88 @@ export default function POSPage() {
     router.push('/dashboard');
   }
 
-  const handleCompleteTransaction = (paymentMethod: PaymentMethod, change: number, amountPaid: number) => {
+  const printReceiptWithQZ = async (transaction: CompletedTransaction) => {
+      const qz = (window as any).qz;
+      if (!qz || !qz.websocket.isActive()) {
+          toast({
+              variant: "destructive",
+              title: "QZ Tray Tidak Terhubung",
+              description: "Tidak dapat mencetak struk. Pastikan QZ Tray berjalan."
+          });
+          return;
+      }
+      
+      const printerName = "POS-58"; // TODO: Make this configurable
+      
+      let dataToPrint = [];
+      
+      // Header
+      dataToPrint.push('\x1B\x40'); // Reset
+      dataToPrint.push('\x1B\x61\x31'); // Align center
+      dataToPrint.push('\x1D\x21\x11'); // Double height, double width
+      dataToPrint.push('B\n');
+      dataToPrint.push('\x1D\x21\x00'); // Normal size
+      dataToPrint.push('BAGUS\n\n');
+      
+      dataToPrint.push('\x1B\x61\x30'); // Align left
+
+      // Items
+      for (const item of transaction.items) {
+          const itemTotal = (item.quantity * item.price).toLocaleString('id-ID');
+          let line1 = `${item.name.padEnd(20)}${itemTotal.padStart(12)}\n`;
+          let line2 = `${item.quantity} x @ ${item.price.toLocaleString('id-ID')}\n`;
+          dataToPrint.push(line1);
+          dataToPrint.push(line2);
+          if (item.discount > 0) {
+              dataToPrint.push(`Diskon ${item.discount.toLocaleString('id-ID')}\n`);
+          }
+      }
+      
+      dataToPrint.push('--------------------------------\n');
+      
+      // Summary
+      const totalItems = transaction.items.reduce((sum, item) => sum + item.quantity, 0);
+      dataToPrint.push(`Total barang dibeli: ${totalItems}\n`);
+      dataToPrint.push('--------------------------------\n');
+      
+      dataToPrint.push(`${'TOTAL'.padEnd(12)}${transaction.totalAmount.toLocaleString('id-ID').padStart(20)}\n`);
+      dataToPrint.push(`${'TUNAI'.padEnd(12)}${(transaction.paymentMethod === 'Tunai' ? transaction.amountPaid : 0).toLocaleString('id-ID').padStart(20)}\n`);
+      dataToPrint.push(`${'NON TUNAI'.padEnd(12)}${(transaction.paymentMethod !== 'Tunai' ? transaction.amountPaid : 0).toLocaleString('id-ID').padStart(20)}\n`);
+      dataToPrint.push(`${'KEMBALI'.padEnd(12)}${transaction.change.toLocaleString('id-ID').padStart(20)}\n`);
+      dataToPrint.push(`${'PEMBULATAN'.padEnd(12)}${'0'.padStart(20)}\n\n`);
+
+      // Footer
+      const date = new Date(transaction.timestamp).toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'});
+      const time = new Date(transaction.timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      dataToPrint.push(`${date.padEnd(20)}${time.padStart(12)}\n\n`);
+      
+      dataToPrint.push('\x1B\x61\x31'); // Align center
+      dataToPrint.push('Terima Kasih\n\n\n');
+
+      // Cut and Open Drawer commands
+      dataToPrint.push('\x1D\x56\x42\x00'); // Cut paper
+      dataToPrint.push('\x1B\x70\x00\x19\xFA'); // Open drawer
+      
+      const config = qz.configs.create(printerName);
+      
+      try {
+          await qz.print(config, dataToPrint);
+          toast({
+              title: "Struk Terkirim",
+              description: "Struk sedang dicetak dan laci kasir terbuka."
+          });
+      } catch (e) {
+          console.error("QZ Print Error:", e);
+           toast({
+              variant: "destructive",
+              title: "Gagal Mencetak",
+              description: e instanceof Error ? e.message : "Terjadi kesalahan dengan QZ Tray."
+          });
+      }
+  };
+
+
+  const handleCompleteTransaction = async (paymentMethod: PaymentMethod, change: number, amountPaid: number) => {
     const sessionId = sessionStorage.getItem('pos-session-id') || 'sesi-unknown';
     
     const newTransaction: CompletedTransaction = {
@@ -427,22 +518,12 @@ export default function POSPage() {
       description: `Pembayaran dengan ${paymentMethod} telah berhasil.`
     });
     
-    // Set transaction to be printed
-    setTransactionToPrint(newTransaction);
-    setIsPaymentDialogOpen(false);
+    // Print with QZ Tray
+    await printReceiptWithQZ(newTransaction);
     
-    // Clearing transaction is now handled in useEffect after printing
+    setIsPaymentDialogOpen(false);
+    clearTransaction();
   };
-
-  useEffect(() => {
-    if (transactionToPrint) {
-      window.print();
-      // Reset after printing
-      setTransactionToPrint(null);
-      clearTransaction();
-    }
-  }, [transactionToPrint]);
-
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (isLocked || isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen || isCashDrawerDialogOpen || isShiftReportDialogOpen || isPaymentDialogOpen) return;
@@ -798,12 +879,6 @@ export default function POSPage() {
         totalAmount={total}
         onCompleteTransaction={handleCompleteTransaction}
       />
-      
-      {transactionToPrint && (
-        <div className="print-only">
-          <ReceiptTemplate transaction={transactionToPrint} />
-        </div>
-      )}
 
     </>
   );
@@ -1657,5 +1732,7 @@ const ReceiptTemplate = ({ transaction }: { transaction: CompletedTransaction })
 
 
     
+
+
 
 
