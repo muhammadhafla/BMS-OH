@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Lock, Power, Settings, Unlock } from 'lucide-react';
+import { Lock, Power, Settings, Unlock, HardDrive } from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 // Data produk yang diimpor dari file inventaris
 const inventoryItems = [
@@ -134,6 +136,7 @@ export default function POSPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TransactionItem & { index: number } | null>(null);
   const [isKeybindDialogOpen, setIsKeybindDialogOpen] = useState(false);
+  const [isCashierMenuOpen, setIsCashierMenuOpen] = useState(false);
   const [keybinds, setKeybinds] = useState<Keybinds>({
     hold: 'F2',
     recall: 'F3',
@@ -299,7 +302,7 @@ export default function POSPage() {
   };
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen) return;
+    if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen) return;
 
     const key = event.key;
     
@@ -317,13 +320,14 @@ export default function POSPage() {
       deleteSelectedItem();
     } else if (key === keybinds.cashier) {
       event.preventDefault();
+      setIsCashierMenuOpen(true);
     } else if (key === keybinds.clear) {
         event.preventDefault();
         clearTransaction();
     } else if (key === keybinds.pay) {
         event.preventDefault();
     }
-  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, keybinds]);
+  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, keybinds]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -372,7 +376,7 @@ export default function POSPage() {
           <Button variant="pos" className="relative" onClick={() => setIsRecallDialogOpen(true)}>
             Panggil <KeybindHint>{keybinds.recall}</KeybindHint>
           </Button>
-          <Button variant="pos" className="relative">
+          <Button variant="pos" className="relative" onClick={() => setIsCashierMenuOpen(true)}>
             Kasir <KeybindHint>{keybinds.cashier}</KeybindHint>
           </Button>
           <Button variant="pos" className="relative" onClick={clearTransaction}>
@@ -605,6 +609,11 @@ export default function POSPage() {
         onClose={() => setIsKeybindDialogOpen(false)}
         keybinds={keybinds}
         setKeybinds={setKeybinds}
+       />
+       
+       <CashierMenuDialog
+        isOpen={isCashierMenuOpen}
+        onClose={() => setIsCashierMenuOpen(false)}
        />
     </div>
   );
@@ -847,7 +856,7 @@ const AuthorizationDialog = ({ isOpen, onClose, onAuthorize }: AuthorizationDial
   useEffect(() => {
     if (isOpen) {
       // Focus the input when the dialog opens
-      setTimeout(() => pinInputref.current?.focus(), 100);
+      setTimeout(() => pinInputRef.current?.focus(), 100);
     } else {
         setPin(''); // Reset PIN on close
     }
@@ -889,6 +898,72 @@ const AuthorizationDialog = ({ isOpen, onClose, onAuthorize }: AuthorizationDial
             </Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Cashier Menu Dialog
+type CashierMenuDialogProps = {
+  isOpen: boolean;
+  onClose: () => void;
+};
+
+const CashierMenuDialog = ({ isOpen, onClose }: CashierMenuDialogProps) => {
+    useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isOpen) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+  
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-300 border-zinc-500 text-black max-w-sm p-0 shadow-lg" onKeyDown={(e) => e.stopPropagation()}>
+        <DialogHeader className="bg-zinc-800 p-2 px-4 rounded-t-lg">
+          <DialogTitle className="text-white text-base">Menu Kasir</DialogTitle>
+        </DialogHeader>
+        <div className="p-4 space-y-4">
+            <div className="space-y-1">
+                <Label>&raquo; Memasukkan Uang Awal / Keluar Uang</Label>
+                <div className="flex gap-2">
+                    <Button variant="pos" className="w-full h-9">Uang Awal</Button>
+                    <Button variant="pos" className="w-full h-9">Uang Keluar</Button>
+                </div>
+            </div>
+            <div className="space-y-1">
+                <Label>&raquo; Membuka Laci uang</Label>
+                <Button variant="pos" className="w-full h-9">Buka</Button>
+            </div>
+            <div className="space-y-1">
+                <Label>&raquo; Laporan Akhir Shift</Label>
+                <Button variant="pos" className="w-full h-9">Laporan</Button>
+            </div>
+             <div className="space-y-1">
+                <Label>&raquo; Kunci Layar</Label>
+                <Button variant="pos" className="w-full h-9">Kunci</Button>
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+                <Checkbox id="auto-lock" />
+                <Label htmlFor="auto-lock" className="text-sm font-medium leading-none">
+                    Kunci otomatis jika ditinggal selama
+                </Label>
+                <Input type="number" defaultValue={0} className="w-16 h-8 text-center" />
+                <Label>Menit</Label>
+            </div>
+        </div>
+        <DialogFooter className="bg-zinc-200 p-2 rounded-b-lg">
+            <Button variant="pos" onClick={onClose} className="w-auto px-6 h-10 relative">
+                Tutup
+                <KeybindHint>Esc</KeybindHint>
+            </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
