@@ -1,6 +1,7 @@
 
+
 import type { ReactNode } from 'react';
-import type { Timestamp } from 'firebase-admin/firestore';
+import type { Timestamp, FieldValue } from 'firebase-admin/firestore';
 
 export interface Module {
   name: string;
@@ -119,4 +120,19 @@ export interface PurchaseHistory {
   purchasePrice: number;
   purchaseDate: Timestamp;
   supplier: string;
+}
+
+// Attendance Types
+export interface AttendanceEntry {
+  id?: string;
+  employeeId: string;
+  employeeName: string;
+  clockIn: Timestamp | FieldValue;
+  clockOut: Timestamp | FieldValue | null;
+  status: 'Hadir' | 'Absen' | 'Izin' | string;
+  location: string;
+  photoIn?: string;
+  photoOut?: string | null;
+  // These are for client-side display only, not stored in DB
+  date?: string; 
 }

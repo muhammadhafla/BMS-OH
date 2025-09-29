@@ -40,6 +40,11 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import Image from 'next/image';
+import { firestore } from '@/lib/firebase-client';
+import { collection, onSnapshot, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { recordAttendance, getAttendanceHistoryForUser } from '@/lib/services/attendance';
+import type { AttendanceEntry } from '@/lib/types';
+
 
 type UserRole = 'staff' | 'manager' | 'admin';
 
@@ -82,16 +87,6 @@ const initialAttendanceHistory = [
   },
 ];
 
-
-type AttendanceEntry = {
-  employeeId?: string;
-  employeeName?: string;
-  date: string;
-  clockIn: string;
-  clockOut: string;
-  status: 'Hadir' | 'Absen' | 'Setengah Hari' | string;
-  location: string;
-};
 
 // =================================================================
 // Komponen untuk Tab Monitoring Tim (Admin/Manager)
@@ -374,49 +369,90 @@ const CameraClockInModal = ({
 // =================================================================
 // Komponen untuk Tab Absensi Pribadi (Staf)
 // =================================================================
-const MyAttendanceTab = () => {
+const MyAttendanceTab = ({ currentUser }: { currentUser: { id: string; name: string; } }) => {
     const [isClockedIn, setIsClockedIn] = useState(false);
     const [attendanceHistory, setAttendanceHistory] = useState<AttendanceEntry[]>([]);
     const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [todaysEntryId, setTodaysEntryId] = useState<string | null>(null);
     const { toast } = useToast();
 
-    const handleClockInOut = (imageData: string) => {
+    useEffect(() => {
+      if (!currentUser.id) return;
+      setIsLoading(true);
+      const q = query(
+        collection(firestore, 'attendance'), //perlu diganti//
+        where('employeeId', '==', currentUser.id),
+        orderBy('clockIn', 'desc')
+      );
+
+      const unsubscribe = onSnapshot(q, (snapshot) => { //perlu diganti//
+        const history: AttendanceEntry[] = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            employeeId: data.employeeId,
+            employeeName: data.employeeName,
+            date: format((data.clockIn as Timestamp).toDate(), 'yyyy-MM-dd'),
+            clockIn: format((data.clockIn as Timestamp).toDate(), 'HH:mm'),
+            clockOut: data.clockOut ? format((data.clockOut as Timestamp).toDate(), 'HH:mm') : 'N/A',
+            status: data.status,
+            location: data.location,
+          }
+        });
+        setAttendanceHistory(history);
+        
+        // Check if clocked in today
+        const todayStr = format(new Date(), 'yyyy-MM-dd');
+        const todaysEntry = history.find(entry => entry.date === todayStr && entry.clockOut === 'N/A');
+        if (todaysEntry) {
+          setIsClockedIn(true);
+          setTodaysEntryId(todaysEntry.id!);
+        } else {
+          setIsClockedIn(false);
+          setTodaysEntryId(null);
+        }
+        setIsLoading(false);
+      }, (error) => {
+        console.error("Gagal mengambil riwayat absensi: ", error);
+        toast({ variant: 'destructive', title: 'Gagal Memuat Riwayat'});
+        setIsLoading(false);
+      });
+      
+      return () => unsubscribe();
+    }, [currentUser.id, toast]);
+
+
+    const handleClockInOut = async (imageData: string) => {
         setIsCameraModalOpen(false); // Close modal first
         
-        const now = new Date();
-        const date = format(now, 'yyyy-MM-dd');
-        const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-        if (!isClockedIn) {
-        // Clocking In
-        const newEntry: AttendanceEntry = {
-            date,
-            clockIn: time,
-            clockOut: 'N/A',
-            status: 'Hadir',
-            location: 'Kantor Utama', // Placeholder for GPS location
-        };
-        setAttendanceHistory([newEntry, ...attendanceHistory]);
-        setIsClockedIn(true);
-        toast({
-            title: 'Clock In Berhasil',
-            description: `Anda berhasil masuk pada pukul ${time}.`,
-        });
-        } else {
-        // Clocking Out
-        setAttendanceHistory(prevHistory => {
-            const newHistory = [...prevHistory];
-            const currentEntry = newHistory[0];
-            if (currentEntry && currentEntry.status === 'Hadir' && currentEntry.clockOut === 'N/A') {
-            currentEntry.clockOut = time;
+        const type = isClockedIn ? 'clock-out' : 'clock-in';
+        
+        try {
+            const result = await recordAttendance({ //perlu diganti//
+                type,
+                employeeId: currentUser.id,
+                employeeName: currentUser.name,
+                location: 'Kantor Utama', // Placeholder
+                photoDataUri: imageData,
+                entryId: todaysEntryId, // Pass ID for clock-out
+            });
+            
+            if (result.success) {
+                toast({
+                    title: `Clock ${isClockedIn ? 'Out' : 'In'} Berhasil`,
+                    description: `Anda berhasil ${isClockedIn ? 'keluar' : 'masuk'} pada pukul ${format(new Date(), 'HH:mm')}.`,
+                });
+            } else {
+                 throw new Error(result.error);
             }
-            return newHistory;
-        });
-        setIsClockedIn(false);
-        toast({
-            title: 'Clock Out Berhasil',
-            description: `Anda berhasil keluar pada pukul ${time}.`,
-        });
+        } catch (error) {
+            console.error("Gagal mencatat absensi:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Gagal Mencatat Absensi',
+                description: error instanceof Error ? error.message : 'Terjadi kesalahan di server.'
+            });
         }
     };
     return (
@@ -460,7 +496,13 @@ const MyAttendanceTab = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {attendanceHistory.length > 0 ? attendanceHistory.map((entry, index) => (
+                  {isLoading ? (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">
+                            Memuat riwayat...
+                        </TableCell>
+                     </TableRow>
+                  ) : attendanceHistory.length > 0 ? attendanceHistory.map((entry, index) => (
                     <TableRow key={index}>
                       <TableCell className="font-medium">{entry.date}</TableCell>
                       <TableCell>
@@ -511,6 +553,9 @@ const MyAttendanceTab = () => {
 // =================================================================
 export default function AttendancePage() {
   const [userRole, setUserRole] = useState<UserRole>('staff');
+  
+  // Hardcoded current user for demonstration purposes
+  const currentUser = { id: 'user_staff_001', name: 'Pengguna Staf' };
 
   const handleRoleChange = (isManager: boolean) => {
     setUserRole(isManager ? 'manager' : 'staff');
@@ -545,7 +590,7 @@ export default function AttendancePage() {
           <TabsTrigger value="team-monitoring" disabled={userRole === 'staff'}><Users className="mr-2"/>Monitoring Tim</TabsTrigger>
         </TabsList>
         <TabsContent value="my-attendance" className="mt-6">
-            <MyAttendanceTab />
+            <MyAttendanceTab currentUser={currentUser} />
         </TabsContent>
         <TabsContent value="team-monitoring" className="mt-6">
             {userRole !== 'staff' ? <TeamMonitoringTab /> : (
@@ -559,4 +604,3 @@ export default function AttendancePage() {
     </div>
   );
 }
-
