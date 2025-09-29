@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Lock, Power } from 'lucide-react';
+import { Lock, Power, Settings } from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -89,6 +89,17 @@ type HeldTransaction = {
   timestamp: Date;
 };
 
+type Keybinds = {
+  hold: string;
+  recall: string;
+  cashier: string;
+  clear: string;
+  edit: string;
+  delete: string;
+  pay: string;
+  lock: string;
+};
+
 const productCatalog: Product[] = inventoryItems.map(item => ({
     sku: item.sku,
     name: item.name,
@@ -119,6 +130,18 @@ export default function POSPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TransactionItem & { index: number } | null>(null);
+  const [isKeybindDialogOpen, setIsKeybindDialogOpen] = useState(false);
+  const [keybinds, setKeybinds] = useState<Keybinds>({
+    hold: 'F2',
+    recall: 'F3',
+    cashier: 'F11',
+    clear: 'F4',
+    edit: 'F7',
+    delete: 'F8',
+    pay: 'F9',
+    lock: 'F5', // Assuming F5 for the lock button
+  });
+
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -252,29 +275,54 @@ export default function POSPage() {
   const handleItemRowClick = (index: number) => {
     setSelectedItemIndex(index);
   };
+  
+  const deleteSelectedItem = () => {
+    if (selectedItemIndex === null || !items[selectedItemIndex]) return;
+    
+    setItems(prevItems => {
+      const newItems = prevItems.filter((_, index) => index !== selectedItemIndex);
+      
+      if (newItems.length === 0) {
+        setSelectedItemIndex(null);
+      } else if (selectedItemIndex >= newItems.length) {
+        // If the last item was deleted, select the new last item
+        setSelectedItemIndex(newItems.length - 1);
+      }
+      // Otherwise, the index remains the same for the item that shifted up
+      
+      return newItems;
+    });
+  };
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     // Prevent keybinds from firing when a dialog is open
-    if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen) return;
+    if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen) return;
 
-    if (event.key === 'F2') {
+    const key = event.key;
+    
+    if (key === keybinds.hold) {
       event.preventDefault();
       holdTransaction();
-    } else if (event.key === 'F3') {
+    } else if (key === keybinds.recall) {
       event.preventDefault();
       setIsRecallDialogOpen(true);
-    } else if (event.key === 'F7') {
+    } else if (key === keybinds.edit) {
         event.preventDefault();
         openEditDialog();
-    } else if (event.key === 'F11') {
+    } else if (key === keybinds.delete) {
       event.preventDefault();
-    } else if (event.key === 'F4') {
+      deleteSelectedItem();
+    } else if (key === keybinds.cashier) {
+      event.preventDefault();
+      // Add cashier functionality here
+    } else if (key === keybinds.clear) {
         event.preventDefault();
         clearTransaction();
-    } else if (event.key === 'F9') {
+    } else if (key === keybinds.pay) {
         event.preventDefault();
+        // Add pay functionality here
     }
-  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen]);
+  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, keybinds]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -305,9 +353,14 @@ export default function POSPage() {
       {/* Header */}
       <header className="flex items-center justify-between bg-zinc-200 px-4 py-1 border-b-2 border-zinc-400">
         <h1 className="text-lg font-bold text-red-600">RENE Cashier</h1>
-        <div className="text-right text-xs font-semibold">
-          <p>TOKO BAGUS, Ruko Gaden Plaza No. 9B Jl. Raya Wonopringgo</p>
-          <p>082324703076</p>
+        <div className="flex items-center gap-2">
+            <div className="text-right text-xs font-semibold">
+                <p>TOKO BAGUS, Ruko Gaden Plaza No. 9B Jl. Raya Wonopringgo</p>
+                <p>082324703076</p>
+            </div>
+             <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-600" onClick={() => setIsKeybindDialogOpen(true)}>
+                <Settings />
+             </Button>
         </div>
       </header>
 
@@ -315,16 +368,16 @@ export default function POSPage() {
         {/* Left Sidebar */}
         <aside className="w-48 flex-shrink-0 space-y-2 border-r-2 border-zinc-400 bg-zinc-200 p-2">
           <Button variant="pos" className="relative" onClick={holdTransaction}>
-            Tunda <KeybindHint>F2</KeybindHint>
+            Tunda <KeybindHint>{keybinds.hold}</KeybindHint>
           </Button>
           <Button variant="pos" className="relative" onClick={() => setIsRecallDialogOpen(true)}>
-            Panggil <KeybindHint>F3</KeybindHint>
+            Panggil <KeybindHint>{keybinds.recall}</KeybindHint>
           </Button>
           <Button variant="pos" className="relative">
-            Kasir <KeybindHint>F11</KeybindHint>
+            Kasir <KeybindHint>{keybinds.cashier}</KeybindHint>
           </Button>
           <Button variant="pos" className="relative" onClick={clearTransaction}>
-            Clear <KeybindHint>F4</KeybindHint>
+            Clear <KeybindHint>{keybinds.clear}</KeybindHint>
           </Button>
 
           <div className="py-2">
@@ -382,10 +435,10 @@ export default function POSPage() {
           <footer className="mt-auto flex items-center justify-between border-t-2 border-zinc-400 bg-zinc-200 px-4 py-2">
             <div className="flex items-center gap-2">
                <Button variant="posAction" className="relative" onClick={openEditDialog}>
-                 Ubah <KeybindHint>F7</KeybindHint>
+                 Ubah <KeybindHint>{keybinds.edit}</KeybindHint>
                </Button>
-               <Button variant="posAction" className="relative">
-                 Hapus <KeybindHint>F8</KeybindHint>
+               <Button variant="posAction" className="relative" onClick={deleteSelectedItem}>
+                 Hapus <KeybindHint>{keybinds.delete}</KeybindHint>
                </Button>
             </div>
              <div className="flex items-center gap-4 rounded-md bg-zinc-800 px-3 py-1 text-sm text-white">
@@ -394,7 +447,7 @@ export default function POSPage() {
              </div>
             <Button className="relative h-12 w-32 bg-yellow-400 text-black font-bold text-xl hover:bg-yellow-500">
                 BAYAR
-                <KeybindHint>F9</KeybindHint>
+                <KeybindHint>{keybinds.pay}</KeybindHint>
             </Button>
           </footer>
         </main>
@@ -533,6 +586,13 @@ export default function POSPage() {
           onUpdate={handleItemUpdate}
         />
       )}
+      
+      <KeybindSettingsDialog
+        isOpen={isKeybindDialogOpen}
+        onClose={() => setIsKeybindDialogOpen(false)}
+        keybinds={keybinds}
+        setKeybinds={setKeybinds}
+       />
     </div>
   );
 }
@@ -643,3 +703,78 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate }: EditItemDialogProps
     </Dialog>
   );
 };
+
+
+// Keybind Settings Dialog Component
+type KeybindSettingsDialogProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  keybinds: Keybinds;
+  setKeybinds: React.Dispatch<React.SetStateAction<Keybinds>>;
+};
+
+const KeybindSettingsDialog = ({ isOpen, onClose, keybinds, setKeybinds }: KeybindSettingsDialogProps) => {
+  const [editingKeybinds, setEditingKeybinds] = useState(keybinds);
+
+  const keybindActions: { id: keyof Keybinds; label: string }[] = [
+    { id: 'hold', label: 'Tunda Transaksi' },
+    { id: 'recall', label: 'Panggil Transaksi' },
+    { id: 'cashier', label: 'Buka Laci Kasir' },
+    { id: 'clear', label: 'Bersihkan Transaksi' },
+    { id: 'edit', label: 'Ubah Item' },
+    { id: 'delete', label: 'Hapus Item' },
+    { id: 'pay', label: 'Pembayaran' },
+    { id: 'lock', label: 'Kunci POS' },
+  ];
+
+  const handleKeydown = (e: React.KeyboardEvent<HTMLInputElement>, action: keyof Keybinds) => {
+    e.preventDefault();
+    const key = e.key;
+    setEditingKeybinds(prev => ({ ...prev, [action]: key }));
+  };
+
+  const handleSave = () => {
+    setKeybinds(editingKeybinds);
+    onClose();
+  };
+  
+  useEffect(() => {
+    if (isOpen) {
+        setEditingKeybinds(keybinds);
+    }
+  }, [isOpen, keybinds])
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-md">
+        <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
+          <DialogTitle className="text-white">Pengaturan Keybind</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 grid grid-cols-2 gap-x-8 gap-y-3">
+          {keybindActions.map(({ id, label }) => (
+            <div key={id} className="space-y-1">
+              <Label htmlFor={`keybind-${id}`}>{label}</Label>
+              <Input
+                id={`keybind-${id}`}
+                value={editingKeybinds[id]}
+                onKeyDown={(e) => handleKeydown(e, id)}
+                className="h-8"
+                readOnly
+              />
+            </div>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Batal
+          </Button>
+          <Button onClick={handleSave} className="bg-accent hover:bg-accent/90">
+            Simpan
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+    
