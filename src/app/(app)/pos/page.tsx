@@ -124,6 +124,15 @@ export default function POSPage() {
     const posAuthenticated = sessionStorage.getItem('pos-authenticated') === 'true';
     if (!posAuthenticated) {
       router.push('/pos/auth');
+      return; // Stop execution if not authenticated
+    }
+
+    // Initialize session ID if it doesn't exist for this session
+    let sessionId = sessionStorage.getItem('pos-session-id');
+    if (!sessionId) {
+      const now = new Date();
+      sessionId = `sesi-${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+      sessionStorage.setItem('pos-session-id', sessionId);
     }
   }, [router]);
 
@@ -296,13 +305,14 @@ export default function POSPage() {
   };
 
   const handleCashDrawerSubmit = (amount: number, description: string) => {
+    const sessionId = sessionStorage.getItem('pos-session-id') || 'sesi-unknown';
     const newTransaction: CashDrawerTransaction = {
       id: `cd-${Date.now()}`,
       type: cashDrawerDialogType,
       amount,
       description,
       timestamp: new Date().toISOString(),
-      sessionId: 'sesi-01', // Placeholder for session management
+      sessionId: sessionId,
     };
 
     // Save to localStorage
@@ -333,6 +343,7 @@ export default function POSPage() {
   
   const handlePowerOff = () => {
     sessionStorage.removeItem('pos-authenticated');
+    sessionStorage.removeItem('pos-session-id');
     router.push('/dashboard');
   }
 
