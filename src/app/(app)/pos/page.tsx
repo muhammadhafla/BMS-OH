@@ -28,6 +28,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import type { Product as ProductType } from '@/lib/types';
 import { getAllProducts } from '@/lib/services/product';
+import { useRouter } from 'next/navigation';
 
 
 type TransactionItem = {
@@ -107,6 +108,9 @@ export default function POSPage() {
   const [cashDrawerDialogType, setCashDrawerDialogType] = useState<'Uang Awal' | 'Uang Keluar'>('Uang Awal');
   const [isShiftReportDialogOpen, setIsShiftReportDialogOpen] = useState(false);
   const [productCatalog, setProductCatalog] = useState<ProductType[]>([]);
+  const [isLocked, setIsLocked] = useState(false);
+  const router = useRouter();
+
 
   
   // Hardcoded current user role for demonstration. In a real app, this would come from an auth context.
@@ -114,6 +118,14 @@ export default function POSPage() {
 
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+     // Check if POS session is authenticated
+    const posAuthenticated = sessionStorage.getItem('pos-authenticated') === 'true';
+    if (!posAuthenticated) {
+      router.push('/pos/auth');
+    }
+  }, [router]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -304,9 +316,24 @@ export default function POSPage() {
     setIsCashierMenuOpen(false);
     setIsShiftReportDialogOpen(true);
   };
+  
+  const lockScreen = () => {
+    setIsCashierMenuOpen(false);
+    setIsLocked(true);
+  }
+
+  const unlockScreen = () => {
+    setIsLocked(false);
+    searchInputRef.current?.focus();
+  }
+  
+  const handlePowerOff = () => {
+    sessionStorage.removeItem('pos-authenticated');
+    router.push('/dashboard');
+  }
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen || isCashDrawerDialogOpen || isShiftReportDialogOpen) return;
+    if (isLocked || isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen || isCashDrawerDialogOpen || isShiftReportDialogOpen) return;
 
     const key = event.key;
     
@@ -328,10 +355,13 @@ export default function POSPage() {
     } else if (key === keybinds.clear) {
         event.preventDefault();
         clearTransaction();
+    } else if (key === keybinds.lock) {
+        event.preventDefault();
+        lockScreen();
     } else if (key === keybinds.pay) {
         event.preventDefault();
     }
-  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, isCashDrawerDialogOpen, isShiftReportDialogOpen, keybinds]);
+  }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, isCashierMenuOpen, isCashDrawerDialogOpen, isShiftReportDialogOpen, keybinds, isLocked]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -343,6 +373,10 @@ export default function POSPage() {
   useEffect(() => {
     setTotal(calculateTotal(items));
   }, [items]);
+  
+  if (isLocked) {
+    return <PosLockScreen onUnlock={unlockScreen} />;
+  }
 
   const filteredHeldTransactions = heldTransactions.filter(
     (t) =>
@@ -460,10 +494,8 @@ export default function POSPage() {
       </div>
 
        <div className="fixed bottom-2 left-2">
-         <Button size="icon" className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700 shadow-lg" asChild>
-            <Link href="/dashboard">
-              <Power />
-            </Link>
+         <Button size="icon" className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700 shadow-lg" onClick={handlePowerOff}>
+            <Power />
          </Button>
        </div>
        
@@ -620,6 +652,7 @@ export default function POSPage() {
         onClose={() => setIsCashierMenuOpen(false)}
         onOpenCashDrawerDialog={openCashDrawerDialog}
         onOpenShiftReportDialog={openShiftReportDialog}
+        onLockScreen={lockScreen}
        />
 
       <CashDrawerDialog
@@ -929,9 +962,10 @@ type CashierMenuDialogProps = {
   onClose: () => void;
   onOpenCashDrawerDialog: (type: 'Uang Awal' | 'Uang Keluar') => void;
   onOpenShiftReportDialog: () => void;
+  onLockScreen: () => void;
 };
 
-const CashierMenuDialog = ({ isOpen, onClose, onOpenCashDrawerDialog, onOpenShiftReportDialog }: CashierMenuDialogProps) => {
+const CashierMenuDialog = ({ isOpen, onClose, onOpenCashDrawerDialog, onOpenShiftReportDialog, onLockScreen }: CashierMenuDialogProps) => {
     useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isOpen) return;
@@ -969,7 +1003,7 @@ const CashierMenuDialog = ({ isOpen, onClose, onOpenCashDrawerDialog, onOpenShif
             </div>
              <div className="space-y-1">
                 <Label>&raquo; Kunci Layar</Label>
-                <Button variant="pos" className="w-full h-9">Kunci</Button>
+                <Button variant="pos" className="w-full h-9" onClick={onLockScreen}>Kunci</Button>
             </div>
             <div className="flex items-center space-x-2 pt-2">
                 <Checkbox id="auto-lock" />
@@ -1174,4 +1208,46 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDial
   );
 };
 
+const PosLockScreen = ({ onUnlock }: { onUnlock: () => void }) => {
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const pinInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    pinInputRef.current?.focus();
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const storedPin = localStorage.getItem('pos-auth-pin') || '1234';
+    if (pin === storedPin) {
+      onUnlock();
+    } else {
+      setError('PIN salah. Coba lagi.');
+      setPin('');
+    }
+  };
+
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-zinc-800 text-white">
+        <Logo className="!h-24 !w-24 !text-4xl mb-6" />
+        <h1 className="text-3xl font-bold mb-2">POS Terkunci</h1>
+        <p className="text-zinc-400 mb-6">Masukkan PIN untuk membuka kunci.</p>
+        <form onSubmit={handleSubmit} className="w-full max-w-xs">
+            <Input
+              ref={pinInputRef}
+              type="password"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              className="h-12 text-center text-2xl tracking-[1rem] bg-zinc-700 border-zinc-600 text-white"
+              maxLength={4}
+            />
+            {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
+            <Button type="submit" className="w-full mt-4 h-12 text-lg bg-yellow-400 text-black hover:bg-yellow-500">
+                Buka Kunci
+            </Button>
+        </form>
+    </div>
+  );
+};
     

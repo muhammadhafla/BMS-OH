@@ -44,7 +44,7 @@ export const modules: Module[] = [
   {
     name: 'Point of Sale (POS)',
     description: 'POS yang dioptimalkan untuk desktop demi kelancaran transaksi.',
-    href: '/pos',
+    href: '/pos/auth',
     icon: <ShoppingCart className="size-8 text-primary" />,
   },
   {
