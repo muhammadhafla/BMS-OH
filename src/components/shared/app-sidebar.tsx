@@ -25,6 +25,7 @@ import {
   ShoppingCart,
   LogOut,
   ChevronRight,
+  Settings,
 } from 'lucide-react';
 import Link from 'next/link';
 import { Logo } from './logo';
@@ -36,6 +37,7 @@ const menuItems = [
   { href: '/accounting', label: 'Accounting', icon: BookCopy },
   { href: '/attendance', label: 'Attendance', icon: UserCheck },
   { href: '/pos', label: 'Point of Sale', icon: ShoppingCart },
+  { href: '/settings', label: 'Pengaturan', icon: Settings },
 ];
 
 export function AppSidebar() {
