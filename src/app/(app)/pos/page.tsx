@@ -197,13 +197,17 @@ export default function POSPage() {
 
   const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-        const searchTerm = e.currentTarget.value.toLowerCase();
-        const foundProduct = productCatalog.find(p => p.sku.toLowerCase() === searchTerm || p.name.toLowerCase() === searchTerm);
+        const searchTerm = e.currentTarget.value;
+        if (!searchTerm) return;
+
+        // Prioritize exact match on SKU first, then name
+        const foundProduct = productCatalog.find(p => p.sku.toLowerCase() === searchTerm.toLowerCase()) || productCatalog.find(p => p.name.toLowerCase() === searchTerm.toLowerCase());
 
         if (foundProduct) {
             addItemToTransaction(foundProduct);
             e.currentTarget.value = '';
         } else {
+            // If no exact match, open search dialog with the term
             setProductSearch(searchTerm);
             setIsSearchDialogOpen(true);
         }
