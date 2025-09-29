@@ -1,3 +1,6 @@
+
+'use client';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,9 +19,11 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Camera, MapPin, CheckCircle, XCircle } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useState, useEffect, useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
-const attendanceHistory = [
+const initialAttendanceHistory = [
   {
     date: '2023-10-26',
     clockIn: '08:59',
@@ -49,8 +54,91 @@ const attendanceHistory = [
   },
 ];
 
+type AttendanceEntry = {
+  date: string;
+  clockIn: string;
+  clockOut: string;
+  status: string;
+  location: string;
+};
+
 export default function AttendancePage() {
-  const isClockedIn = false; // Mock state
+  const [isClockedIn, setIsClockedIn] = useState(false);
+  const [attendanceHistory, setAttendanceHistory] = useState<AttendanceEntry[]>(initialAttendanceHistory);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Akses Kamera Ditolak',
+          description: 'Harap izinkan akses kamera di pengaturan browser Anda untuk menggunakan fitur ini.',
+        });
+      }
+    };
+
+    getCameraPermission();
+  }, [toast]);
+
+  const handleClockInOut = () => {
+    if (!hasCameraPermission) {
+      toast({
+        variant: 'destructive',
+        title: 'Aksi Gagal',
+        description: 'Tidak dapat melakukan absensi tanpa izin akses kamera.',
+      });
+      return;
+    }
+
+    const now = new Date();
+    const date = now.toLocaleDateString('id-ID', { year: 'numeric', month: '2-digit', day: '2-digit' }).split('/').reverse().join('-');
+    const time = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+    if (!isClockedIn) {
+      // Clocking In
+      const newEntry: AttendanceEntry = {
+        date,
+        clockIn: time,
+        clockOut: 'N/A',
+        status: 'Hadir',
+        location: 'Kantor Utama', // Placeholder for GPS location
+      };
+      setAttendanceHistory([newEntry, ...attendanceHistory]);
+      setIsClockedIn(true);
+      toast({
+        title: 'Clock In Berhasil',
+        description: `Anda berhasil masuk pada pukul ${time}.`,
+      });
+    } else {
+      // Clocking Out
+      setAttendanceHistory(prevHistory => {
+        const newHistory = [...prevHistory];
+        const currentEntry = newHistory[0];
+        if (currentEntry && currentEntry.status === 'Hadir' && currentEntry.clockOut === 'N/A') {
+          currentEntry.clockOut = time;
+        }
+        return newHistory;
+      });
+      setIsClockedIn(false);
+      toast({
+        title: 'Clock Out Berhasil',
+        description: `Anda berhasil keluar pada pukul ${time}.`,
+      });
+    }
+  };
+
 
   return (
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
@@ -64,7 +152,7 @@ export default function AttendancePage() {
       </header>
 
       <div className="grid gap-8 md:grid-cols-3">
-        <div className="md:col-span-1">
+        <div className="md:col-span-1 space-y-6">
           <Card className="sticky top-20">
             <CardHeader>
               <CardTitle>Mesin Waktu</CardTitle>
@@ -73,7 +161,7 @@ export default function AttendancePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <Button size="lg" className="w-full h-24 text-2xl bg-accent hover:bg-accent/90">
+              <Button size="lg" className="w-full h-24 text-2xl bg-accent hover:bg-accent/90" onClick={handleClockInOut} disabled={hasCameraPermission === null}>
                 {isClockedIn ? 'Clock Out' : 'Clock In'}
               </Button>
               <p className="mt-4 text-sm text-muted-foreground flex items-center justify-center gap-2">
@@ -81,6 +169,31 @@ export default function AttendancePage() {
                 <MapPin className="size-4" />
                 <span>Selfie & GPS akan direkam.</span>
               </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+                <CardTitle>Pratinjau Kamera</CardTitle>
+            </CardHeader>
+             <CardContent>
+                <div className="relative aspect-video bg-muted rounded-md overflow-hidden flex items-center justify-center">
+                    <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+                    {hasCameraPermission === false && (
+                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+                            <Camera className="w-10 h-10 text-muted-foreground mb-2" />
+                            <p className="text-sm text-muted-foreground">Akses kamera diperlukan</p>
+                         </div>
+                    )}
+                </div>
+                 {hasCameraPermission === false && (
+                    <Alert variant="destructive" className="mt-4">
+                      <AlertTitle>Akses Kamera Diperlukan</AlertTitle>
+                      <AlertDescription>
+                        Harap izinkan akses kamera untuk menggunakan fitur absensi.
+                      </AlertDescription>
+                    </Alert>
+                )}
             </CardContent>
           </Card>
         </div>
@@ -103,8 +216,8 @@ export default function AttendancePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {attendanceHistory.map((entry) => (
-                    <TableRow key={entry.date}>
+                  {attendanceHistory.map((entry, index) => (
+                    <TableRow key={index}>
                       <TableCell className="font-medium">{entry.date}</TableCell>
                       <TableCell>
                         <Badge
@@ -135,4 +248,3 @@ export default function AttendancePage() {
       </div>
     </div>
   );
-}
