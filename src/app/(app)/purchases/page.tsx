@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -421,5 +421,3 @@ export default function PurchasesPage() {
     </div>
   );
 }
-
-    
