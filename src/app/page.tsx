@@ -1,4 +1,5 @@
 'use client';
+//berisi tentang auth//
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -33,7 +34,7 @@ export default function LoginPage() {
     // Original login logic - commented out for now
     /*
     try {
-      const result = await signIn(email, password);
+      const result = await signIn(email, password); //berisi tentang auth//
       if (result.success) {
         toast({
           title: 'Login Berhasil',

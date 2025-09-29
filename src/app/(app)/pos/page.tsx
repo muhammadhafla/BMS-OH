@@ -136,8 +136,8 @@ export default function POSPage() {
 
   useEffect(() => {
      // Check if POS session is authenticated
-    const posAuthenticated = sessionStorage.getItem('pos-authenticated') === 'true'; //perlu diganti//
-    const cashierName = sessionStorage.getItem('pos-cashier-name'); //perlu diganti//
+    const posAuthenticated = sessionStorage.getItem('pos-authenticated') === 'true'; //berisi tentang auth//
+    const cashierName = sessionStorage.getItem('pos-cashier-name'); //berisi tentang auth//
 
     if (!posAuthenticated || !cashierName) {
       router.push('/pos/auth');
@@ -383,7 +383,7 @@ export default function POSPage() {
   }
 
   const unlockScreen = () => {
-    const storedPin = localStorage.getItem('pos-access-pin') || '1234'; //perlu diganti//
+    const storedPin = localStorage.getItem('pos-access-pin') || '1234'; //berisi tentang auth//
     const pin = prompt('Masukkan PIN untuk membuka kunci:');
     if (pin === storedPin) {
       setIsLocked(false);
@@ -394,9 +394,9 @@ export default function POSPage() {
   };
   
   const handlePowerOff = () => {
-    sessionStorage.removeItem('pos-authenticated'); //perlu diganti//
+    sessionStorage.removeItem('pos-authenticated'); //berisi tentang auth//
     sessionStorage.removeItem('pos-session-id'); //perlu diganti//
-    sessionStorage.removeItem('pos-cashier-name'); //perlu diganti//
+    sessionStorage.removeItem('pos-cashier-name'); //berisi tentang auth//
     router.push('/dashboard');
   }
 
@@ -978,7 +978,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
 
   const handleAuthorization = (pin: string) => {
     // This is the PIN for authorizing actions within the POS, set in the main settings page.
-    const storedPin = localStorage.getItem('pos-auth-pin') || '1234'; //perlu diganti//
+    const storedPin = localStorage.getItem('pos-auth-pin') || '1234'; //berisi tentang auth//
     if (pin === storedPin) { 
       setIsPriceLocked(false);
       setIsAuthDialogOpen(false);
@@ -1539,7 +1539,7 @@ const PosLockScreen = ({ onUnlock }: { onUnlock: () => void }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // This uses the same access PIN as the main auth screen.
-    const accessPin = localStorage.getItem('pos-access-pin') || '1234'; //perlu diganti//
+    const accessPin = localStorage.getItem('pos-access-pin') || '1234'; //berisi tentang auth//
     if (pin === accessPin) {
       onUnlock();
     } else {
@@ -1738,3 +1738,4 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
     
 
     
+

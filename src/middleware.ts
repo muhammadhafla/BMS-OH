@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+//berisi tentang auth//
 const PROTECTED_ROUTES = ['/dashboard', '/inventory', '/accounting', '/attendance', '/pos', '/settings'];
 const PUBLIC_ROUTES = ['/'];
 

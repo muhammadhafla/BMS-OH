@@ -1,4 +1,5 @@
 'use client';
+//berisi tentang auth//
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -18,8 +19,8 @@ export default function PosAuthPage() {
 
   useEffect(() => {
     // Clear session auth on load
-    sessionStorage.removeItem('pos-authenticated'); //perlu diganti//
-    sessionStorage.removeItem('pos-cashier-name'); //perlu diganti//
+    sessionStorage.removeItem('pos-authenticated'); //berisi tentang auth//
+    sessionStorage.removeItem('pos-cashier-name'); //berisi tentang auth//
     nameInputRef.current?.focus();
   }, []);
 
@@ -28,7 +29,7 @@ export default function PosAuthPage() {
     setLoading(true);
 
     // This PIN is for accessing the POS screen.
-    const accessPin = localStorage.getItem('pos-access-pin') || '1234'; //perlu diganti//
+    const accessPin = localStorage.getItem('pos-access-pin') || '1234'; //berisi tentang auth//
 
     if (pin === accessPin) {
       toast({
@@ -36,8 +37,8 @@ export default function PosAuthPage() {
         description: 'Mengarahkan ke Point of Sale.',
       });
       // Set a session storage item to indicate authentication
-      sessionStorage.setItem('pos-authenticated', 'true'); //perlu diganti//
-      sessionStorage.setItem('pos-cashier-name', cashierName); //perlu diganti//
+      sessionStorage.setItem('pos-authenticated', 'true'); //berisi tentang auth//
+      sessionStorage.setItem('pos-cashier-name', cashierName); //berisi tentang auth//
       router.push('/pos');
     } else {
       toast({
