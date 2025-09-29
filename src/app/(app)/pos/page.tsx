@@ -758,6 +758,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
   };
 
   const handleAuthorization = (pin: string) => {
+    // This is the PIN for authorizing actions within the POS, set in the main settings page.
     const storedPin = localStorage.getItem('pos-auth-pin') || '1234';
     if (pin === storedPin) { 
       setIsPriceLocked(false);
@@ -1219,8 +1220,9 @@ const PosLockScreen = ({ onUnlock }: { onUnlock: () => void }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const storedPin = localStorage.getItem('pos-auth-pin') || '1234';
-    if (pin === storedPin) {
+    // This uses the same access PIN as the main auth screen.
+    const accessPin = localStorage.getItem('pos-access-pin') || '1234';
+    if (pin === accessPin) {
       onUnlock();
     } else {
       setError('PIN salah. Coba lagi.');

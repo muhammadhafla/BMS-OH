@@ -25,9 +25,11 @@ export default function PosAuthPage() {
     event.preventDefault();
     setLoading(true);
 
-    const storedPin = localStorage.getItem('pos-auth-pin') || '1234';
+    // This PIN is for accessing the POS screen. It's different from the authorization PIN for actions inside POS.
+    // In a real app, this could be a user's password or a cashier-specific PIN managed by an admin.
+    const accessPin = localStorage.getItem('pos-access-pin') || '1234'; 
 
-    if (pin === storedPin) {
+    if (pin === accessPin) {
       toast({
         title: 'Otorisasi Berhasil',
         description: 'Mengarahkan ke Point of Sale.',
@@ -62,7 +64,7 @@ export default function PosAuthPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="pin" className="text-zinc-400">
-                PIN Otorisasi
+                PIN Akses
               </Label>
               <Input
                 ref={pinInputRef}
