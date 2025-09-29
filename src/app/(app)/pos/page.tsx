@@ -74,6 +74,15 @@ export type CashDrawerTransaction = {
 
 type PaymentMethod = 'Tunai' | 'Kartu Debit' | 'Kartu Kredit' | 'QRIS';
 
+export interface CompletedTransaction {
+  id: string;
+  items: TransactionItem[];
+  totalAmount: number;
+  paymentMethod: PaymentMethod;
+  timestamp: string;
+  sessionId: string;
+}
+
 const initialItems: TransactionItem[] = [];
 
 const KeybindHint = ({ children }: { children: React.ReactNode }) => (
@@ -367,9 +376,31 @@ export default function POSPage() {
   }
 
   const handleCompleteTransaction = (paymentMethod: PaymentMethod) => {
-    // In a real app, this is where you would save the transaction to a database.
-    console.log('Transaction complete. Payment method:', paymentMethod);
-    // For now, we'll just clear the transaction.
+    const sessionId = sessionStorage.getItem('pos-session-id') || 'sesi-unknown';
+    
+    const newTransaction: CompletedTransaction = {
+      id: `txn-${Date.now()}`,
+      items: items,
+      totalAmount: total,
+      paymentMethod: paymentMethod,
+      timestamp: new Date().toISOString(),
+      sessionId: sessionId,
+    };
+
+    try {
+      const existingTransactions: CompletedTransaction[] = JSON.parse(localStorage.getItem('pos-transactions') || '[]');
+      localStorage.setItem('pos-transactions', JSON.stringify([...existingTransactions, newTransaction]));
+    } catch (error) {
+      console.error('Failed to save completed transaction to localStorage', error);
+      toast({
+        variant: "destructive",
+        title: "Gagal Menyimpan Transaksi",
+        description: "Tidak dapat menyimpan data transaksi ke penyimpanan lokal."
+      });
+      // Optionally, don't clear the transaction if saving fails
+      // return; 
+    }
+    
     clearTransaction();
     setIsPaymentDialogOpen(false);
     toast({
@@ -377,6 +408,7 @@ export default function POSPage() {
       description: `Pembayaran dengan ${paymentMethod} telah berhasil.`
     });
   };
+
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (isLocked || isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen || isCashDrawerDialogOpen || isShiftReportDialogOpen || isPaymentDialogOpen) return;
@@ -1195,7 +1227,7 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDial
     cashPayment: 0,
     debitCard: 0,
     creditCard: 0,
-    voucher: 0,
+    qris: 0,
     initialCash: 0,
     cashWithdrawal: 0,
   });
@@ -1208,29 +1240,37 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDial
     if (!sessionId) return;
 
     try {
-      const storedData = localStorage.getItem('cashDrawerTransactions');
-      const allTransactions: CashDrawerTransaction[] = storedData ? JSON.parse(storedData) : [];
+      // Get cash drawer activities
+      const storedDrawerData = localStorage.getItem('cashDrawerTransactions');
+      const allDrawerTransactions: CashDrawerTransaction[] = storedDrawerData ? JSON.parse(storedDrawerData) : [];
+      const sessionDrawerTransactions = allDrawerTransactions.filter(t => t.sessionId === sessionId);
       
-      const sessionTransactions = allTransactions.filter(t => t.sessionId === sessionId);
-
-      const initialCash = sessionTransactions
+      const initialCash = sessionDrawerTransactions
         .filter(t => t.type === 'Uang Awal')
         .reduce((sum, t) => sum + t.amount, 0);
 
-      const cashWithdrawal = sessionTransactions
+      const cashWithdrawal = sessionDrawerTransactions
         .filter(t => t.type === 'Uang Keluar')
         .reduce((sum, t) => sum + t.amount, 0);
       
-      // NOTE: Sales data is not yet tracked.
-      const totalSales = 0; 
-      const cashPayment = 0;
+      // Get completed transactions
+      const storedSalesData = localStorage.getItem('pos-transactions');
+      const allSales: CompletedTransaction[] = storedSalesData ? JSON.parse(storedSalesData) : [];
+      const sessionSales = allSales.filter(t => t.sessionId === sessionId);
+
+      const totalSales = sessionSales.reduce((sum, t) => sum + t.totalAmount, 0);
+      const cashPayment = sessionSales.filter(t => t.paymentMethod === 'Tunai').reduce((sum, t) => sum + t.totalAmount, 0);
+      const debitCard = sessionSales.filter(t => t.paymentMethod === 'Kartu Debit').reduce((sum, t) => sum + t.totalAmount, 0);
+      const creditCard = sessionSales.filter(t => t.paymentMethod === 'Kartu Kredit').reduce((sum, t) => sum + t.totalAmount, 0);
+      const qris = sessionSales.filter(t => t.paymentMethod === 'QRIS').reduce((sum, t) => sum + t.totalAmount, 0);
+
 
       setReportData({
         totalSales,
         cashPayment,
-        debitCard: 0,
-        creditCard: 0,
-        voucher: 0,
+        debitCard,
+        creditCard,
+        qris,
         initialCash,
         cashWithdrawal,
       });
@@ -1280,7 +1320,7 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDial
             <ReportRow label="Tunai" value={reportData.cashPayment} />
             <ReportRow label="Kartu Debit" value={reportData.debitCard} />
             <ReportRow label="Kartu Kredit" value={reportData.creditCard} />
-            <ReportRow label="Voucher Belanja" value={reportData.voucher} />
+            <ReportRow label="QRIS" value={reportData.qris} />
           </div>
 
           <div className="space-y-2">
@@ -1498,4 +1538,5 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
   );
 };
     
+
 
