@@ -18,7 +18,7 @@ import type { Module } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { summarizeInventoryData } from '@/ai/flows/summarize-inventory-data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, AlertTriangle } from 'lucide-react';
 
 const modules: Module[] = [
   {
@@ -57,17 +57,30 @@ const sampleInventoryData = {
 };
 
 async function AISummary() {
-  const { summary } = await summarizeInventoryData({
-    inventoryData: JSON.stringify(sampleInventoryData),
-  });
+  try {
+    const { summary } = await summarizeInventoryData({
+      inventoryData: JSON.stringify(sampleInventoryData),
+    });
 
-  return (
-    <Alert>
-      <Sparkles className="h-4 w-4" />
-      <AlertTitle>AI Inventory Summary</AlertTitle>
-      <AlertDescription>{summary}</AlertDescription>
-    </Alert>
-  );
+    return (
+      <Alert>
+        <Sparkles className="h-4 w-4" />
+        <AlertTitle>AI Inventory Summary</AlertTitle>
+        <AlertDescription>{summary}</AlertDescription>
+      </Alert>
+    );
+  } catch (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>AI Summary Unavailable</AlertTitle>
+        <AlertDescription>
+          The AI-powered inventory summary is temporarily unavailable. Please
+          try again later.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 }
 
 export default function DashboardPage() {
