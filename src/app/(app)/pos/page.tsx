@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -14,7 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Lock, Power, Settings, Unlock, HardDrive, Printer, QrCode } from 'lucide-react';
+import { Lock, Power, Settings, Unlock, HardDrive, Printer, QrCode, Search, Eraser, Edit, Trash2, ArrowLeftRight, Clock, Hand, Pause, Play, Coins, LogOut, Receipt } from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -32,7 +31,9 @@ import type { Product as ProductType } from '@/lib/types';
 import { getAllProducts } from '@/lib/services/product';
 import { useRouter } from 'next/navigation';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import Image from 'next/image';
 
 type TransactionItem = {
   sku: string;
@@ -89,11 +90,6 @@ export interface CompletedTransaction {
 
 const initialItems: TransactionItem[] = [];
 
-const KeybindHint = ({ children }: { children: React.ReactNode }) => (
-  <span className="absolute -top-2 -right-2 bg-zinc-600 text-white text-[10px] font-bold px-1 rounded-sm border border-zinc-500">
-    {children}
-  </span>
-);
 
 export default function POSPage() {
   const [currentTime, setCurrentTime] = useState('');
@@ -107,7 +103,7 @@ export default function POSPage() {
   const [productSearch, setProductSearch] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<TransactionItem & { index: number } | null>(null);
+  const [editingItem, setEditingItem] = useState<(TransactionItem & { index: number }) | null>(null);
   const [isKeybindDialogOpen, setIsKeybindDialogOpen] = useState(false);
   const [isCashierMenuOpen, setIsCashierMenuOpen] = useState(false);
   const [keybinds, setKeybinds] = useState<Keybinds>({
@@ -129,7 +125,7 @@ export default function POSPage() {
   const router = useRouter();
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const { toast } = useToast();
-  
+
 
   
   // Hardcoded current user role for demonstration. In a real app, this would come from an auth context.
@@ -529,10 +525,22 @@ export default function POSPage() {
     if (isLocked || isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen || isCashierMenuOpen || isCashDrawerDialogOpen || isShiftReportDialogOpen || isPaymentDialogOpen) return;
 
     const key = event.key;
+    const target = event.target as HTMLElement;
+
+    // Don't interfere if user is typing in an input, unless it's the main search input
+    if (target.nodeName === 'INPUT' && target.id !== 'main-pos-search') {
+      if(key === 'Escape') {
+         searchInputRef.current?.focus();
+      }
+      return;
+    }
     
     if (key === 'Tab') {
         event.preventDefault();
         searchInputRef.current?.focus();
+    } else if (key.toLowerCase() === 'b' && event.ctrlKey) { // Ctrl+B for Bayar
+        event.preventDefault();
+        if (items.length > 0) setIsPaymentDialogOpen(true);
     } else if (key === keybinds.hold) {
       event.preventDefault();
       holdTransaction();
@@ -592,121 +600,128 @@ export default function POSPage() {
 
   return (
     <>
-    <div className="flex h-screen w-full flex-col bg-zinc-300 text-black print-area">
-      <header className="flex items-center justify-between bg-zinc-200 px-4 py-1 border-b-2 border-zinc-400 no-print">
-        <h1 className="text-lg font-bold text-red-600">RENE Cashier</h1>
-        <div className="flex items-center gap-2">
-            <div className="text-right text-xs font-semibold">
-                <p>TOKO BAGUS, Ruko Gaden Plaza No. 9B Jl. Raya Wonopringgo</p>
-                <p>082324703076</p>
+    <div className="flex h-screen w-full flex-col bg-muted/30">
+      <header className="flex h-16 items-center justify-between border-b bg-background px-6">
+        <div className="flex items-center gap-3">
+          <Logo />
+          <div>
+            <h1 className="text-lg font-semibold">POS Kasir</h1>
+            <p className="text-sm text-muted-foreground">{currentCashier}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+            <div className="text-right text-sm">
+                <p className="font-medium">{currentTime.split(' ')[0]}</p>
+                <p className="text-muted-foreground">{currentTime.split(' ')[1]}</p>
             </div>
-             <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-600" onClick={() => setIsKeybindDialogOpen(true)}>
-                <Settings />
+             <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => setIsKeybindDialogOpen(true)}>
+                <Settings className="h-5 w-5"/>
+             </Button>
+             <Button size="icon" variant="ghost" className="h-9 w-9" onClick={handlePowerOff}>
+                <Power className="h-5 w-5"/>
              </Button>
         </div>
-      </header>
+        </header>
 
-      <div className="flex flex-1 overflow-hidden no-print">
-        <aside className="w-48 flex-shrink-0 space-y-2 border-r-2 border-zinc-400 bg-zinc-200 p-2">
-          <Button variant="pos" className="relative" onClick={holdTransaction}>
-            Tunda <KeybindHint>{keybinds.hold}</KeybindHint>
-          </Button>
-          <Button variant="pos" className="relative" onClick={() => setIsRecallDialogOpen(true)}>
-            Panggil <KeybindHint>{keybinds.recall}</KeybindHint>
-          </Button>
-          <Button variant="pos" className="relative" onClick={() => setIsCashierMenuOpen(true)}>
-            Kasir <KeybindHint>{keybinds.cashier}</KeybindHint>
-          </Button>
-          <Button variant="pos" className="relative" onClick={clearTransaction}>
-            Clear <KeybindHint>{keybinds.clear}</KeybindHint>
-          </Button>
+      <div className="flex flex-1 overflow-hidden">
+        <main className="flex-1 flex flex-col p-4 gap-4">
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                    id="main-pos-search"
+                    ref={searchInputRef}
+                    placeholder="Pindai atau cari produk berdasarkan nama/SKU... (Tab)" 
+                    className="h-12 pl-10 text-base"
+                    onKeyDown={handleSearchSubmit}
+                />
+            </div>
+            
+            <Card className="flex-1">
+                <CardContent className="p-0">
+                    <ScrollArea className="h-[calc(100vh-280px)]">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-background z-10">
+                          <TableRow>
+                            <TableHead className="w-[80px]">Jml.</TableHead>
+                            <TableHead>Nama Barang</TableHead>
+                            <TableHead className="w-[120px] text-right">@ Harga</TableHead>
+                            <TableHead className="w-[120px] text-right">Diskon</TableHead>
+                            <TableHead className="w-[150px] text-right">Total</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {items.map((item, index) => (
+                            <TableRow 
+                                key={index}
+                                onClick={() => handleItemRowClick(index)}
+                                onDoubleClick={openEditDialog}
+                                className={`cursor-pointer ${selectedItemIndex === index ? 'bg-accent/20' : 'hover:bg-muted/50'}`}
+                            >
+                              <TableCell className="font-medium">{item.quantity}</TableCell>
+                              <TableCell>{item.name}</TableCell>
+                              <TableCell className="text-right">{item.price.toLocaleString('id-ID')}</TableCell>
+                              <TableCell className="text-right">{item.discount > 0 ? item.discount.toLocaleString('id-ID') : '-'}</TableCell>
+                              <TableCell className="text-right font-semibold">{item.total.toLocaleString('id-ID')}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {items.length === 0 && (
+                        <div className="flex h-[calc(100vh-340px)] items-center justify-center text-muted-foreground">
+                            <p>Belum ada item ditambahkan</p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                </CardContent>
+            </Card>
 
-          <div className="py-2">
-             <div className="bg-primary/80 h-24 w-full flex items-center justify-center rounded-md">
-                <Logo className="!h-20 !w-20 !bg-primary-foreground !text-primary" />
-             </div>
-          </div>
-          
-          <Input ref={searchInputRef} type="text" className="h-8 border-2 border-yellow-400 bg-yellow-200 text-black focus:ring-yellow-500" onKeyDown={handleSearchSubmit} />
-          <div className="h-16 bg-zinc-800 rounded-md flex items-center justify-center text-zinc-400">
-            <Printer className="w-8 h-8" />
-          </div>
-          <div className="h-16 bg-zinc-800 rounded-md flex items-center justify-center text-zinc-400">
-            <HardDrive className="w-8 h-8" />
-          </div>
+            <div className="flex gap-2">
+                 <Button variant="outline" className="h-12" onClick={openEditDialog} disabled={selectedItemIndex === null}>
+                    <Edit/> Ubah <span className="ml-2 text-xs text-muted-foreground">({keybinds.edit})</span>
+                 </Button>
+                 <Button variant="outline" className="h-12 text-destructive hover:text-destructive" onClick={deleteSelectedItem} disabled={selectedItemIndex === null}>
+                    <Trash2/> Hapus <span className="ml-2 text-xs text-muted-foreground">({keybinds.delete})</span>
+                 </Button>
+                 <Button variant="outline" className="h-12 ml-auto" onClick={clearTransaction} disabled={items.length === 0}>
+                    <Eraser/> Bersihkan <span className="ml-2 text-xs text-muted-foreground">({keybinds.clear})</span>
+                 </Button>
+            </div>
+        </main>
+        
+        <aside className="w-[380px] flex-shrink-0 border-l bg-background p-4 flex flex-col gap-4">
+            <div className="text-center rounded-lg bg-primary text-primary-foreground p-4">
+                <p className="text-lg">Total Belanja</p>
+                <p className="font-bold text-5xl tracking-tight">
+                    Rp{total.toLocaleString('id-ID')}
+                </p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+                <Button variant="secondary" className="h-16 text-base" onClick={holdTransaction}>
+                    <Pause/> Tunda <span className="ml-auto text-xs opacity-70">({keybinds.hold})</span>
+                </Button>
+                <Button variant="secondary" className="h-16 text-base" onClick={() => setIsRecallDialogOpen(true)}>
+                    <Play/> Panggil <span className="ml-auto text-xs opacity-70">({keybinds.recall})</span>
+                </Button>
+                 <Button variant="secondary" className="h-16 text-base" onClick={() => setIsCashierMenuOpen(true)}>
+                    <Hand/> Kasir <span className="ml-auto text-xs opacity-70">({keybinds.cashier})</span>
+                </Button>
+                <Button variant="secondary" className="h-16 text-base" onClick={lockScreen}>
+                    <Lock/> Kunci <span className="ml-auto text-xs opacity-70">({keybinds.lock})</span>
+                </Button>
+            </div>
+            
+            <Button className="h-24 w-full mt-auto text-2xl font-bold bg-accent hover:bg-accent/90" onClick={() => items.length > 0 && setIsPaymentDialogOpen(true)} disabled={items.length === 0}>
+                BAYAR
+                <span className="ml-auto text-xs opacity-70">(Ctrl+B / {keybinds.pay})</span>
+            </Button>
         </aside>
 
-        <main className="flex flex-1 flex-col">
-          <div className="flex items-center justify-between border-b-2 border-zinc-400 bg-zinc-800 p-2 text-white">
-            <span className="text-2xl font-semibold">Total</span>
-            <span className="font-mono text-7xl font-bold text-yellow-400">
-                {total.toLocaleString('id-ID')}
-            </span>
-          </div>
-          <div className="flex-1 flex flex-col bg-white overflow-y-auto">
-              <Table className="flex-1">
-                <TableHeader className="sticky top-0 bg-zinc-700">
-                  <TableRow className="border-zinc-500">
-                    <TableHead className="w-24 text-white font-bold">KTS</TableHead>
-                    <TableHead className="text-white font-bold">NAMA BARANG</TableHead>
-                    <TableHead className="w-40 text-right text-white font-bold">@ HARGA</TableHead>
-                    <TableHead className="w-40 text-right text-white font-bold">DISKON</TableHead>
-                    <TableHead className="w-48 text-right text-white font-bold">TOTAL</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {items.map((item, index) => (
-                    <TableRow key={index}
-                        onClick={() => handleItemRowClick(index)}
-                        onDoubleClick={openEditDialog}
-                        className={selectedItemIndex === index ? 'bg-yellow-200' : 'hover:bg-yellow-100'}
-                    >
-                      <TableCell className="text-center">{item.quantity}</TableCell>
-                      <TableCell>{item.name}</TableCell>
-                      <TableCell className="text-right">{item.price.toLocaleString('id-ID')}</TableCell>
-                      <TableCell className="text-right">{item.discount.toLocaleString('id-ID')}</TableCell>
-                      <TableCell className="text-right">{item.total.toLocaleString('id-ID')}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {items.length === 0 && (
-                <div className="flex-1 flex items-center justify-center text-zinc-400">
-                    Belum ada item
-                </div>
-              )}
-          </div>
-          <footer className="mt-auto flex items-center justify-between border-t-2 border-zinc-400 bg-zinc-200 px-4 py-2">
-            <div className="flex items-center gap-2">
-               <Button variant="posAction" className="relative" onClick={openEditDialog}>
-                 Ubah <KeybindHint>{keybinds.edit}</KeybindHint>
-               </Button>
-               <Button variant="posAction" className="relative" onClick={deleteSelectedItem}>
-                 Hapus <KeybindHint>{keybinds.delete}</KeybindHint>
-               </Button>
-            </div>
-             <div className="flex items-center gap-4 rounded-md bg-zinc-800 px-3 py-1 text-sm text-white">
-                <span>{currentCashier}</span>
-                <span>{currentTime}</span>
-             </div>
-            <Button className="relative h-12 w-32 bg-yellow-400 text-black font-bold text-xl hover:bg-yellow-500" onClick={() => items.length > 0 && setIsPaymentDialogOpen(true)}>
-                BAYAR
-                <KeybindHint>{keybinds.pay}</KeybindHint>
-            </Button>
-          </footer>
-        </main>
       </div>
-
-       <div className="fixed bottom-2 left-2 no-print">
-         <Button size="icon" className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700 shadow-lg" onClick={handlePowerOff}>
-            <Power />
-         </Button>
-       </div>
     </div>
        
       <Dialog open={isRecallDialogOpen} onOpenChange={setIsRecallDialogOpen}>
         <DialogContent
-          className="bg-zinc-200 border-zinc-400 text-black max-w-md"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
@@ -716,52 +731,49 @@ export default function POSPage() {
             }
           }}
         >
-          <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
-            <DialogTitle className="text-white">PANGGIL PESANAN</DialogTitle>
+          <DialogHeader>
+            <DialogTitle>Panggil Transaksi yang Ditunda</DialogTitle>
+             <DialogDescription>Pilih transaksi untuk dilanjutkan.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-                <Label htmlFor="recall-search" className="font-bold">Cari</Label>
-                <Input
+          <div className="space-y-4">
+             <Input
                   id="recall-search"
                   type="text"
                   value={recallSearch}
                   onChange={(e) => setRecallSearch(e.target.value)}
-                  className="h-8 border-2 border-yellow-400 bg-yellow-200 text-black focus:ring-yellow-500"
+                  placeholder="Cari berdasarkan pelanggan atau item..."
+                  className="h-10"
                 />
-            </div>
-            <div className="border-2 border-zinc-400 h-64 overflow-y-auto bg-white">
+            <ScrollArea className="h-64 border rounded-md">
               <Table>
-                <TableHeader className="bg-zinc-700 sticky top-0">
+                <TableHeader>
                   <TableRow>
-                    <TableHead className="text-white">Deskripsi</TableHead>
-                    <TableHead className="text-white">Pelanggan</TableHead>
-                    <TableHead className="text-right text-white">Total</TableHead>
+                    <TableHead>Deskripsi</TableHead>
+                    <TableHead>Waktu</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredHeldTransactions.map((t) => (
-                    <TableRow key={t.id} onClick={() => recallTransaction(t.id)} className="cursor-pointer hover:bg-yellow-200">
-                      <TableCell>{t.items[0]?.name || 'N/A'}</TableCell>
-                      <TableCell>{t.customer}</TableCell>
-                      <TableCell className="text-right">{t.total.toLocaleString('id-ID')}</TableCell>
+                    <TableRow key={t.id} onClick={() => recallTransaction(t.id)} className="cursor-pointer hover:bg-muted">
+                      <TableCell className="font-medium">{t.items[0]?.name || 'N/A'}{t.items.length > 1 ? ` (+${t.items.length - 1} item)` : ''}</TableCell>
+                      <TableCell>{t.timestamp.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</TableCell>
+                      <TableCell className="text-right">Rp{t.total.toLocaleString('id-ID')}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
                {filteredHeldTransactions.length === 0 && (
-                <div className="flex items-center justify-center h-full text-zinc-400">
-                  Tidak ada pesanan yang ditunda
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                  Tidak ada transaksi yang ditunda
                 </div>
               )}
-            </div>
+            </ScrollArea>
           </div>
           <DialogFooter className="mt-2">
-            <Button variant="pos" onClick={() => filteredHeldTransactions.length > 0 && recallTransaction(filteredHeldTransactions[0]?.id)} className="relative">
-              OK <KeybindHint>Enter</KeybindHint>
-            </Button>
-            <Button variant="pos" onClick={() => setIsRecallDialogOpen(false)} className="relative">
-              Batal <KeybindHint>Esc</KeybindHint>
+            <Button variant="outline" onClick={() => setIsRecallDialogOpen(false)}>Batal</Button>
+            <Button onClick={() => filteredHeldTransactions.length > 0 && recallTransaction(filteredHeldTransactions[0]?.id)} disabled={filteredHeldTransactions.length === 0}>
+                Panggil Pilihan
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -769,7 +781,7 @@ export default function POSPage() {
 
       <Dialog open={isSearchDialogOpen} onOpenChange={(open) => { if (!open) { setIsSearchDialogOpen(false); setProductSearch(''); setSelectedProduct(null); searchInputRef.current?.focus(); if (searchInputRef.current) searchInputRef.current.value = ''; } else { setIsSearchDialogOpen(true) }}}>
         <DialogContent
-          className="bg-zinc-200 border-zinc-400 text-black max-w-2xl"
+            className="max-w-2xl"
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
@@ -777,57 +789,49 @@ export default function POSPage() {
             }
           }}
         >
-            <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
-                <DialogTitle className="text-white">CARI BARANG</DialogTitle>
+            <DialogHeader>
+                <DialogTitle>Cari Produk</DialogTitle>
+                <DialogDescription>Cari dan pilih produk untuk ditambahkan ke transaksi.</DialogDescription>
             </DialogHeader>
-            <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                    <Label htmlFor="product-search" className="font-bold">Cari</Label>
-                    <Input
-                        id="product-search"
-                        type="text"
-                        value={productSearch}
-                        onChange={(e) => setProductSearch(e.target.value)}
-                        className="h-8 border-2 border-yellow-400 bg-yellow-200 text-black focus:ring-yellow-500"
-                    />
-                </div>
-                <div className="border-2 border-zinc-400 h-80 overflow-y-auto bg-white">
+            <div className="space-y-4">
+                <Input
+                    id="product-search-dialog"
+                    type="text"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    placeholder="Ketik nama atau SKU produk..."
+                />
+                <ScrollArea className="h-80 border rounded-md">
                     <Table>
-                        <TableHeader className="bg-zinc-700 sticky top-0">
+                        <TableHeader>
                             <TableRow>
-                                <TableHead className="text-white">Nama Barang</TableHead>
-                                <TableHead className="text-right text-white">Stok</TableHead>
-                                <TableHead className="text-white">Satuan</TableHead>
-                                <TableHead className="text-right text-white">Harga</TableHead>
+                                <TableHead>Nama Barang</TableHead>
+                                <TableHead className="text-right">Stok</TableHead>
+                                <TableHead>Satuan</TableHead>
+                                <TableHead className="text-right">Harga</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {filteredProducts.map((p) => (
-                                <TableRow key={p.id} onClick={() => setSelectedProduct(p)} onDoubleClick={handleProductSelectAndClose} className={`cursor-pointer ${selectedProduct?.id === p.id ? 'bg-yellow-200' : 'hover:bg-yellow-100'}`}>
-                                    <TableCell>{p.name}</TableCell>
+                                <TableRow key={p.id} onClick={() => setSelectedProduct(p)} onDoubleClick={handleProductSelectAndClose} className={`cursor-pointer ${selectedProduct?.id === p.id ? 'bg-accent/20' : 'hover:bg-muted'}`}>
+                                    <TableCell className="font-medium">{p.name}</TableCell>
                                     <TableCell className="text-right">{p.stock.main}</TableCell> {/* Assuming main branch for now */}
                                     <TableCell>{p.unit}</TableCell>
-                                    <TableCell className="text-right">{p.price.toLocaleString('id-ID')}</TableCell>
+                                    <TableCell className="text-right">Rp{p.price.toLocaleString('id-ID')}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
                     {filteredProducts.length === 0 && (
-                        <div className="flex items-center justify-center h-full text-zinc-400">
-                            Barang tidak ditemukan
+                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                            Produk tidak ditemukan
                         </div>
                     )}
-                </div>
+                </ScrollArea>
             </div>
             <DialogFooter className="mt-2">
-                <Button variant="pos" onClick={handleProductSelectAndClose} className="relative">
-                    OK
-                    <KeybindHint>Enter</KeybindHint>
-                </Button>
-                <Button variant="pos" onClick={() => setIsSearchDialogOpen(false)} className="relative">
-                    Batal
-                    <KeybindHint>Esc</KeybindHint>
-                </Button>
+                <Button variant="outline" onClick={() => setIsSearchDialogOpen(false)}>Batal</Button>
+                <Button onClick={handleProductSelectAndClose} disabled={!selectedProduct}>Tambah ke Transaksi</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -986,45 +990,43 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
   return (
     <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-lg p-0" onKeyDown={(e) => e.stopPropagation()}>
-        <DialogHeader className="bg-zinc-700 p-2 px-4 rounded-t-lg">
-          <DialogTitle className="text-white text-sm">PERUBAHAN DETIL STRUK</DialogTitle>
+      <DialogContent onKeyDown={(e) => e.stopPropagation()}>
+        <DialogHeader>
+          <DialogTitle>Ubah Detail Item</DialogTitle>
+           <DialogDescription>{item.name}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
-          <div className="p-4 grid grid-cols-3 gap-x-4 gap-y-2 items-center">
-            <Label className="text-right">Nama Barang</Label>
-            <Input value={item.name} readOnly className="col-span-2 h-8" />
-
-            <Label className="text-right">Kuantitas</Label>
-            <Input type="number" value={quantity} onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)} className="col-span-2 h-8 bg-yellow-200 border-yellow-400" />
-            
-            <Label className="text-right">Harga @</Label>
-            <Input type="number" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} className="col-span-2 h-8" disabled={isPriceLocked} />
-            
-            <Label className="text-right">% | Potongan</Label>
-            <div className="col-span-2 flex items-center gap-2">
-                <Input type="number" value={discountPercent} onChange={handleDiscountPercentChange} className="h-8 w-20" />
-                <Input ref={discountAmountRef} type="number" value={discountAmount} onChange={handleDiscountAmountChange} className="h-8 flex-1" />
-            </div>
-
-            <Label className="text-right">Harga Total</Label>
-            <Input value={calculatedTotal.toLocaleString('id-ID')} readOnly className="col-span-2 h-8" />
+          <div className="grid grid-cols-2 gap-4 py-4">
+              <div className="space-y-2">
+                <Label>Kuantitas</Label>
+                <Input type="number" value={quantity} onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Harga Satuan</Label>
+                <div className="flex items-center gap-2">
+                    <Input type="number" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} disabled={isPriceLocked} />
+                    <Button type="button" variant="outline" size="icon" onClick={handleUnlockPrice} disabled={!isPriceLocked}>
+                        {isPriceLocked ? <Lock className="w-4 h-4"/> : <Unlock className="w-4 h-4"/>}
+                    </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                 <Label>Diskon (%)</Label>
+                 <Input type="number" value={discountPercent} onChange={handleDiscountPercentChange} />
+              </div>
+              <div className="space-y-2">
+                 <Label>Potongan (Rp)</Label>
+                 <Input ref={discountAmountRef} type="number" value={discountAmount} onChange={handleDiscountAmountChange} />
+              </div>
+               <div className="col-span-2 space-y-2">
+                 <Label>Harga Total</Label>
+                 <Input value={`Rp${calculatedTotal.toLocaleString('id-ID')}`} readOnly className="font-semibold text-lg h-12" />
+              </div>
           </div>
 
-          <DialogFooter className="bg-zinc-300 p-2 flex justify-between items-center rounded-b-lg">
-            <Button type="button" variant="pos" className="w-auto px-4 h-10" onClick={handleUnlockPrice} disabled={!isPriceLocked}>
-                {isPriceLocked ? <Lock className="w-5 h-5"/> : <Unlock className="w-5 h-5"/>}
-            </Button>
-            <div className="flex gap-2">
-                <Button type="submit" variant="pos" className="w-auto px-6 h-10 relative">
-                    OK
-                    <KeybindHint>Enter</KeybindHint>
-                </Button>
-                <Button type="button" variant="pos" onClick={onClose} className="w-auto px-6 h-10 relative">
-                    Batal
-                    <KeybindHint>Esc</KeybindHint>
-                </Button>
-            </div>
+          <DialogFooter>
+             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
+             <Button type="submit">Simpan Perubahan</Button>
           </DialogFooter>
         </form>
       </DialogContent>
@@ -1053,7 +1055,7 @@ const KeybindSettingsDialog = ({ isOpen, onClose, keybinds, setKeybinds }: Keybi
   const keybindActions: { id: keyof Keybinds; label: string }[] = [
     { id: 'hold', label: 'Tunda Transaksi' },
     { id: 'recall', label: 'Panggil Transaksi' },
-    { id: 'cashier', label: 'Buka Laci Kasir' },
+    { id: 'cashier', label: 'Buka Menu Kasir' },
     { id: 'clear', label: 'Bersihkan Transaksi' },
     { id: 'edit', label: 'Ubah Item' },
     { id: 'delete', label: 'Hapus Item' },
@@ -1080,20 +1082,21 @@ const KeybindSettingsDialog = ({ isOpen, onClose, keybinds, setKeybinds }: Keybi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-md">
-        <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
-          <DialogTitle className="text-white">Pengaturan Keybind</DialogTitle>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Pengaturan Keybind</DialogTitle>
+          <DialogDescription>Atur tombol pintas untuk mempercepat pekerjaan Anda.</DialogDescription>
         </DialogHeader>
-        <div className="py-4 grid grid-cols-2 gap-x-8 gap-y-3">
+        <div className="py-4 grid grid-cols-2 gap-x-8 gap-y-4">
           {keybindActions.map(({ id, label }) => (
-            <div key={id} className="space-y-1">
+            <div key={id} className="space-y-2">
               <Label htmlFor={`keybind-${id}`}>{label}</Label>
               <Input
                 id={`keybind-${id}`}
                 value={editingKeybinds[id]}
                 onKeyDown={(e) => handleKeydown(e, id)}
-                className="h-8"
                 readOnly
+                placeholder="Tekan tombol..."
               />
             </div>
           ))}
@@ -1102,7 +1105,7 @@ const KeybindSettingsDialog = ({ isOpen, onClose, keybinds, setKeybinds }: Keybi
           <Button variant="outline" onClick={onClose}>
             Batal
           </Button>
-          <Button onClick={handleSave} className="bg-accent hover:bg-accent/90">
+          <Button onClick={handleSave}>
             Simpan
           </Button>
         </DialogFooter>
@@ -1138,11 +1141,11 @@ const AuthorizationDialog = ({ isOpen, onClose, onAuthorize }: AuthorizationDial
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-sm" onKeyDown={(e) => {if(e.key === 'Enter') handleSubmit(e)}}>
-        <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
-          <DialogTitle className="text-white">Otorisasi Diperlukan</DialogTitle>
-          <DialogDescription className="text-zinc-300 pt-1">
-            Masukkan PIN Manager atau Admin untuk mengubah harga.
+      <DialogContent className="max-w-sm" onKeyDown={(e) => {if(e.key === 'Enter') handleSubmit(e)}}>
+        <DialogHeader>
+          <DialogTitle>Otorisasi Diperlukan</DialogTitle>
+          <DialogDescription>
+            Masukkan PIN Manager atau Admin untuk tindakan ini.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -1154,15 +1157,16 @@ const AuthorizationDialog = ({ isOpen, onClose, onAuthorize }: AuthorizationDial
               type="password"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              className="h-10 text-center text-lg border-2 border-yellow-400 bg-yellow-200"
+              className="h-12 text-center text-2xl tracking-[0.5rem]"
               maxLength={4}
+              placeholder="----"
             />
           </div>
           <DialogFooter>
-            <Button type="button" variant="pos" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Batal
             </Button>
-            <Button type="submit" variant="pos" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+            <Button type="submit">
               Otorisasi
             </Button>
           </DialogFooter>
@@ -1197,43 +1201,20 @@ const CashierMenuDialog = ({ isOpen, onClose, onOpenCashDrawerDialog, onOpenShif
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-300 border-zinc-500 text-black max-w-sm p-0 shadow-lg" onKeyDown={(e) => e.stopPropagation()}>
-        <DialogHeader className="bg-zinc-800 p-2 px-4 rounded-t-lg">
-          <DialogTitle className="text-white text-base">Menu Kasir</DialogTitle>
+      <DialogContent className="max-w-sm" onKeyDown={(e) => e.stopPropagation()}>
+        <DialogHeader>
+          <DialogTitle>Menu Kasir</DialogTitle>
+          <DialogDescription>Pilih salah satu tindakan di bawah ini.</DialogDescription>
         </DialogHeader>
-        <div className="p-4 space-y-4">
-            <div className="space-y-1">
-                <Label>&raquo; Memasukkan Uang Awal / Keluar Uang</Label>
-                <div className="flex gap-2">
-                    <Button variant="pos" className="w-full h-9" onClick={() => onOpenCashDrawerDialog('Uang Awal')}>Uang Awal</Button>
-                    <Button variant="pos" className="w-full h-9" onClick={() => onOpenCashDrawerDialog('Uang Keluar')}>Uang Keluar</Button>
-                </div>
-            </div>
-            <div className="space-y-1">
-                <Label>&raquo; Membuka Laci uang</Label>
-                <Button variant="pos" className="w-full h-9">Buka</Button>
-            </div>
-            <div className="space-y-1">
-                <Label>&raquo; Laporan Akhir Shift</Label>
-                <Button variant="pos" className="w-full h-9" onClick={onOpenShiftReportDialog}>Laporan</Button>
-            </div>
-             <div className="space-y-1">
-                <Label>&raquo; Kunci Layar</Label>
-                <Button variant="pos" className="w-full h-9" onClick={onLockScreen}>Kunci</Button>
-            </div>
-            <div className="flex items-center space-x-2 pt-2">
-                <Checkbox id="auto-lock" />
-                <Label htmlFor="auto-lock" className="text-sm font-medium leading-none">
-                    Kunci otomatis jika ditinggal selama
-                </Label>
-                <Input type="number" defaultValue={0} className="w-16 h-8 text-center" />
-                <Label>Menit</Label>
-            </div>
+        <div className="py-4 grid grid-cols-1 gap-3">
+            <Button variant="outline" className="h-12 justify-start gap-3 text-base" onClick={() => onOpenCashDrawerDialog('Uang Awal')}><Coins/> Masukkan Uang Awal</Button>
+            <Button variant="outline" className="h-12 justify-start gap-3 text-base" onClick={() => onOpenCashDrawerDialog('Uang Keluar')}><LogOut/> Keluarkan Uang</Button>
+            <Button variant="outline" className="h-12 justify-start gap-3 text-base" onClick={onOpenShiftReportDialog}><Receipt/> Laporan Akhir Shift</Button>
+            <Button variant="outline" className="h-12 justify-start gap-3 text-base" onClick={onLockScreen}><Lock/> Kunci Layar</Button>
         </div>
-        <DialogFooter className="bg-zinc-200 p-2 rounded-b-lg">
-            <Button variant="pos" onClick={onClose} className="w-auto px-6 h-10 relative">
+        <DialogFooter>
+            <Button variant="secondary" onClick={onClose}>
                 Tutup
-                <KeybindHint>Esc</KeybindHint>
             </Button>
         </DialogFooter>
       </DialogContent>
@@ -1281,10 +1262,10 @@ const CashDrawerDialog = ({ isOpen, onClose, type, onSubmit }: CashDrawerDialogP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-md">
-        <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
-          <DialogTitle className="text-white">{type}</DialogTitle>
-          <DialogDescription className="text-zinc-300 pt-1">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{type}</DialogTitle>
+          <DialogDescription>
             Masukkan nominal dan keterangan untuk transaksi laci kasir.
           </DialogDescription>
         </DialogHeader>
@@ -1298,25 +1279,24 @@ const CashDrawerDialog = ({ isOpen, onClose, type, onSubmit }: CashDrawerDialogP
                 type="number"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="h-10 border-2 border-yellow-400 bg-yellow-200"
                 placeholder="0"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="cash-drawer-description">Keterangan</Label>
+              <Label htmlFor="cash-drawer-description">Keterangan (Opsional)</Label>
               <Textarea
                 id="cash-drawer-description"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Opsional..."
+                placeholder="Contoh: Modal awal untuk shift pagi"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="pos" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Batal
             </Button>
-            <Button type="submit" variant="pos" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+            <Button type="submit">
               Simpan
             </Button>
           </DialogFooter>
@@ -1336,14 +1316,12 @@ type ShiftReportDialogProps = {
   toast: ReturnType<typeof useToast>['toast'];
 };
 
-const ReportRow = ({ label, value }: { label: string; value: number }) => (
-  <div className="flex justify-between items-center">
-    <Label>{label}</Label>
-    <Input
-      readOnly
-      value={value.toLocaleString('id-ID')}
-      className="h-8 w-48 text-right bg-zinc-800 text-white border-zinc-500 font-mono"
-    />
+const ReportRow = ({ label, value, isTotal = false }: { label: string; value: string | number, isTotal?: boolean }) => (
+  <div className="flex justify-between items-center text-sm">
+    <p className={isTotal ? "font-semibold" : "text-muted-foreground"}>{label}</p>
+    <p className={`font-mono ${isTotal ? "font-semibold" : ""}`}>
+        {typeof value === 'number' ? `Rp${value.toLocaleString('id-ID')}` : value}
+    </p>
   </div>
 );
 
@@ -1494,7 +1472,7 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole, cashierName, toas
         event.preventDefault();
         onClose();
       }
-       if (event.key.toLowerCase() === 'p') { // Keybind for Print (Cetak)
+       if (event.key.toLowerCase() === 'p' && !event.ctrlKey && !event.metaKey) { // Keybind for Print (Cetak)
         event.preventDefault();
         handlePrintShiftReport();
       }
@@ -1506,20 +1484,21 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole, cashierName, toas
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-700 border-zinc-500 text-white max-w-md p-0" onKeyDown={(e) => e.stopPropagation()}>
-        <DialogHeader className="bg-zinc-800 p-2 px-4 rounded-t-lg">
-          <DialogTitle className="text-white text-base">
-            LAPORAN KASIR [{currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1)}]
-          </DialogTitle>
+      <DialogContent onKeyDown={(e) => e.stopPropagation()}>
+        <DialogHeader>
+          <DialogTitle>Laporan Akhir Shift</DialogTitle>
+          <DialogDescription>
+            Rekapitulasi penjualan dan kas untuk sesi ini oleh {cashierName}.
+          </DialogDescription>
         </DialogHeader>
-        <div className="p-4 space-y-4">
+        <div className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">&raquo; Total Belanjaan</Label>
-            <ReportRow label="Total" value={reportData.totalSales} />
+            <h3 className="font-semibold">Total Penjualan</h3>
+            <ReportRow label="Total" value={reportData.totalSales} isTotal/>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">&raquo; Rincian Pembayaran</Label>
+            <h3 className="font-semibold">Rincian Pembayaran</h3>
             <ReportRow label="Tunai" value={reportData.cashPayment} />
             <ReportRow label="Kartu Debit" value={reportData.debitCard} />
             <ReportRow label="Kartu Kredit" value={reportData.creditCard} />
@@ -1527,22 +1506,20 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole, cashierName, toas
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">&raquo; Uang Tunai dalam Laci</Label>
-            <ReportRow label="Uang Awal" value={reportData.initialCash} />
-            <ReportRow label="Pembayaran Tunai" value={reportData.cashPayment} />
-            <ReportRow label="Tarik Uang" value={reportData.cashWithdrawal} />
-            <ReportRow label="Total" value={totalInDrawer} />
+            <h3 className="font-semibold">Uang Tunai dalam Laci</h3>
+            <ReportRow label="(+) Uang Awal" value={reportData.initialCash} />
+            <ReportRow label="(+) Pembayaran Tunai" value={reportData.cashPayment} />
+            <ReportRow label="(-) Tarik Uang" value={-reportData.cashWithdrawal} />
+            <ReportRow label="Total" value={totalInDrawer} isTotal/>
           </div>
         </div>
 
-        <DialogFooter className="bg-zinc-800 p-2 gap-2 justify-end rounded-b-lg">
-          <Button variant="pos" className="w-auto px-6 h-10 relative" onClick={handlePrintShiftReport}>
-            Cetak
-            <KeybindHint>P</KeybindHint>
-          </Button>
-          <Button variant="pos" onClick={onClose} className="w-auto px-6 h-10 relative">
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
             Tutup
-            <KeybindHint>Esc</KeybindHint>
+          </Button>
+          <Button onClick={handlePrintShiftReport}>
+            <Printer className="mr-2 h-4 w-4" /> Cetak Laporan (P)
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1586,7 +1563,7 @@ const PosLockScreen = ({ onUnlock }: { onUnlock: () => void }) => {
               maxLength={4}
             />
             {error && <p className="text-red-500 text-sm mt-2 text-center">{error}</p>}
-            <Button type="submit" className="w-full mt-4 h-12 text-lg bg-yellow-400 text-black hover:bg-yellow-500">
+            <Button type="submit" className="w-full mt-4 h-12 text-lg">
                 Buka Kunci
             </Button>
         </form>
@@ -1610,20 +1587,23 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
   const amountInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const quickCashOptions = [50000, 100000, 150000, 200000];
+
   useEffect(() => {
     if (isOpen) {
       // Reset state on open
       setPaymentMethod('Tunai');
-      setAmountPaid('');
+      setAmountPaid(String(totalAmount));
       setChange(0);
       // Focus the input if payment method is cash
       setTimeout(() => {
         if (paymentMethod === 'Tunai') {
           amountInputRef.current?.focus();
+          amountInputRef.current?.select();
         }
       }, 100);
     }
-  }, [isOpen]);
+  }, [isOpen, totalAmount]);
 
   useEffect(() => {
     if (paymentMethod === 'Tunai') {
@@ -1639,7 +1619,7 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
   useEffect(() => {
     if(isOpen && paymentMethod === 'Tunai') {
         amountInputRef.current?.focus();
-        setAmountPaid('');
+        amountInputRef.current?.select();
     }
   }, [paymentMethod, isOpen]);
 
@@ -1659,86 +1639,102 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-2xl p-0" onKeyDown={(e) => {
-        if (e.key === 'Enter') {
+      <DialogContent className="max-w-4xl" onKeyDown={(e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
           handleFinishTransaction();
         }
       }}>
-        <DialogHeader className="bg-zinc-700 p-3 px-6 rounded-t-lg">
-          <DialogTitle className="text-white text-lg">Pembayaran</DialogTitle>
+        <DialogHeader>
+          <DialogTitle className="text-2xl">Pembayaran</DialogTitle>
+           <DialogDescription>Selesaikan transaksi dengan memilih metode pembayaran.</DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-6 p-6">
-          {/* Left Side: Payment Details */}
-          <div className="space-y-4">
-            <div>
-              <Label className="text-base font-bold">Total Belanja</Label>
-              <div className="text-5xl font-mono font-bold text-red-600 mt-1">
-                {totalAmount.toLocaleString('id-ID')}
-              </div>
-            </div>
-
-            <div className={paymentMethod === 'Tunai' ? 'space-y-2' : 'space-y-2 opacity-50'}>
-              <Label htmlFor="amount-paid" className="font-bold">Jumlah Bayar</Label>
-              <Input
-                ref={amountInputRef}
-                id="amount-paid"
-                type="number"
-                value={amountPaid}
-                onChange={(e) => setAmountPaid(e.target.value)}
-                disabled={paymentMethod !== 'Tunai'}
-                className="h-12 text-2xl font-mono border-2 border-yellow-400 bg-yellow-200"
-                placeholder="0"
-              />
-            </div>
-
-             <div className={paymentMethod === 'Tunai' ? 'space-y-2' : 'space-y-2 opacity-50'}>
-              <Label className="font-bold">Kembali</Label>
-              <div className="text-4xl font-mono font-bold text-blue-600">
-                {change > 0 ? change.toLocaleString('id-ID') : '0'}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Side: Payment Method Selection */}
-          <div className="space-y-4">
-            <Label className="text-base font-bold">Metode Pembayaran</Label>
+        <div className="grid grid-cols-2 gap-8 py-4">
+          
+          <div className="space-y-6">
              <RadioGroup
               value={paymentMethod}
               onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
               className="grid grid-cols-2 gap-4"
             >
-              <Label htmlFor="pay-tunai" className={`flex flex-col items-center justify-center p-4 border-2 rounded-md cursor-pointer hover:bg-zinc-300 ${paymentMethod === 'Tunai' ? 'border-blue-500 bg-blue-100' : 'border-zinc-300'}`}>
-                <RadioGroupItem value="Tunai" id="pay-tunai" className="sr-only"/>
-                <HardDrive className="w-8 h-8 mb-2" />
-                <span>Tunai</span>
-              </Label>
-              <Label htmlFor="pay-debit" className={`flex flex-col items-center justify-center p-4 border-2 rounded-md cursor-pointer hover:bg-zinc-300 ${paymentMethod === 'Kartu Debit' ? 'border-blue-500 bg-blue-100' : 'border-zinc-300'}`}>
-                <RadioGroupItem value="Kartu Debit" id="pay-debit" className="sr-only" />
-                <HardDrive className="w-8 h-8 mb-2" />
-                <span>Kartu Debit</span>
-              </Label>
-              <Label htmlFor="pay-kredit" className={`flex flex-col items-center justify-center p-4 border-2 rounded-md cursor-pointer hover:bg-zinc-300 ${paymentMethod === 'Kartu Kredit' ? 'border-blue-500 bg-blue-100' : 'border-zinc-300'}`}>
-                <RadioGroupItem value="Kartu Kredit" id="pay-kredit" className="sr-only" />
-                <HardDrive className="w-8 h-8 mb-2" />
-                <span>Kartu Kredit</span>
-              </Label>
-              <Label htmlFor="pay-qris" className={`flex flex-col items-center justify-center p-4 border-2 rounded-md cursor-pointer hover:bg-zinc-300 ${paymentMethod === 'QRIS' ? 'border-blue-500 bg-blue-100' : 'border-zinc-300'}`}>
-                 <RadioGroupItem value="QRIS" id="pay-qris" className="sr-only"/>
-                <QrCode className="w-8 h-8 mb-2" />
-                <span>QRIS</span>
-              </Label>
+                <Label htmlFor="pay-tunai" className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-muted ${paymentMethod === 'Tunai' ? 'border-primary ring-2 ring-primary' : ''}`}>
+                    <RadioGroupItem value="Tunai" id="pay-tunai" className="sr-only"/>
+                    <Coins className="w-8 h-8 mb-2" />
+                    <span className="font-semibold">Tunai</span>
+                </Label>
+                <Label htmlFor="pay-debit" className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-muted ${paymentMethod === 'Kartu Debit' ? 'border-primary ring-2 ring-primary' : ''}`}>
+                    <RadioGroupItem value="Kartu Debit" id="pay-debit" className="sr-only" />
+                    <HardDrive className="w-8 h-8 mb-2" />
+                    <span className="font-semibold">Kartu Debit</span>
+                </Label>
+                <Label htmlFor="pay-kredit" className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-muted ${paymentMethod === 'Kartu Kredit' ? 'border-primary ring-2 ring-primary' : ''}`}>
+                    <RadioGroupItem value="Kartu Kredit" id="pay-kredit" className="sr-only" />
+                    <HardDrive className="w-8 h-8 mb-2" />
+                    <span className="font-semibold">Kartu Kredit</span>
+                </Label>
+                <Label htmlFor="pay-qris" className={`flex flex-col items-center justify-center p-4 border rounded-lg cursor-pointer hover:bg-muted ${paymentMethod === 'QRIS' ? 'border-primary ring-2 ring-primary' : ''}`}>
+                    <RadioGroupItem value="QRIS" id="pay-qris" className="sr-only"/>
+                    <QrCode className="w-8 h-8 mb-2" />
+                    <span className="font-semibold">QRIS</span>
+                </Label>
             </RadioGroup>
+            
+            {paymentMethod === 'Tunai' && (
+                <div className="space-y-2">
+                    <Label>Uang Cepat</Label>
+                    <div className="flex gap-2">
+                        {quickCashOptions.map(val => (
+                            <Button key={val} variant="outline" onClick={() => setAmountPaid(String(val))}>
+                                {val.toLocaleString('id-ID')}
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-4 border rounded-lg">
+              <Label className="text-sm text-muted-foreground">Total Belanja</Label>
+              <div className="text-4xl font-bold tracking-tight">
+                Rp{totalAmount.toLocaleString('id-ID')}
+              </div>
+            </div>
+
+            <div className={paymentMethod !== 'Tunai' ? "opacity-50" : ""}>
+                <Label htmlFor="amount-paid">Jumlah Bayar</Label>
+                <Input
+                    ref={amountInputRef}
+                    id="amount-paid"
+                    type="number"
+                    value={amountPaid}
+                    onChange={(e) => setAmountPaid(e.target.value)}
+                    disabled={paymentMethod !== 'Tunai'}
+                    className="h-14 text-2xl font-mono"
+                    placeholder="0"
+                />
+            </div>
+
+             <div className={`p-4 border rounded-lg ${paymentMethod !== 'Tunai' ? "opacity-50" : ""}`}>
+                <Label className="text-sm text-muted-foreground">Kembali</Label>
+                <div className="text-4xl font-bold tracking-tight text-primary">
+                    Rp{change > 0 ? change.toLocaleString('id-ID') : '0'}
+                </div>
+            </div>
           </div>
         </div>
 
-        <DialogFooter className="bg-zinc-300 p-2 flex justify-end rounded-b-lg">
-          <Button variant="pos" onClick={onClose} className="w-auto px-6 h-10">Batal</Button>
-          <Button onClick={handleFinishTransaction} className="bg-green-600 hover:bg-green-700 text-white w-auto px-6 h-10 font-bold">
-            Selesaikan Transaksi & Cetak
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} className="w-32 h-12">Batal</Button>
+          <Button onClick={handleFinishTransaction} className="w-auto h-12 px-8 text-base bg-accent hover:bg-accent/90">
+            <Printer className="mr-2 h-5 w-5"/> Selesaikan & Cetak (Enter)
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 };
+    
+    
+
+    
