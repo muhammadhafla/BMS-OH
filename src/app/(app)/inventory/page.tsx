@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -18,10 +17,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, FileUp, ImageUp } from 'lucide-react';
-import { useEffect, useState, useRef } from 'react';
+import { PlusCircle, FileUp, ImageUp, Edit } from 'lucide-react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import type { Product } from '@/lib/types';
-import { addProduct, importProductsFromCSV } from '@/lib/services/product';
+import { addProduct, importProductsFromCSV, updateProduct } from '@/lib/services/product';
 import {
   Dialog,
   DialogContent,
@@ -62,7 +61,7 @@ const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
                 name,
                 sku,
                 price: parseFloat(price) || 0,
-                stock: { main: parseInt(stock, 10) || 0 }, // Anggap 'main' adalah cabang default
+                stock: { main: parseInt(stock, 10) || 0 },
                 unit,
             };
             const newProduct = await addProduct(newProductData);
@@ -136,6 +135,101 @@ const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => vo
         </Dialog>
     );
 };
+
+const EditItemDialog = ({ isOpen, onClose, product }: { isOpen: boolean, onClose: () => void, product: Product | null }) => {
+    const [name, setName] = useState('');
+    const [sku, setSku] = useState('');
+    const [price, setPrice] = useState('');
+    const [stock, setStock] = useState('');
+    const [unit, setUnit] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (product) {
+            setName(product.name);
+            setSku(product.sku);
+            setPrice(String(product.price));
+            setStock(String(product.stock['main'] || 0));
+            setUnit(product.unit);
+        }
+    }, [product, isOpen]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!product) return;
+
+        setIsSubmitting(true);
+        try {
+            const updatedData: Partial<Product> = {
+                name,
+                sku,
+                price: parseFloat(price) || 0,
+                stock: { ...product.stock, main: parseInt(stock, 10) || 0 },
+                unit,
+            };
+            await updateProduct(product.id!, updatedData);
+            toast({
+                title: "Produk Diperbarui",
+                description: `${name} telah berhasil diperbarui.`,
+            });
+            onClose();
+        } catch (error) {
+            console.error("Gagal memperbarui produk:", error);
+            toast({
+                variant: "destructive",
+                title: "Gagal Memperbarui Produk",
+                description: "Terjadi kesalahan saat menyimpan perubahan.",
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Edit Item</DialogTitle>
+                    <DialogDescription>
+                        Perbarui detail produk di bawah ini.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-name" className="text-right">Nama</Label>
+                            <Input id="edit-name" value={name} onChange={e => setName(e.target.value)} className="col-span-3" required />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-sku" className="text-right">SKU</Label>
+                            <Input id="edit-sku" value={sku} onChange={e => setSku(e.target.value)} className="col-span-3" required />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-price" className="text-right">Harga</Label>
+                            <Input id="edit-price" type="number" value={price} onChange={e => setPrice(e.target.value)} className="col-span-3" required />
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-stock" className="text-right">Stok</Label>
+                            <Input id="edit-stock" type="number" value={stock} onChange={e => setStock(e.target.value)} className="col-span-3" required />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="edit-unit" className="text-right">Satuan</Label>
+                            <Input id="edit-unit" value={unit} onChange={e => setUnit(e.target.value)} className="col-span-3" placeholder="cth: pcs, kg, box" required />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Batal</Button>
+                        <Button type="submit" className="bg-accent hover:bg-accent/90" disabled={isSubmitting}>
+                            {isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 const databaseColumns = [
     { value: 'name', label: 'Nama Produk' },
@@ -358,6 +452,12 @@ export default function InventoryPage() {
   const [csvPreview, setCsvPreview] = useState<any[]>([]);
   const [csvFileContent, setCsvFileContent] = useState('');
 
+  // State for search
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // State for editing
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -372,12 +472,16 @@ export default function InventoryPage() {
       setLoading(false);
     }, (error) => {
       console.error('Gagal berlangganan pembaruan inventaris:', error);
+      toast({
+        variant: "destructive",
+        title: "Gagal Memuat Data",
+        description: "Tidak dapat mengambil data inventaris. Coba muat ulang halaman."
+      });
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -396,7 +500,7 @@ export default function InventoryPage() {
 
         Papa.parse(content, {
             header: true,
-            preview: 5, // Only parse first 5 rows for preview
+            preview: 5,
             complete: (results) => {
                 if (results.meta.fields) {
                     setCsvHeaders(results.meta.fields);
@@ -414,15 +518,29 @@ export default function InventoryPage() {
     };
     reader.readAsText(file);
 
-    // Reset file input value to allow re-uploading the same file
     if (event.target) {
         event.target.value = '';
     }
   };
 
+  const handleEditClick = (product: Product) => {
+    setEditingProduct(product);
+    setIsEditDialogOpen(true);
+  };
+
+  const filteredItems = useMemo(() => {
+    if (!searchQuery) {
+      return inventoryItems;
+    }
+    return inventoryItems.filter(item => 
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.sku.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [inventoryItems, searchQuery]);
+
   const getStatus = (stock: number) => {
     if (stock === 0) return 'Stok Habis';
-    if (stock <= 10) return 'Stok Rendah'; // Anggap 10 adalah ambang batas stok rendah
+    if (stock <= 10) return 'Stok Rendah';
     return 'Tersedia';
   };
 
@@ -475,10 +593,21 @@ export default function InventoryPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Produk</CardTitle>
-          <CardDescription>
-            Daftar semua produk dalam inventaris Anda.
-          </CardDescription>
+          <div className="flex justify-between items-center">
+            <div>
+              <CardTitle>Produk</CardTitle>
+              <CardDescription>
+                Daftar semua produk dalam inventaris Anda.
+              </CardDescription>
+            </div>
+            <div className="w-full max-w-sm">
+              <Input 
+                placeholder="Cari berdasarkan nama atau SKU..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -489,18 +618,18 @@ export default function InventoryPage() {
                 <TableHead>Status</TableHead>
                 <TableHead>Stok</TableHead>
                 <TableHead className="text-right">Harga</TableHead>
+                <TableHead className="text-right">Tindakan</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center h-24">
+                  <TableCell colSpan={6} className="text-center h-24">
                     Memuat inventaris...
                   </TableCell>
                 </TableRow>
-              ) : inventoryItems.length > 0 ? (
-                inventoryItems.map((item) => {
-                  // Anggap kita menampilkan stok dari cabang 'main' untuk saat ini
+              ) : filteredItems.length > 0 ? (
+                filteredItems.map((item) => {
                   const stock = item.stock['main'] || 0;
                   const status = getStatus(stock);
                   return (
@@ -521,13 +650,18 @@ export default function InventoryPage() {
                       <TableCell className="text-right">
                         Rp{item.price.toLocaleString('id-ID')}
                       </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="icon" onClick={() => handleEditClick(item)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })
               ) : (
                  <TableRow>
-                  <TableCell colSpan={5} className="text-center h-24">
-                    Tidak ada produk ditemukan. Tambah item baru untuk memulai.
+                  <TableCell colSpan={6} className="text-center h-24">
+                    {searchQuery ? 'Produk tidak ditemukan.' : 'Tidak ada produk. Tambah item baru untuk memulai.'}
                   </TableCell>
                 </TableRow>
               )}
@@ -538,6 +672,14 @@ export default function InventoryPage() {
       <AddItemDialog 
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
+      />
+      <EditItemDialog
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setEditingProduct(null);
+        }}
+        product={editingProduct}
       />
       <ImportMappingDialog
         isOpen={isImportMappingDialogOpen}

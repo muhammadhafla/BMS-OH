@@ -1,4 +1,3 @@
-// src/lib/services/product.ts
 'use server';
 
 import { firestore } from '@/lib/firebase-admin';
@@ -65,6 +64,22 @@ export async function addProduct(productData: Omit<Product, 'id'>): Promise<Prod
     throw new Error('Gagal menambahkan produk baru ke server.');
   }
 }
+
+/**
+ * Memperbarui produk yang ada di Firestore.
+ * @param {string} id - ID produk yang akan diperbarui.
+ * @param {Partial<Product>} productData - Data produk yang akan diubah.
+ * @returns {Promise<void>}
+ */
+export async function updateProduct(id: string, productData: Partial<Product>): Promise<void> {
+  try {
+    await productsCollection.doc(id).update(productData);
+  } catch (error) {
+    console.error(`Error updating product (${id}):`, error);
+    throw new Error('Gagal memperbarui produk di server.');
+  }
+}
+
 
 type ColumnMapping = Record<string, keyof Omit<Product, 'id'> | 'ignore'>;
 
