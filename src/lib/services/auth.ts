@@ -1,32 +1,27 @@
-// src/lib/services/auth.ts
 'use server';
 
 import { auth as adminAuth } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
-import { getAuth } from 'firebase-admin/auth';
 import { redirect } from 'next/navigation';
 
-const sessionCookieName = '__session';
+const SESSION_COOKIE_NAME = '__session';
 
 export async function signIn(
   email: string,
   password: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    // This is a simplified sign-in process for a simulated environment.
-    // In a real-world application, you would use the Firebase client SDK
-    // to sign in the user, get an ID token, and then post it to the server
-    // to create a session cookie. The Admin SDK cannot verify passwords directly.
-
-    // 1. Verify if the user exists.
+    // THIS IS INSECURE FOR PRODUCTION.
+    // In a real app, you would use the client SDK to sign in, get an ID token,
+    // and post it to an API route to create a session cookie.
+    // The Admin SDK cannot verify passwords directly.
     const userRecord = await adminAuth.getUserByEmail(email);
 
-    // 2. Since we cannot verify passwords on the server, we will just create a session cookie if the user exists.
-    // THIS IS INSECURE FOR PRODUCTION but necessary for this simulated environment.
+    // If user exists, create a session cookie.
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await adminAuth.createSessionCookie(userRecord.uid, { expiresIn });
 
-    cookies().set(sessionCookieName, sessionCookie, {
+    cookies().set(SESSION_COOKIE_NAME, sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -36,7 +31,6 @@ export async function signIn(
   } catch (error: any) {
     let errorMessage = 'An unexpected error occurred.';
     
-    // Firebase Authentication errors have a 'code' property.
     if (error.code) {
       switch (error.code) {
         case 'auth/user-not-found':
@@ -59,19 +53,23 @@ export async function signIn(
 }
 
 export async function signOut() {
-  cookies().delete(sessionCookieName);
+  cookies().delete(SESSION_COOKIE_NAME);
   redirect('/');
 }
 
 export async function getCurrentUser() {
-  const sessionCookie = cookies().get(sessionCookieName)?.value;
+  const sessionCookie = cookies().get(SESSION_COOKIE_NAME)?.value;
   if (!sessionCookie) {
     return null;
   }
   try {
-    const decodedIdToken = await getAuth().verifySessionCookie(sessionCookie, true);
+    // Verify the session cookie. In this case an additional check is added to detect
+    // if the user's Firebase session was revoked, user deleted/disabled, etc.
+    const decodedIdToken = await adminAuth.verifySessionCookie(sessionCookie, true);
     return decodedIdToken;
   } catch (error) {
+    console.log('Error verifying session cookie:', error);
+    // Session cookie is invalid. Force user to login again.
     return null;
   }
 }
