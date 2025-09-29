@@ -47,6 +47,7 @@ const prompt = ai.definePrompt({
   name: 'extractReceiptItemsPrompt',
   input: {schema: ExtractReceiptItemsInputSchema},
   output: {schema: ExtractReceiptItemsOutputSchema},
+  model: 'googleai/gemini-pro-vision',
   prompt: `You are an intelligent data entry assistant for an inventory management system. Your task is to extract all line items from the provided receipt image.
 
 Analyze the receipt image: {{media url=receiptImage}}
