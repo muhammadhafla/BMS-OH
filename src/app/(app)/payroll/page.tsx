@@ -1,13 +1,14 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,8 +19,20 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, Send, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
+import { Calculator, Send, Calendar as CalendarIcon, Loader2, Landmark, Wallet, PlusCircle } from 'lucide-react';
 import { DateRange } from "react-day-picker"
 import { addDays, format } from "date-fns"
 import { id as indonesiaLocale } from "date-fns/locale";
@@ -29,27 +42,27 @@ import { cn } from "@/lib/utils";
 import { useToast } from '@/hooks/use-toast';
 
 
-type PayrollStatus = 'Belum Dibayar' | 'Dibayar';
+type PayrollStatus = 'Belum Dibayar' | 'Dibayar Sebagian' | 'Lunas';
+type PaymentMethod = 'Tunai' | 'Transfer Bank';
 
 interface PayrollEntry {
   employeeId: string;
   employeeName: string;
-  baseSalary: number; // Gaji pokok atau total gaji dari jam kerja
-  allowances: number; // Tunjangan
-  deductions: number; // Potongan
-  netSalary: number; // Gaji bersih
+  baseSalary: number;
+  allowances: number;
+  deductions: number; // Termasuk uang muka
+  netSalary: number;
+  paidAmount: number;
   status: PayrollStatus;
 }
 
-const initialPayrollData: PayrollEntry[] = [
+const initialPayrollData: Omit<PayrollEntry, 'paidAmount' | 'status' | 'netSalary'>[] = [
   {
     employeeId: '1',
     employeeName: 'Pengguna Admin',
     baseSalary: 10000000,
     allowances: 500000,
     deductions: 250000,
-    netSalary: 10250000,
-    status: 'Belum Dibayar',
   },
   {
     employeeId: '2',
@@ -57,20 +70,198 @@ const initialPayrollData: PayrollEntry[] = [
     baseSalary: 7500000,
     allowances: 250000,
     deductions: 100000,
-    netSalary: 7650000,
-    status: 'Belum Dibayar',
   },
   {
     employeeId: '3',
     employeeName: 'Pengguna Staf (Asumsi 160 jam)',
-    baseSalary: 50000 * 160, // 50,000/jam * 160 jam
+    baseSalary: 50000 * 160,
     allowances: 0,
     deductions: 50000,
-    netSalary: (50000 * 160) - 50000,
-    status: 'Belum Dibayar',
+  },
+   {
+    employeeId: '4',
+    employeeName: 'Karyawan Baru',
+    baseSalary: 4000000,
+    allowances: 0,
+    deductions: 1000000, // Ambil uang muka
   },
 ];
 
+const getStatus = (netSalary: number, paidAmount: number): PayrollStatus => {
+    if (paidAmount <= 0) return 'Belum Dibayar';
+    if (paidAmount >= netSalary) return 'Lunas';
+    return 'Dibayar Sebagian';
+};
+
+const getStatusVariant = (status: PayrollStatus) => {
+    switch (status) {
+        case 'Lunas': return 'default';
+        case 'Dibayar Sebagian': return 'secondary';
+        case 'Belum Dibayar': return 'outline';
+    }
+};
+
+const PaymentDialog = ({ 
+    isOpen, 
+    onClose, 
+    entry, 
+    onConfirm 
+}: { 
+    isOpen: boolean; 
+    onClose: () => void; 
+    entry: PayrollEntry | null; 
+    onConfirm: (employeeId: string, amount: number, method: PaymentMethod, notes: string) => void;
+}) => {
+    const remainingSalary = entry ? entry.netSalary - entry.paidAmount : 0;
+    const [amount, setAmount] = useState(remainingSalary);
+    const [method, setMethod] = useState<PaymentMethod>('Transfer Bank');
+    const [notes, setNotes] = useState('');
+
+    useEffect(() => {
+        if (entry) {
+            const newRemaining = entry.netSalary - entry.paidAmount;
+            setAmount(newRemaining);
+            setMethod('Transfer Bank');
+            setNotes('');
+        }
+    }, [entry]);
+
+    if (!entry) return null;
+
+    const handleSubmit = () => {
+        onConfirm(entry.employeeId, amount, method, notes);
+        onClose();
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Proses Pembayaran Gaji</DialogTitle>
+                    <DialogDescription>
+                        Konfirmasi pembayaran untuk <span className="font-bold">{entry.employeeName}</span>.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                    <div className="p-4 border rounded-lg bg-muted/50">
+                        <div className="flex justify-between text-sm">
+                            <span>Gaji Bersih</span>
+                            <span>Rp{entry.netSalary.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-destructive">
+                            <span>(-) Sudah Dibayar</span>
+                            <span>-Rp{entry.paidAmount.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-lg mt-2 pt-2 border-t">
+                            <span>Sisa Gaji</span>
+                            <span>Rp{(entry.netSalary - entry.paidAmount).toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="payment-amount">Jumlah Pembayaran</Label>
+                        <Input id="payment-amount" type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} />
+                        <p className="text-xs text-muted-foreground">Ubah jumlah untuk pembayaran sebagian.</p>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="payment-method">Metode Pembayaran</Label>
+                        <Select onValueChange={(v) => setMethod(v as PaymentMethod)} defaultValue={method}>
+                            <SelectTrigger id="payment-method">
+                                <SelectValue placeholder="Pilih metode..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Transfer Bank"><Landmark className="inline-block mr-2 h-4 w-4"/>Transfer Bank</SelectItem>
+                                <SelectItem value="Tunai"><Wallet className="inline-block mr-2 h-4 w-4"/>Tunai</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="payment-notes">Catatan (Opsional)</Label>
+                        <Textarea id="payment-notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Contoh: Pembayaran gaji Oktober 2023"/>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose}>Batal</Button>
+                    <Button onClick={handleSubmit} disabled={amount <= 0 || amount > remainingSalary}>
+                        <Send className="mr-2 h-4 w-4"/> Konfirmasi Pembayaran
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
+const AdvancePaymentDialog = ({
+    isOpen,
+    onClose,
+    employees,
+    onConfirm
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    employees: Omit<PayrollEntry, 'paidAmount' | 'status' | 'netSalary'>[];
+    onConfirm: (employeeId: string, amount: number, notes: string) => void;
+}) => {
+    const [employeeId, setEmployeeId] = useState<string>('');
+    const [amount, setAmount] = useState(0);
+    const [notes, setNotes] = useState('');
+    const { toast } = useToast();
+
+    const handleSubmit = () => {
+        if (!employeeId || amount <= 0) {
+            toast({
+                variant: 'destructive',
+                title: 'Input Tidak Lengkap',
+                description: 'Pilih karyawan dan masukkan jumlah yang valid.'
+            });
+            return;
+        }
+        onConfirm(employeeId, amount, notes);
+        setEmployeeId('');
+        setAmount(0);
+        setNotes('');
+        onClose();
+    };
+    
+    return (
+         <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Catat Uang Muka (Advance)</DialogTitle>
+                    <DialogDescription>
+                        Catat pembayaran di muka untuk karyawan. Ini akan menjadi potongan pada siklus gaji berikutnya.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="advance-employee">Karyawan</Label>
+                        <Select onValueChange={setEmployeeId} value={employeeId}>
+                            <SelectTrigger id="advance-employee">
+                                <SelectValue placeholder="Pilih karyawan..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {employees.map(e => <SelectItem key={e.employeeId} value={e.employeeId}>{e.employeeName}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="advance-amount">Jumlah Uang Muka</Label>
+                        <Input id="advance-amount" type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="advance-notes">Catatan</Label>
+                        <Textarea id="advance-notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Contoh: Uang muka untuk keperluan darurat"/>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onClose}>Batal</Button>
+                    <Button onClick={handleSubmit}>
+                       Simpan Catatan
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 export default function PayrollPage() {
     const [date, setDate] = useState<DateRange | undefined>({
@@ -79,6 +270,9 @@ export default function PayrollPage() {
     });
     const [payrollData, setPayrollData] = useState<PayrollEntry[]>([]);
     const [isCalculating, setIsCalculating] = useState(false);
+    const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+    const [isAdvanceDialogOpen, setIsAdvanceDialogOpen] = useState(false);
+    const [selectedEntry, setSelectedEntry] = useState<PayrollEntry | null>(null);
     const { toast } = useToast();
 
     const handleCalculate = () => {
@@ -99,7 +293,17 @@ export default function PayrollPage() {
 
         // Simulasi proses kalkulasi
         setTimeout(() => {
-            setPayrollData(initialPayrollData);
+            const processedData = initialPayrollData.map(entry => {
+                const netSalary = entry.baseSalary + entry.allowances - entry.deductions;
+                const paidAmount = 0;
+                return {
+                    ...entry,
+                    netSalary,
+                    paidAmount,
+                    status: getStatus(netSalary, paidAmount)
+                };
+            });
+            setPayrollData(processedData);
             setIsCalculating(false);
             toast({
                 title: 'Perhitungan Selesai',
@@ -108,11 +312,69 @@ export default function PayrollPage() {
         }, 1500);
     };
     
-    const totalNetSalary = useMemo(() => {
-        return payrollData.reduce((sum, entry) => sum + entry.netSalary, 0);
+    const handlePayClick = (entry: PayrollEntry) => {
+        setSelectedEntry(entry);
+        setIsPaymentDialogOpen(true);
+    };
+    
+    const handleConfirmPayment = (employeeId: string, amount: number, method: PaymentMethod, notes: string) => {
+        setPayrollData(prevData => prevData.map(entry => {
+            if (entry.employeeId === employeeId) {
+                const newPaidAmount = entry.paidAmount + amount;
+                return {
+                    ...entry,
+                    paidAmount: newPaidAmount,
+                    status: getStatus(entry.netSalary, newPaidAmount)
+                };
+            }
+            return entry;
+        }));
+        toast({
+            title: "Pembayaran Berhasil",
+            description: `Pembayaran sebesar Rp${amount.toLocaleString('id-ID')} untuk ${selectedEntry?.employeeName} telah dicatat.`
+        });
+    };
+    
+    const handlePayAll = () => {
+         payrollData.forEach(entry => {
+            if (entry.status !== 'Lunas') {
+                 handleConfirmPayment(entry.employeeId, entry.netSalary - entry.paidAmount, 'Transfer Bank', 'Pembayaran massal');
+            }
+        });
+        toast({
+            title: 'Pembayaran Massal Selesai',
+            description: 'Semua gaji yang belum lunas telah diproses.'
+        });
+    };
+
+    const handleConfirmAdvance = (employeeId: string, amount: number, notes: string) => {
+        // In a real app, you would save this to a database.
+        // For this demo, we'll just show a toast and maybe log it.
+        console.log({
+            message: "Advance payment recorded (simulation)",
+            employeeId,
+            amount,
+            notes,
+            date: new Date().toISOString()
+        });
+        toast({
+            title: "Uang Muka Dicatat",
+            description: `Uang muka sebesar Rp${amount.toLocaleString('id-ID')} untuk karyawan terpilih telah dicatat.`
+        });
+        // This would then be pulled as a deduction in the next handleCalculate call.
+    };
+
+    const totalUnpaidSalary = useMemo(() => {
+        return payrollData.reduce((sum, entry) => {
+             if (entry.status !== 'Lunas') {
+                return sum + (entry.netSalary - entry.paidAmount);
+             }
+             return sum;
+        }, 0);
     }, [payrollData]);
 
   return (
+    <>
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight font-headline">
@@ -168,6 +430,9 @@ export default function PayrollPage() {
                   />
                 </PopoverContent>
               </Popover>
+               <Button variant="outline" onClick={() => setIsAdvanceDialogOpen(true)}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Catat Uang Muka
+                </Button>
               <Button onClick={handleCalculate} disabled={isCalculating} className="bg-accent hover:bg-accent/90">
                 {isCalculating ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -197,12 +462,13 @@ export default function PayrollPage() {
                         <TableHead className="text-right">Potongan</TableHead>
                         <TableHead className="text-right font-bold">Gaji Bersih</TableHead>
                         <TableHead className="text-center">Status</TableHead>
+                        <TableHead className="text-right">Tindakan</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {isCalculating ? (
                          <TableRow>
-                            <TableCell colSpan={6} className="h-48 text-center">
+                            <TableCell colSpan={7} className="h-48 text-center">
                                 <div className="flex justify-center items-center gap-2 text-muted-foreground">
                                    <Loader2 className="h-5 w-5 animate-spin" />
                                    <span>Mengkalkulasi data penggajian...</span>
@@ -218,15 +484,20 @@ export default function PayrollPage() {
                                 <TableCell className="text-right text-destructive">-Rp{entry.deductions.toLocaleString('id-ID')}</TableCell>
                                 <TableCell className="text-right font-bold">Rp{entry.netSalary.toLocaleString('id-ID')}</TableCell>
                                 <TableCell className="text-center">
-                                    <Badge variant={entry.status === 'Dibayar' ? 'default' : 'secondary'} className={entry.status === 'Dibayar' ? 'bg-green-500' : ''}>
+                                    <Badge variant={getStatusVariant(entry.status)} className={entry.status === 'Lunas' ? 'bg-green-500' : ''}>
                                         {entry.status}
                                     </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <Button variant="outline" size="sm" onClick={() => handlePayClick(entry)} disabled={entry.status === 'Lunas'}>
+                                        Bayar
+                                    </Button>
                                 </TableCell>
                             </TableRow>
                         ))
                     ) : (
                          <TableRow>
-                            <TableCell colSpan={6} className="h-48 text-center text-muted-foreground">
+                            <TableCell colSpan={7} className="h-48 text-center text-muted-foreground">
                                 Belum ada data untuk ditampilkan. Pilih periode dan klik "Hitung Gaji".
                             </TableCell>
                         </TableRow>
@@ -235,17 +506,32 @@ export default function PayrollPage() {
             </Table>
         </CardContent>
         {payrollData.length > 0 && (
-            <CardHeader className="pt-0 flex flex-row items-center justify-between border-t mt-4">
+            <CardFooter className="pt-4 flex flex-row items-center justify-between border-t mt-4">
                 <div className="text-lg font-bold">
-                    Total Gaji Bersih: <span className="text-primary">Rp{totalNetSalary.toLocaleString('id-ID')}</span>
+                    Total Gaji Belum Dibayar: <span className="text-primary">Rp{totalUnpaidSalary.toLocaleString('id-ID')}</span>
                 </div>
-                <Button>
+                <Button onClick={handlePayAll} disabled={totalUnpaidSalary <= 0}>
                     <Send className="mr-2 h-4 w-4"/>
-                    Proses Pembayaran
+                    Bayar Semua (Belum Dibayar)
                 </Button>
-            </CardHeader>
+            </CardFooter>
         )}
       </Card>
     </div>
+
+    <PaymentDialog 
+        isOpen={isPaymentDialogOpen}
+        onClose={() => setIsPaymentDialogOpen(false)}
+        entry={selectedEntry}
+        onConfirm={handleConfirmPayment}
+    />
+    <AdvancePaymentDialog 
+        isOpen={isAdvanceDialogOpen}
+        onClose={() => setIsAdvanceDialogOpen(false)}
+        employees={initialPayrollData}
+        onConfirm={handleConfirmAdvance}
+    />
+    </>
   );
 }
+
