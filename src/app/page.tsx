@@ -27,7 +27,11 @@ export default function LoginPage() {
   const handleSignIn = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
+    // Bypass login and redirect to dashboard
+    router.push('/dashboard');
 
+    // Original login logic - commented out for now
+    /*
     try {
       const result = await signIn(email, password);
       if (result.success) {
@@ -48,6 +52,7 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+    */
   };
 
   return (
@@ -94,7 +99,7 @@ export default function LoginPage() {
               className="w-full bg-accent hover:bg-accent/90"
               disabled={loading}
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Redirecting...' : 'Sign In (Bypass)'}
             </Button>
           </CardFooter>
         </form>
