@@ -23,6 +23,7 @@ import { Logo } from './logo';
 import { cn } from '@/lib/utils';
 import { modules } from '@/lib/modules.tsx';
 import React from 'react';
+import { signOut } from '@/lib/services/auth';
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -76,9 +77,11 @@ export function AppSidebar() {
             <p className="text-sm font-semibold text-sidebar-foreground truncate">Admin User</p>
             <p className="text-xs text-muted-foreground truncate">admin@bms.app</p>
           </div>
-          <Button variant="ghost" size="icon" className="group-data-[collapsible=icon]:hidden">
-            <LogOut />
-          </Button>
+          <form action={signOut}>
+            <Button type="submit" variant="ghost" size="icon" className="group-data-[collapsible=icon]:hidden">
+              <LogOut />
+            </Button>
+          </form>
         </div>
       </SidebarFooter>
     </Sidebar>

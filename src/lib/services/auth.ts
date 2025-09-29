@@ -4,6 +4,7 @@
 import { auth as adminAuth } from '@/lib/firebase-admin';
 import { cookies } from 'next/headers';
 import { getAuth } from 'firebase-admin/auth';
+import { redirect } from 'next/navigation';
 
 const sessionCookieName = '__session';
 
@@ -67,6 +68,7 @@ export async function signIn(
 
 export async function signOut() {
   cookies().delete(sessionCookieName);
+  redirect('/');
 }
 
 export async function getCurrentUser() {
