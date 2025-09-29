@@ -459,7 +459,15 @@ export default function POSPage() {
        </div>
        
       <Dialog open={isRecallDialogOpen} onOpenChange={setIsRecallDialogOpen}>
-        <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-md">
+        <DialogContent
+          className="bg-zinc-200 border-zinc-400 text-black max-w-md"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              recallTransaction(filteredHeldTransactions[0]?.id);
+            }
+          }}
+        >
           <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
             <DialogTitle className="text-white">PANGGIL PESANAN</DialogTitle>
           </DialogHeader>
@@ -512,7 +520,15 @@ export default function POSPage() {
       </Dialog>
 
       <Dialog open={isSearchDialogOpen} onOpenChange={(open) => { if (!open) { setIsSearchDialogOpen(false); setProductSearch(''); setSelectedProduct(null); searchInputRef.current?.focus(); if (searchInputRef.current) searchInputRef.current.value = ''; } else { setIsSearchDialogOpen(true) }}}>
-        <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-2xl">
+        <DialogContent
+          className="bg-zinc-200 border-zinc-400 text-black max-w-2xl"
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleProductSelectAndClose();
+            }
+          }}
+        >
             <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
                 <DialogTitle className="text-white">CARI BARANG</DialogTitle>
             </DialogHeader>
