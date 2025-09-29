@@ -52,9 +52,9 @@ interface User {
 }
 
 const initialUsers: User[] = [
-  { id: '1', name: 'Admin User', email: 'admin@bms.app', role: 'admin' },
-  { id: '2', name: 'Manager User', email: 'manager@bms.app', role: 'manager' },
-  { id: '3', name: 'Staff User', email: 'staff@bms.app', role: 'staff' },
+  { id: '1', name: 'Pengguna Admin', email: 'admin@bms.app', role: 'admin' },
+  { id: '2', name: 'Pengguna Manajer', email: 'manager@bms.app', role: 'manager' },
+  { id: '3', name: 'Pengguna Staf', email: 'staff@bms.app', role: 'staff' },
 ];
 
 const initialPermissions: Record<string, UserRole[]> = {
@@ -159,7 +159,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Nama</Label>
-              <Input id="name" defaultValue="Admin User" />
+              <Input id="name" defaultValue="Pengguna Admin" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -252,8 +252,8 @@ export default function SettingsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Modul</TableHead>
-                  <TableHead className="text-center">Manager</TableHead>
-                  <TableHead className="text-center">Staff</TableHead>
+                  <TableHead className="text-center">Manajer</TableHead>
+                  <TableHead className="text-center">Staf</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -381,8 +381,8 @@ export default function SettingsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="manager">Manager</SelectItem>
-                    <SelectItem value="staff">Staff</SelectItem>
+                    <SelectItem value="manager">Manajer</SelectItem>
+                    <SelectItem value="staff">Staf</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

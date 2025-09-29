@@ -36,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { firestore } from '@/lib/firebase-client'; // Import client-side firestore
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore'; // Import firestore functions
 
-const AddItemDialog = ({ isOpen, onClose, onProductAdded }: { isOpen: boolean, onClose: () => void, onProductAdded: (newProduct: Product) => void }) => {
+const AddItemDialog = ({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) => {
     const [name, setName] = useState('');
     const [sku, setSku] = useState('');
     const [price, setPrice] = useState('');
@@ -57,7 +57,6 @@ const AddItemDialog = ({ isOpen, onClose, onProductAdded }: { isOpen: boolean, o
                 unit,
             };
             const newProduct = await addProduct(newProductData);
-            // onProductAdded is no longer needed as onSnapshot will handle the update
             toast({
                 title: "Produk Ditambahkan",
                 description: `${newProduct.name} telah berhasil ditambahkan ke inventaris.`,
@@ -114,7 +113,7 @@ const AddItemDialog = ({ isOpen, onClose, onProductAdded }: { isOpen: boolean, o
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="unit" className="text-right">Satuan</Label>
-                            <Input id="unit" value={unit} onChange={e => setUnit(e.target.value)} className="col-span-3" placeholder="e.g., pcs, kg, box" required />
+                            <Input id="unit" value={unit} onChange={e => setUnit(e.target.value)} className="col-span-3" placeholder="cth: pcs, kg, box" required />
                         </div>
                     </div>
                     <DialogFooter>
@@ -147,7 +146,7 @@ export default function InventoryPage() {
       setInventoryItems(products);
       setLoading(false);
     }, (error) => {
-      console.error('Failed to subscribe to inventory updates:', error);
+      console.error('Gagal berlangganan pembaruan inventaris:', error);
       setLoading(false);
     });
 
@@ -155,25 +154,19 @@ export default function InventoryPage() {
     return () => unsubscribe();
   }, []);
 
-  const handleProductAdded = (newProduct: Product) => {
-    // This function is no longer necessary because onSnapshot handles updates,
-    // but we can keep it for now.
-    // setInventoryItems(prevItems => [...prevItems, newProduct]);
-  };
-
   const getStatus = (stock: number) => {
-    if (stock === 0) return 'Out of Stock';
-    if (stock <= 10) return 'Low Stock'; // Assuming 10 is the threshold for low stock
-    return 'In Stock';
+    if (stock === 0) return 'Stok Habis';
+    if (stock <= 10) return 'Stok Rendah'; // Anggap 10 adalah ambang batas stok rendah
+    return 'Tersedia';
   };
 
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'In Stock':
+      case 'Tersedia':
         return 'secondary';
-      case 'Low Stock':
+      case 'Stok Rendah':
         return 'outline';
-      case 'Out of Stock':
+      case 'Stok Habis':
         return 'destructive';
       default:
         return 'secondary';
@@ -185,56 +178,56 @@ export default function InventoryPage() {
       <header className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight font-headline">
-            Inventory
+            Inventaris
           </h1>
           <p className="text-muted-foreground">
-            Manage your products and stock levels.
+            Kelola produk dan tingkat stok Anda.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline">
             <ImageUp />
-            Scan Receipt (OCR)
+            Pindai Struk (OCR)
           </Button>
           <Button variant="outline">
             <FileUp />
-            Import from CSV
+            Impor dari CSV
           </Button>
           <Button className="bg-accent hover:bg-accent/90" onClick={() => setIsAddDialogOpen(true)}>
             <PlusCircle />
-            Add Item
+            Tambah Item
           </Button>
         </div>
       </header>
 
       <Card>
         <CardHeader>
-          <CardTitle>Products</CardTitle>
+          <CardTitle>Produk</CardTitle>
           <CardDescription>
-            A list of all products in your inventory.
+            Daftar semua produk dalam inventaris Anda.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product Name</TableHead>
+                <TableHead>Nama Produk</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead className="text-right">Price</TableHead>
+                <TableHead>Stok</TableHead>
+                <TableHead className="text-right">Harga</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center h-24">
-                    Loading inventory...
+                    Memuat inventaris...
                   </TableCell>
                 </TableRow>
               ) : inventoryItems.length > 0 ? (
                 inventoryItems.map((item) => {
-                  // Assuming we show stock from a 'main' branch for now
+                  // Anggap kita menampilkan stok dari cabang 'main' untuk saat ini
                   const stock = item.stock['main'] || 0;
                   const status = getStatus(stock);
                   return (
@@ -245,7 +238,7 @@ export default function InventoryPage() {
                         <Badge
                           variant={getStatusVariant(status)}
                           className={
-                            status === 'Low Stock' ? 'text-orange-500 border-orange-500' : ''
+                            status === 'Stok Rendah' ? 'text-orange-500 border-orange-500' : ''
                           }
                         >
                           {status}
@@ -253,7 +246,7 @@ export default function InventoryPage() {
                       </TableCell>
                       <TableCell>{stock}</TableCell>
                       <TableCell className="text-right">
-                        ${item.price.toFixed(2)}
+                        Rp{item.price.toLocaleString('id-ID')}
                       </TableCell>
                     </TableRow>
                   );
@@ -261,7 +254,7 @@ export default function InventoryPage() {
               ) : (
                  <TableRow>
                   <TableCell colSpan={5} className="text-center h-24">
-                    No products found. Add a new item to get started.
+                    Tidak ada produk ditemukan. Tambah item baru untuk memulai.
                   </TableCell>
                 </TableRow>
               )}
@@ -272,7 +265,6 @@ export default function InventoryPage() {
       <AddItemDialog 
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
-        onProductAdded={handleProductAdded}
       />
     </div>
   );

@@ -21,31 +21,31 @@ import { Separator } from '@/components/ui/separator';
 const attendanceHistory = [
   {
     date: '2023-10-26',
-    clockIn: '08:59 AM',
-    clockOut: '05:03 PM',
-    status: 'Present',
-    location: 'Main Office',
+    clockIn: '08:59',
+    clockOut: '17:03',
+    status: 'Hadir',
+    location: 'Kantor Utama',
   },
   {
     date: '2023-10-25',
-    clockIn: '09:05 AM',
-    clockOut: '05:00 PM',
-    status: 'Present',
-    location: 'Main Office',
+    clockIn: '09:05',
+    clockOut: '17:00',
+    status: 'Hadir',
+    location: 'Kantor Utama',
   },
   {
     date: '2023-10-24',
     clockIn: 'N/A',
     clockOut: 'N/A',
-    status: 'Absent',
+    status: 'Absen',
     location: 'N/A',
   },
   {
     date: '2023-10-23',
-    clockIn: '09:00 AM',
-    clockOut: '03:30 PM',
-    status: 'Half Day',
-    location: 'Main Office',
+    clockIn: '09:00',
+    clockOut: '15:30',
+    status: 'Setengah Hari',
+    location: 'Kantor Utama',
   },
 ];
 
@@ -56,10 +56,10 @@ export default function AttendancePage() {
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight font-headline">
-          Attendance
+          Absensi
         </h1>
         <p className="text-muted-foreground">
-          Track your work hours and location.
+          Catat jam kerja dan lokasi Anda.
         </p>
       </header>
 
@@ -67,9 +67,9 @@ export default function AttendancePage() {
         <div className="md:col-span-1">
           <Card className="sticky top-20">
             <CardHeader>
-              <CardTitle>Time Clock</CardTitle>
+              <CardTitle>Mesin Waktu</CardTitle>
               <CardDescription>
-                {isClockedIn ? 'Clock out to end your shift.' : 'Clock in to start your shift.'}
+                {isClockedIn ? 'Lakukan clock out untuk mengakhiri shift.' : 'Lakukan clock in untuk memulai shift.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
@@ -79,7 +79,7 @@ export default function AttendancePage() {
               <p className="mt-4 text-sm text-muted-foreground flex items-center justify-center gap-2">
                 <Camera className="size-4" />
                 <MapPin className="size-4" />
-                <span>Selfie & GPS will be captured.</span>
+                <span>Selfie & GPS akan direkam.</span>
               </p>
             </CardContent>
           </Card>
@@ -88,18 +88,18 @@ export default function AttendancePage() {
         <div className="md:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Attendance History</CardTitle>
-              <CardDescription>Your recent attendance log.</CardDescription>
+              <CardTitle>Riwayat Absensi</CardTitle>
+              <CardDescription>Log absensi Anda baru-baru ini.</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Tanggal</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Clock In</TableHead>
                     <TableHead>Clock Out</TableHead>
-                    <TableHead>Location</TableHead>
+                    <TableHead>Lokasi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -109,16 +109,16 @@ export default function AttendancePage() {
                       <TableCell>
                         <Badge
                           variant={
-                            entry.status === 'Present'
+                            entry.status === 'Hadir'
                               ? 'default'
-                              : entry.status === 'Absent'
+                              : entry.status === 'Absen'
                               ? 'destructive'
                               : 'secondary'
                           }
-                          className={entry.status === 'Present' ? 'bg-green-500 hover:bg-green-600' : ''}
+                          className={entry.status === 'Hadir' ? 'bg-green-500 hover:bg-green-600' : ''}
                         >
-                           {entry.status === 'Present' && <CheckCircle className="mr-1 h-3 w-3" />}
-                           {entry.status === 'Absent' && <XCircle className="mr-1 h-3 w-3" />}
+                           {entry.status === 'Hadir' && <CheckCircle className="mr-1 h-3 w-3" />}
+                           {entry.status === 'Absen' && <XCircle className="mr-1 h-3 w-3" />}
                           {entry.status}
                         </Badge>
                       </TableCell>

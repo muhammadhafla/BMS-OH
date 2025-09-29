@@ -62,8 +62,8 @@ export default function LoginPage() {
           <div className="mb-4 flex justify-center">
             <Logo />
           </div>
-          <CardTitle className="text-2xl font-bold">Welcome to BMS</CardTitle>
-          <CardDescription>Sign in to access your dashboard</CardDescription>
+          <CardTitle className="text-2xl font-bold">Selamat Datang di BMS</CardTitle>
+          <CardDescription>Masuk untuk mengakses dashboard Anda</CardDescription>
         </CardHeader>
         <form onSubmit={handleSignIn}>
           <CardContent>
@@ -99,7 +99,7 @@ export default function LoginPage() {
               className="w-full bg-accent hover:bg-accent/90"
               disabled={loading}
             >
-              {loading ? 'Redirecting...' : 'Sign In (Bypass)'}
+              {loading ? 'Mengarahkan...' : 'Masuk (Bypass)'}
             </Button>
           </CardFooter>
         </form>

@@ -74,7 +74,7 @@ export function AppSidebar() {
             <AvatarFallback>AD</AvatarFallback>
           </Avatar>
           <div className="flex-1 overflow-hidden group-data-[collapsible=icon]:opacity-0 transition-opacity duration-200">
-            <p className="text-sm font-semibold text-sidebar-foreground truncate">Admin User</p>
+            <p className="text-sm font-semibold text-sidebar-foreground truncate">Pengguna Admin</p>
             <p className="text-xs text-muted-foreground truncate">admin@bms.app</p>
           </div>
           <form action={signOut}>

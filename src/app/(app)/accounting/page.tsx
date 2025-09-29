@@ -37,54 +37,54 @@ import { useState, useEffect } from 'react';
 const journalEntries = [
   {
     date: '2023-10-01',
-    account: 'Cash',
+    account: 'Kas',
     debit: 5000.0,
     credit: 0,
-    description: 'Initial capital investment',
+    description: 'Investasi modal awal',
   },
   {
     date: '2023-10-01',
-    account: 'Owner\'s Equity',
+    account: 'Ekuitas Pemilik',
     debit: 0,
     credit: 5000.0,
-    description: 'Initial capital investment',
+    description: 'Investasi modal awal',
   },
   {
     date: '2023-10-02',
-    account: 'Inventory',
+    account: 'Inventaris',
     debit: 1500.0,
     credit: 0,
-    description: 'Purchase of goods',
+    description: 'Pembelian barang',
   },
   {
     date: '2023-10-02',
-    account: 'Accounts Payable',
+    account: 'Utang Usaha',
     debit: 0,
     credit: 1500.0,
-    description: 'Purchase of goods',
+    description: 'Pembelian barang',
   },
   {
     date: '2023-10-05',
-    account: 'Accounts Receivable',
+    account: 'Piutang Usaha',
     debit: 500.0,
     credit: 0,
-    description: 'Sale on credit',
+    description: 'Penjualan kredit',
   },
   {
     date: '2023-10-05',
-    account: 'Sales Revenue',
+    account: 'Pendapatan Penjualan',
     debit: 0,
     credit: 500.0,
-    description: 'Sale on credit',
+    description: 'Penjualan kredit',
   },
 ];
 
 const financialReports = [
-  'Profit & Loss',
-  'Balance Sheet',
-  'General Ledger',
-  'Cash Flow',
-  'Changes in Equity',
+  'Laporan Laba Rugi',
+  'Neraca Saldo',
+  'Buku Besar',
+  'Arus Kas',
+  'Perubahan Modal',
 ];
 
 const CashierReport = () => {
@@ -104,7 +104,7 @@ const CashierReport = () => {
         setSessions(uniqueSessions);
       }
     } catch (error) {
-      console.error('Failed to load cash drawer transactions from localStorage', error);
+      console.error('Gagal memuat transaksi laci kas dari localStorage', error);
     }
   }, []);
 
@@ -186,42 +186,42 @@ export default function AccountingPage() {
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight font-headline">
-          Accounting
+          Akuntansi
         </h1>
         <p className="text-muted-foreground">
-          Track finances and generate reports.
+          Lacak keuangan dan hasilkan laporan.
         </p>
       </header>
 
       <Tabs defaultValue="journal">
         <TabsList className="mb-4">
-          <TabsTrigger value="journal">Journal Entries</TabsTrigger>
-          <TabsTrigger value="reports">Financial Reports</TabsTrigger>
+          <TabsTrigger value="journal">Entri Jurnal</TabsTrigger>
+          <TabsTrigger value="reports">Laporan Keuangan</TabsTrigger>
           <TabsTrigger value="cashier-report">Laporan Kasir</TabsTrigger>
         </TabsList>
         <TabsContent value="journal">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>General Journal</CardTitle>
+                <CardTitle>Jurnal Umum</CardTitle>
                 <CardDescription>
-                  Record of all financial transactions.
+                  Catatan semua transaksi keuangan.
                 </CardDescription>
               </div>
               <Button className="bg-accent hover:bg-accent/90">
                 <PlusCircle />
-                Add Entry
+                Tambah Entri
               </Button>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Account</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Akun</TableHead>
+                    <TableHead>Deskripsi</TableHead>
                     <TableHead className="text-right">Debit</TableHead>
-                    <TableHead className="text-right">Credit</TableHead>
+                    <TableHead className="text-right">Kredit</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -235,10 +235,10 @@ export default function AccountingPage() {
                         {entry.description}
                       </TableCell>
                       <TableCell className="text-right">
-                        {entry.debit > 0 ? `$${entry.debit.toFixed(2)}` : '-'}
+                        {entry.debit > 0 ? `Rp${entry.debit.toFixed(2)}` : '-'}
                       </TableCell>
                       <TableCell className="text-right">
-                        {entry.credit > 0 ? `$${entry.credit.toFixed(2)}` : '-'}
+                        {entry.credit > 0 ? `Rp${entry.credit.toFixed(2)}` : '-'}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -250,9 +250,9 @@ export default function AccountingPage() {
         <TabsContent value="reports">
           <Card>
             <CardHeader>
-              <CardTitle>Financial Reports</CardTitle>
+              <CardTitle>Laporan Keuangan</CardTitle>
               <CardDescription>
-                Generate and view key financial statements.
+                Hasilkan dan lihat laporan keuangan utama.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
@@ -265,7 +265,7 @@ export default function AccountingPage() {
                     <FileText className="text-primary" />
                     <span className="font-medium">{report}</span>
                   </div>
-                  <Button variant="outline">View</Button>
+                  <Button variant="outline">Lihat</Button>
                 </Card>
               ))}
             </CardContent>

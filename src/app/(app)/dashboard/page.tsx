@@ -33,7 +33,7 @@ async function AISummary() {
     return (
       <Alert>
         <Sparkles className="h-4 w-4" />
-        <AlertTitle>AI Inventory Summary</AlertTitle>
+        <AlertTitle>Ringkasan Inventaris AI</AlertTitle>
         <AlertDescription>{summary}</AlertDescription>
       </Alert>
     );
@@ -41,10 +41,10 @@ async function AISummary() {
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>AI Summary Unavailable</AlertTitle>
+        <AlertTitle>Ringkasan AI Tidak Tersedia</AlertTitle>
         <AlertDescription>
-          The AI-powered inventory summary is temporarily unavailable. Please
-          try again later.
+          Ringkasan inventaris yang didukung AI untuk sementara tidak tersedia. Silakan
+          coba lagi nanti.
         </AlertDescription>
       </Alert>
     );
@@ -61,7 +61,7 @@ export default function DashboardPage() {
           Dashboard
         </h1>
         <p className="text-muted-foreground">
-          Welcome back! Here's your business overview.
+          Selamat datang kembali! Berikut adalah gambaran umum bisnis Anda.
         </p>
       </header>
 
@@ -82,7 +82,7 @@ export default function DashboardPage() {
             <CardFooter>
               <Button asChild variant="outline">
                 <Link href={mod.href}>
-                  Open Module <ArrowRight />
+                  Buka Modul <ArrowRight />
                 </Link>
               </Button>
             </CardFooter>
