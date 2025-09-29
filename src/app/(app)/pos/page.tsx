@@ -26,55 +26,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
+import type { Product as ProductType } from '@/lib/types';
+import { getAllProducts } from '@/lib/services/product';
 
-
-// Data produk yang diimpor dari file inventaris
-const inventoryItems = [
-  {
-    name: 'Vintage Leather Journal',
-    sku: 'BK-VLJ-001',
-    stock: 25,
-    price: 29.99,
-    status: 'In Stock',
-  },
-  {
-    name: 'Modern Desk Lamp',
-    sku: 'DSK-MDL-012',
-    stock: 10,
-    price: 75.5,
-    status: 'In Stock',
-  },
-  {
-    name: 'Ergonomic Office Chair',
-    sku: 'CHR-EOC-003',
-    stock: 5,
-    price: 350.0,
-    status: 'Low Stock',
-  },
-  {
-    name: 'Wireless Mechanical Keyboard',
-    sku: 'KBD-WMK-007',
-    stock: 0,
-    price: 120.0,
-    status: 'Out of Stock',
-  },
-  {
-    name: 'Ultra-Wide 4K Monitor',
-    sku: 'MON-UWK-004',
-    stock: 8,
-    price: 899.99,
-    status: 'In Stock',
-  },
-];
-
-
-type Product = {
-  sku: string;
-  name: string;
-  price: number;
-  stock: number;
-  unit: string;
-};
 
 type TransactionItem = {
   sku: string;
@@ -116,15 +70,6 @@ export type CashDrawerTransaction = {
 };
 
 
-const productCatalog: Product[] = inventoryItems.map(item => ({
-    sku: item.sku,
-    name: item.name,
-    price: item.price,
-    stock: item.stock,
-    unit: 'Pcs'
-}));
-
-
 const initialItems: TransactionItem[] = [];
 
 const KeybindHint = ({ children }: { children: React.ReactNode }) => (
@@ -143,7 +88,7 @@ export default function POSPage() {
   const [recallSearch, setRecallSearch] = useState('');
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [productSearch, setProductSearch] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TransactionItem & { index: number } | null>(null);
   const [isKeybindDialogOpen, setIsKeybindDialogOpen] = useState(false);
@@ -161,6 +106,7 @@ export default function POSPage() {
   const [isCashDrawerDialogOpen, setIsCashDrawerDialogOpen] = useState(false);
   const [cashDrawerDialogType, setCashDrawerDialogType] = useState<'Uang Awal' | 'Uang Keluar'>('Uang Awal');
   const [isShiftReportDialogOpen, setIsShiftReportDialogOpen] = useState(false);
+  const [productCatalog, setProductCatalog] = useState<ProductType[]>([]);
 
   
   // Hardcoded current user role for demonstration. In a real app, this would come from an auth context.
@@ -185,6 +131,17 @@ export default function POSPage() {
           })
       );
     }, 1000);
+
+    const fetchProducts = async () => {
+        try {
+            const products = await getAllProducts();
+            setProductCatalog(products);
+        } catch (error) {
+            console.error("Failed to fetch products:", error);
+            // Handle error, e.g., show a toast notification
+        }
+    };
+    fetchProducts();
 
     searchInputRef.current?.focus();
     return () => clearInterval(timer);
@@ -241,7 +198,7 @@ export default function POSPage() {
     }
   };
 
-  const addItemToTransaction = (product: Product, quantity: number = 1) => {
+  const addItemToTransaction = (product: ProductType, quantity: number = 1) => {
     setItems(prevItems => {
         const existingItemIndex = prevItems.findIndex(item => item.sku === product.sku);
         let newItems = [...prevItems];
@@ -609,9 +566,9 @@ export default function POSPage() {
                         </TableHeader>
                         <TableBody>
                             {filteredProducts.map((p) => (
-                                <TableRow key={p.sku} onClick={() => setSelectedProduct(p)} onDoubleClick={handleProductSelectAndClose} className={`cursor-pointer ${selectedProduct?.sku === p.sku ? 'bg-yellow-200' : 'hover:bg-yellow-100'}`}>
+                                <TableRow key={p.id} onClick={() => setSelectedProduct(p)} onDoubleClick={handleProductSelectAndClose} className={`cursor-pointer ${selectedProduct?.id === p.id ? 'bg-yellow-200' : 'hover:bg-yellow-100'}`}>
                                     <TableCell>{p.name}</TableCell>
-                                    <TableCell className="text-right">{p.stock}</TableCell>
+                                    <TableCell className="text-right">{p.stock.main}</TableCell> {/* Assuming main branch for now */}
                                     <TableCell>{p.unit}</TableCell>
                                     <TableCell className="text-right">{p.price.toLocaleString('id-ID')}</TableCell>
                                 </TableRow>
@@ -1216,3 +1173,5 @@ const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDial
     </Dialog>
   );
 };
+
+    

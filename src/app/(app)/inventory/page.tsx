@@ -1,3 +1,6 @@
+
+'use client';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,46 +19,50 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { PlusCircle, FileUp, ImageUp } from 'lucide-react';
-
-const inventoryItems = [
-  {
-    name: 'Vintage Leather Journal',
-    sku: 'BK-VLJ-001',
-    stock: 25,
-    price: 29.99,
-    status: 'In Stock',
-  },
-  {
-    name: 'Modern Desk Lamp',
-    sku: 'DSK-MDL-012',
-    stock: 10,
-    price: 75.5,
-    status: 'In Stock',
-  },
-  {
-    name: 'Ergonomic Office Chair',
-    sku: 'CHR-EOC-003',
-    stock: 5,
-    price: 350.0,
-    status: 'Low Stock',
-  },
-  {
-    name: 'Wireless Mechanical Keyboard',
-    sku: 'KBD-WMK-007',
-    stock: 0,
-    price: 120.0,
-    status: 'Out of Stock',
-  },
-  {
-    name: 'Ultra-Wide 4K Monitor',
-    sku: 'MON-UWK-004',
-    stock: 8,
-    price: 899.99,
-    status: 'In Stock',
-  },
-];
+import { useEffect, useState } from 'react';
+import type { Product } from '@/lib/types';
+import { getAllProducts } from '@/lib/services/product';
 
 export default function InventoryPage() {
+  const [inventoryItems, setInventoryItems] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const products = await getAllProducts();
+        setInventoryItems(products);
+      } catch (error) {
+        console.error('Failed to fetch inventory:', error);
+        // Optionally, show a toast or error message to the user
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const getStatus = (stock: number) => {
+    if (stock === 0) return 'Out of Stock';
+    if (stock <= 10) return 'Low Stock'; // Assuming 10 is the threshold for low stock
+    return 'In Stock';
+  };
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'In Stock':
+        return 'secondary';
+      case 'Low Stock':
+        return 'outline';
+      case 'Out of Stock':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
+
   return (
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
       <header className="mb-8 flex items-center justify-between">
@@ -102,32 +109,45 @@ export default function InventoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {inventoryItems.map((item) => (
-                <TableRow key={item.sku}>
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell>{item.sku}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        item.status === 'In Stock'
-                          ? 'secondary'
-                          : item.status === 'Low Stock'
-                          ? 'outline'
-                          : 'destructive'
-                      }
-                      className={
-                        item.status === 'Low Stock' ? 'text-orange-500 border-orange-500' : ''
-                      }
-                    >
-                      {item.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{item.stock}</TableCell>
-                  <TableCell className="text-right">
-                    ${item.price.toFixed(2)}
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center h-24">
+                    Loading inventory...
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : inventoryItems.length > 0 ? (
+                inventoryItems.map((item) => {
+                  // Assuming we show stock from a 'main' branch for now
+                  const stock = item.stock['main'] || 0;
+                  const status = getStatus(stock);
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell>{item.sku}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={getStatusVariant(status)}
+                          className={
+                            status === 'Low Stock' ? 'text-orange-500 border-orange-500' : ''
+                          }
+                        >
+                          {status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{stock}</TableCell>
+                      <TableCell className="text-right">
+                        ${item.price.toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              ) : (
+                 <TableRow>
+                  <TableCell colSpan={5} className="text-center h-24">
+                    No products found. Add a new item to get started.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -135,3 +155,5 @@ export default function InventoryPage() {
     </div>
   );
 }
+
+    
