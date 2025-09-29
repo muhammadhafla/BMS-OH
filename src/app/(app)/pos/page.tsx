@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -83,6 +84,7 @@ export interface CompletedTransaction {
   sessionId: string;
   cashierName: string;
   change: number;
+  amountPaid: number;
 }
 
 const initialItems: TransactionItem[] = [];
@@ -230,6 +232,7 @@ export default function POSPage() {
 
   const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+        e.preventDefault();
         const searchTerm = e.currentTarget.value.trim().toLowerCase();
         if (!searchTerm) return;
 
@@ -378,7 +381,7 @@ export default function POSPage() {
     router.push('/dashboard');
   }
 
-  const handleCompleteTransaction = (paymentMethod: PaymentMethod, change: number) => {
+  const handleCompleteTransaction = (paymentMethod: PaymentMethod, change: number, amountPaid: number) => {
     const sessionId = sessionStorage.getItem('pos-session-id') || 'sesi-unknown';
     
     const newTransaction: CompletedTransaction = {
@@ -390,6 +393,7 @@ export default function POSPage() {
       sessionId: sessionId,
       cashierName: currentCashier,
       change: change,
+      amountPaid: amountPaid,
     };
 
     try {
@@ -831,7 +835,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
       setDiscountAmount(amount);
   };
 
-  const calculatedTotal = (price - discountAmount) * quantity;
+  const calculatedTotal = (price * quantity) - (discountAmount * quantity);
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -1426,7 +1430,7 @@ type PaymentDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   totalAmount: number;
-  onCompleteTransaction: (paymentMethod: PaymentMethod, change: number) => void;
+  onCompleteTransaction: (paymentMethod: PaymentMethod, change: number, amountPaid: number) => void;
 };
 
 const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: PaymentDialogProps) => {
@@ -1470,7 +1474,8 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
   }, [paymentMethod, isOpen]);
 
   const handleFinishTransaction = () => {
-    if (paymentMethod === 'Tunai' && (parseFloat(amountPaid) || 0) < totalAmount) {
+    const paidAmount = parseFloat(amountPaid) || 0;
+    if (paymentMethod === 'Tunai' && paidAmount < totalAmount) {
         toast({
             variant: "destructive",
             title: "Pembayaran Kurang",
@@ -1479,7 +1484,7 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
         return;
     }
     const finalChange = paymentMethod === 'Tunai' ? change : 0;
-    onCompleteTransaction(paymentMethod, finalChange);
+    onCompleteTransaction(paymentMethod, finalChange, paidAmount);
   }
   
   return (
@@ -1570,65 +1575,68 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
     
 
 const ReceiptTemplate = ({ transaction }: { transaction: CompletedTransaction }) => {
-  const { id, items, totalAmount, paymentMethod, timestamp, cashierName, change } = transaction;
+  const { items, totalAmount, paymentMethod, timestamp, change, amountPaid } = transaction;
 
-  const totalDiscount = items.reduce((sum, item) => sum + item.discount * item.quantity, 0);
-  
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
-    <div className="w-[300px] bg-white text-black p-4 font-mono text-xs">
-      <div className="text-center mb-4">
-        <h2 className="text-sm font-bold">TOKO BAGUS</h2>
-        <p>Ruko Gaden Plaza No. 9B</p>
-        <p>Jl. Raya Wonopringgo</p>
-        <p>082324703076</p>
+    <div className="w-[240px] bg-white text-black p-2 font-mono text-xs">
+      <div className="text-center mb-2">
+        {/* Simplified Logo */}
+        <div className="text-4xl font-bold leading-none">B</div>
+        <div className="font-semibold">BAGUS</div>
       </div>
       
-      <div className="flex justify-between border-t border-b border-dashed border-black py-1">
-        <span>{new Date(timestamp).toLocaleDateString('id-ID')}</span>
-        <span>{new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
-      </div>
-      <div className="flex justify-between pb-1">
-        <span>No. Struk: {id.slice(-6)}</span>
-        <span>Kasir: {cashierName}</span>
-      </div>
-
-      <div className="border-t border-black pt-1">
-        {items.map(item => (
-          <div key={item.sku}>
-            <p>{item.name}</p>
+      <div className="border-t border-dashed border-black pt-1">
+        {items.map((item, index) => (
+          <div key={index} className="mb-1">
             <div className="flex justify-between">
-              <span>{item.quantity} x {item.price.toLocaleString('id-ID')}</span>
-              <span>{item.total.toLocaleString('id-ID')}</span>
+                <span>{item.name}</span>
+                <span>{(item.quantity * item.price).toLocaleString('id-ID')}*</span>
             </div>
+            <div>{item.quantity} x @ {item.price.toLocaleString('id-ID')}</div>
+            {item.discount > 0 && (
+              <div>Diskon {item.discount.toLocaleString('id-ID')}</div>
+            )}
           </div>
         ))}
       </div>
 
-      <div className="border-t border-dashed border-black mt-2 pt-2 space-y-1">
-        <div className="flex justify-between">
-          <span className="font-bold">TOTAL</span>
-          <span className="font-bold">{totalAmount.toLocaleString('id-ID')}</span>
-        </div>
-        {totalDiscount > 0 && (
-           <div className="flex justify-between">
-            <span>DISKON</span>
-            <span>- {totalDiscount.toLocaleString('id-ID')}</span>
-          </div>
-        )}
-        <div className="flex justify-between">
-          <span>{paymentMethod}</span>
-          <span>{totalAmount.toLocaleString('id-ID')}</span>
-        </div>
-        {paymentMethod === 'Tunai' && change > 0 && (
-          <div className="flex justify-between">
-            <span>KEMBALI</span>
-            <span>{change.toLocaleString('id-ID')}</span>
-          </div>
-        )}
+      <div className="border-t border-dashed border-black my-1 pt-1">
+          <p>Total barang dibeli: {totalItems}</p>
       </div>
 
-      <div className="text-center mt-4 pt-2 border-t border-dashed border-black">
-        <p>Terima kasih telah berbelanja!</p>
+      <div className="border-t border-dashed border-black my-1 pt-1 space-y-1">
+        <div className="flex justify-between font-bold">
+          <span>TOTAL</span>
+          <span>{totalAmount.toLocaleString('id-ID')}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>TUNAI</span>
+          <span>{paymentMethod === 'Tunai' ? amountPaid.toLocaleString('id-ID') : '0'}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>NON TUNAI</span>
+          <span>{paymentMethod !== 'Tunai' ? amountPaid.toLocaleString('id-ID') : '0'}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>KEMBALI</span>
+          <span>{change.toLocaleString('id-ID')}</span>
+        </div>
+        {/* Placeholder for rounding */}
+        <div className="flex justify-between">
+          <span>PEMBULATAN</span>
+          <span>0</span>
+        </div>
+      </div>
+      
+      <div className="flex justify-between text-[10px] mt-2">
+        <span>{new Date(timestamp).toLocaleDateString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric'})}</span>
+        <span>{new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</span>
+      </div>
+
+      <div className="text-center mt-2">
+        <p>Terima Kasih</p>
       </div>
     </div>
   );
@@ -1636,3 +1644,4 @@ const ReceiptTemplate = ({ transaction }: { transaction: CompletedTransaction })
 
 
     
+
