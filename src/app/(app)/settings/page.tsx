@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -17,8 +19,79 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { useState } from 'react';
+import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+
+type UserRole = 'admin' | 'manager' | 'staff';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+}
+
+const initialUsers: User[] = [
+  { id: '1', name: 'Admin User', email: 'admin@bms.app', role: 'admin' },
+  { id: '2', name: 'Manager User', email: 'manager@bms.app', role: 'manager' },
+  { id: '3', name: 'Staff User', email: 'staff@bms.app', role: 'staff' },
+];
 
 export default function SettingsPage() {
+  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+
+  const openAddDialog = () => {
+    setEditingUser(null);
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (user: User) => {
+    setEditingUser(user);
+    setIsDialogOpen(true);
+  };
+  
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const newUser: User = {
+      id: editingUser ? editingUser.id : String(Date.now()),
+      name: formData.get('name') as string,
+      email: formData.get('email') as string,
+      role: formData.get('role') as UserRole,
+    };
+
+    if (editingUser) {
+      setUsers(users.map(u => u.id === editingUser.id ? newUser : u));
+    } else {
+      setUsers([...users, newUser]);
+    }
+    setIsDialogOpen(false);
+  };
+
+  const deleteUser = (userId: string) => {
+    setUsers(users.filter(u => u.id !== userId));
+  };
+
+
   return (
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
       <header className="mb-8">
@@ -45,32 +118,54 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue="admin@bms.app" />
+              <Input id="email" type="email" defaultValue="admin@bms.app" disabled />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Peran & Hak Akses</CardTitle>
-            <CardDescription>
-              Kelola peran pengguna dan hak aksesnya.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="role">Peran</Label>
-              <Select defaultValue="admin">
-                <SelectTrigger id="role">
-                  <SelectValue placeholder="Pilih peran" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="manager">Manager</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                </SelectContent>
-              </Select>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Peran & Hak Akses</CardTitle>
+              <CardDescription>
+                Kelola peran pengguna dan hak aksesnya.
+              </CardDescription>
             </div>
+            <Button className="bg-accent hover:bg-accent/90" onClick={openAddDialog}>
+              <PlusCircle />
+              Tambah Pengguna
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nama</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Peran</TableHead>
+                  <TableHead className="text-right">Tindakan</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map(user => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>{user.role}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                       <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                       <Button variant="ghost" size="icon" onClick={() => deleteUser(user.id)} className="text-destructive hover:text-destructive/80">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
@@ -149,6 +244,46 @@ export default function SettingsPage() {
           <Button className="bg-accent hover:bg-accent/90">Simpan Perubahan</Button>
         </div>
       </div>
+
+       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingUser ? 'Edit Pengguna' : 'Tambah Pengguna Baru'}</DialogTitle>
+            <DialogDescription>
+              {editingUser ? 'Perbarui detail pengguna di bawah ini.' : 'Isi detail untuk pengguna baru.'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleFormSubmit}>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="user-name">Nama</Label>
+                <Input id="user-name" name="name" defaultValue={editingUser?.name || ''} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="user-email">Email</Label>
+                <Input id="user-email" name="email" type="email" defaultValue={editingUser?.email || ''} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="user-role">Peran</Label>
+                 <Select name="role" defaultValue={editingUser?.role || 'staff'}>
+                  <SelectTrigger id="user-role">
+                    <SelectValue placeholder="Pilih peran" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="manager">Manager</SelectItem>
+                    <SelectItem value="staff">Staff</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Batal</Button>
+              <Button type="submit" className="bg-accent hover:bg-accent/90">Simpan</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
