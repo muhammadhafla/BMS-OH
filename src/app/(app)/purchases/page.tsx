@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -22,7 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Trash2, Save } from 'lucide-react';
+import { PlusCircle, Trash2, Save, ImageUp, Camera, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { PurchaseItem } from '@/lib/types';
 import { recordPurchase } from '@/lib/services/purchase';
@@ -37,6 +36,127 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import Image from 'next/image';
+
+const OcrDialog = ({
+  isOpen,
+  onClose,
+  onFileSelect,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onFileSelect: (file: File) => void;
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      onFileSelect(file);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Pindai Struk dengan OCR</DialogTitle>
+          <DialogDescription>
+            Pilih sumber gambar struk pembelian Anda. Fitur kamera akan segera hadir.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-4 py-4">
+          <Button variant="outline" className="h-24 flex-col" disabled>
+            <Camera className="h-8 w-8 mb-2" />
+            Gunakan Kamera
+          </Button>
+          <Button variant="outline" className="h-24 flex-col" onClick={handleUploadClick}>
+            <Upload className="h-8 w-8 mb-2" />
+            Unggah File
+          </Button>
+        </div>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          accept="image/*"
+        />
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+
+const OcrProcessingDialog = ({
+  file,
+  onClose,
+}: {
+  file: File | null;
+  onClose: () => void;
+}) => {
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const imageUrl = useMemo(() => file ? URL.createObjectURL(file) : null, [file]);
+
+  // TODO: Implement actual OCR processing by calling a Genkit flow
+  const processReceipt = useCallback(async () => {
+     if (!file) return;
+     setIsProcessing(true);
+     setError(null);
+     // This is where you would convert the file to a data URI and call the AI flow.
+     // For now, we'll just simulate a delay and an error.
+     setTimeout(() => {
+        setError("Fitur OCR belum terimplementasi sepenuhnya.");
+        setIsProcessing(false);
+     }, 2000);
+  }, [file]);
+
+  useEffect(() => {
+    if (file) {
+      processReceipt();
+    }
+  }, [file, processReceipt]);
+
+  return (
+     <Dialog open={!!file} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent>
+           <DialogHeader>
+              <DialogTitle>Memproses Struk...</DialogTitle>
+              <DialogDescription>
+                Harap tunggu sementara AI menganalisis struk Anda.
+              </DialogDescription>
+           </DialogHeader>
+           <div className="py-4">
+            {imageUrl && (
+              <div className="relative w-full h-64 mb-4 border rounded-md overflow-hidden">
+                <Image src={imageUrl} alt="Pratinjau Struk" layout="fill" objectFit="contain" />
+              </div>
+            )}
+            {isProcessing && <p className="text-center">Menganalisis...</p>}
+            {error && <p className="text-center text-destructive">{error}</p>}
+           </div>
+           <DialogFooter>
+              <Button variant="outline" onClick={onClose} disabled={isProcessing}>Tutup</Button>
+           </DialogFooter>
+        </DialogContent>
+     </Dialog>
+  )
+};
+
 
 export default function PurchasesPage() {
   const [items, setItems] = useState<PurchaseItem[]>([]);
@@ -44,6 +164,8 @@ export default function PurchasesPage() {
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const [isOcrDialogOpen, setIsOcrDialogOpen] = useState(false);
+  const [ocrFile, setOcrFile] = useState<File | null>(null);
 
   const handleAddItem = () => {
     const newItem: PurchaseItem = {
@@ -130,6 +252,11 @@ export default function PurchasesPage() {
     }
   };
 
+  const handleFileSelectForOcr = (file: File) => {
+    setIsOcrDialogOpen(false);
+    setOcrFile(file);
+  };
+
 
   return (
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
@@ -142,6 +269,10 @@ export default function PurchasesPage() {
             Rekam pembelian baru untuk memperbarui stok dan harga beli.
           </p>
         </div>
+         <Button variant="outline" onClick={() => setIsOcrDialogOpen(true)}>
+            <ImageUp className="mr-2 h-4 w-4" />
+            Pindai Struk (OCR)
+          </Button>
       </header>
       
       <Card>
@@ -277,6 +408,18 @@ export default function PurchasesPage() {
         </CardFooter>
       </Card>
 
+      <OcrDialog 
+        isOpen={isOcrDialogOpen}
+        onClose={() => setIsOcrDialogOpen(false)}
+        onFileSelect={handleFileSelectForOcr}
+      />
+      <OcrProcessingDialog
+        file={ocrFile}
+        onClose={() => setOcrFile(null)}
+      />
+
     </div>
   );
 }
+
+    

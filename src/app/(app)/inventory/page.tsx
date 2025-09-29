@@ -624,12 +624,12 @@ export default function InventoryPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline">
-            <ImageUp />
+          <Button variant="outline" disabled>
+            <ImageUp className="mr-2 h-4 w-4" />
             Pindai Struk (OCR)
           </Button>
           <Button variant="outline" onClick={handleImportClick}>
-            <FileUp />
+            <FileUp className="mr-2 h-4 w-4" />
             Impor dari CSV
           </Button>
           <input 
@@ -640,7 +640,7 @@ export default function InventoryPage() {
             accept=".csv"
           />
           <Button className="bg-accent hover:bg-accent/90" onClick={() => setIsAddDialogOpen(true)}>
-            <PlusCircle />
+            <PlusCircle className="mr-2 h-4 w-4" />
             Tambah Item
           </Button>
         </div>
@@ -772,3 +772,5 @@ export default function InventoryPage() {
     </div>
   );
 }
+
+    
