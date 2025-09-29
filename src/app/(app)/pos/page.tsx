@@ -12,7 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Lock, Power, Settings } from 'lucide-react';
+import { Lock, Power, Settings, Unlock } from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -100,6 +100,8 @@ type Keybinds = {
   lock: string;
 };
 
+type UserRole = 'admin' | 'manager' | 'staff';
+
 const productCatalog: Product[] = inventoryItems.map(item => ({
     sku: item.sku,
     name: item.name,
@@ -139,8 +141,11 @@ export default function POSPage() {
     edit: 'F7',
     delete: 'F8',
     pay: 'F9',
-    lock: 'F5', // Assuming F5 for the lock button
+    lock: 'F5',
   });
+  
+  // Hardcoded current user role for demonstration. In a real app, this would come from an auth context.
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole>('staff');
 
 
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -285,17 +290,14 @@ export default function POSPage() {
       if (newItems.length === 0) {
         setSelectedItemIndex(null);
       } else if (selectedItemIndex >= newItems.length) {
-        // If the last item was deleted, select the new last item
         setSelectedItemIndex(newItems.length - 1);
       }
-      // Otherwise, the index remains the same for the item that shifted up
       
       return newItems;
     });
   };
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    // Prevent keybinds from firing when a dialog is open
     if (isRecallDialogOpen || isSearchDialogOpen || isEditDialogOpen || isKeybindDialogOpen) return;
 
     const key = event.key;
@@ -314,13 +316,11 @@ export default function POSPage() {
       deleteSelectedItem();
     } else if (key === keybinds.cashier) {
       event.preventDefault();
-      // Add cashier functionality here
     } else if (key === keybinds.clear) {
         event.preventDefault();
         clearTransaction();
     } else if (key === keybinds.pay) {
         event.preventDefault();
-        // Add pay functionality here
     }
   }, [items, heldTransactions, selectedItemIndex, isRecallDialogOpen, isSearchDialogOpen, isEditDialogOpen, isKeybindDialogOpen, keybinds]);
 
@@ -350,7 +350,6 @@ export default function POSPage() {
 
   return (
     <div className="flex h-screen w-full flex-col bg-zinc-300 text-black">
-      {/* Header */}
       <header className="flex items-center justify-between bg-zinc-200 px-4 py-1 border-b-2 border-zinc-400">
         <h1 className="text-lg font-bold text-red-600">RENE Cashier</h1>
         <div className="flex items-center gap-2">
@@ -365,7 +364,6 @@ export default function POSPage() {
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
         <aside className="w-48 flex-shrink-0 space-y-2 border-r-2 border-zinc-400 bg-zinc-200 p-2">
           <Button variant="pos" className="relative" onClick={holdTransaction}>
             Tunda <KeybindHint>{keybinds.hold}</KeybindHint>
@@ -391,7 +389,6 @@ export default function POSPage() {
           <div className="h-16 bg-zinc-800 rounded-md" />
         </aside>
 
-        {/* Main Content */}
         <main className="flex flex-1 flex-col">
           <div className="flex items-center justify-between border-b-2 border-zinc-400 bg-zinc-800 p-2 text-white">
             <span className="text-2xl font-semibold">Total</span>
@@ -442,7 +439,7 @@ export default function POSPage() {
                </Button>
             </div>
              <div className="flex items-center gap-4 rounded-md bg-zinc-800 px-3 py-1 text-sm text-white">
-                <span>Administrator</span>
+                <span>{currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1)}</span>
                 <span>{currentTime}</span>
              </div>
             <Button className="relative h-12 w-32 bg-yellow-400 text-black font-bold text-xl hover:bg-yellow-500">
@@ -505,14 +502,10 @@ export default function POSPage() {
           </div>
           <DialogFooter className="mt-2">
             <Button variant="pos" onClick={() => recallTransaction(filteredHeldTransactions[0]?.id)} className="relative">
-              OK <span className="absolute -top-2 -right-2 bg-zinc-600 text-white text-[10px] font-bold px-1 rounded-sm border border-zinc-500">
-                Enter
-              </span>
+              OK <KeybindHint>Enter</KeybindHint>
             </Button>
             <Button variant="pos" onClick={() => setIsRecallDialogOpen(false)} className="relative">
-              Batal <span className="absolute -top-2 -right-2 bg-zinc-600 text-white text-[10px] font-bold px-1 rounded-sm border border-zinc-500">
-                Esc
-              </span>
+              Batal <KeybindHint>Esc</KeybindHint>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -584,6 +577,7 @@ export default function POSPage() {
             setEditingItem(null);
           }}
           onUpdate={handleItemUpdate}
+          currentUserRole={currentUserRole}
         />
       )}
       
@@ -603,18 +597,20 @@ type EditItemDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (item: TransactionItem, index: number) => void;
+  currentUserRole: UserRole;
 };
 
-const EditItemDialog = ({ item, isOpen, onClose, onUpdate }: EditItemDialogProps) => {
+const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: EditItemDialogProps) => {
   const [quantity, setQuantity] = useState(item.quantity);
   const [price, setPrice] = useState(item.price);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(item.discount);
+  const [isPriceLocked, setIsPriceLocked] = useState(currentUserRole === 'staff');
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   
   const discountAmountRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Recalculate discount amount when percentage changes
     const newDiscountAmount = (price * discountPercent) / 100;
     setDiscountAmount(newDiscountAmount);
   }, [discountPercent, price]);
@@ -631,6 +627,10 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate }: EditItemDialogProps
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (isPriceLocked && price !== item.price) {
+        // Maybe show a toast or alert that price can't be changed without auth
+        return;
+    }
     const updatedItem: TransactionItem = {
       ...item,
       quantity,
@@ -643,7 +643,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate }: EditItemDialogProps
   
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!isOpen) return;
+      if (!isOpen || isAuthDialogOpen) return;
       if (event.key === 'F5') {
         event.preventDefault();
         handleSubmit();
@@ -654,9 +654,29 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate }: EditItemDialogProps
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, quantity, price, discountAmount, discountPercent]);
+  }, [isOpen, quantity, price, discountAmount, discountPercent, isPriceLocked, isAuthDialogOpen]);
+  
+  const handleUnlockPrice = () => {
+    if (currentUserRole === 'staff') {
+      setIsAuthDialogOpen(true);
+    } else {
+      setIsPriceLocked(false);
+    }
+  };
+
+  const handleAuthorization = (pin: string) => {
+    // In a real app, you'd verify the PIN against a backend service.
+    // For this demo, we'll use a simple hardcoded PIN.
+    if (pin === '1234') { 
+      setIsPriceLocked(false);
+      setIsAuthDialogOpen(false);
+    } else {
+      alert('PIN Salah!');
+    }
+  };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-lg p-0" onKeyDown={(e) => e.stopPropagation()}>
         <DialogHeader className="bg-zinc-700 p-2 px-4 rounded-t-lg">
@@ -671,7 +691,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate }: EditItemDialogProps
             <Input type="number" value={quantity} onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)} className="col-span-2 h-8 bg-yellow-200 border-yellow-400" />
             
             <Label className="text-right">Harga @</Label>
-            <Input type="number" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} className="col-span-2 h-8" />
+            <Input type="number" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} className="col-span-2 h-8" disabled={isPriceLocked} />
             
             <Label className="text-right">% | Potongan</Label>
             <div className="col-span-2 flex items-center gap-2">
@@ -684,8 +704,8 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate }: EditItemDialogProps
           </div>
 
           <DialogFooter className="bg-zinc-300 p-2 flex justify-between items-center rounded-b-lg">
-            <Button type="button" variant="pos" className="w-auto px-4 h-10">
-                <Lock className="w-5 h-5"/>
+            <Button type="button" variant="pos" className="w-auto px-4 h-10" onClick={handleUnlockPrice} disabled={!isPriceLocked}>
+                {isPriceLocked ? <Lock className="w-5 h-5"/> : <Unlock className="w-5 h-5"/>}
             </Button>
             <div className="flex gap-2">
                 <Button type="submit" variant="pos" className="w-auto px-6 h-10 relative">
@@ -701,6 +721,12 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate }: EditItemDialogProps
         </form>
       </DialogContent>
     </Dialog>
+    <AuthorizationDialog 
+        isOpen={isAuthDialogOpen}
+        onClose={() => setIsAuthDialogOpen(false)}
+        onAuthorize={handleAuthorization}
+    />
+    </>
   );
 };
 
@@ -777,4 +803,63 @@ const KeybindSettingsDialog = ({ isOpen, onClose, keybinds, setKeybinds }: Keybi
   );
 };
 
-    
+// Authorization Dialog Component
+type AuthorizationDialogProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  onAuthorize: (pin: string) => void;
+};
+
+const AuthorizationDialog = ({ isOpen, onClose, onAuthorize }: AuthorizationDialogProps) => {
+  const [pin, setPin] = useState('');
+  const pinInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Focus the input when the dialog opens
+      setTimeout(() => pinInputRef.current?.focus(), 100);
+    } else {
+        setPin(''); // Reset PIN on close
+    }
+  }, [isOpen]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAuthorize(pin);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-sm">
+        <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
+          <DialogTitle className="text-white">Otorisasi Diperlukan</DialogTitle>
+          <DialogDescription className="text-zinc-300 pt-1">
+            Masukkan PIN Manager atau Admin untuk mengubah harga.
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="py-4">
+            <Label htmlFor="pin-input" className="sr-only">PIN</Label>
+            <Input
+              ref={pinInputRef}
+              id="pin-input"
+              type="password"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              className="h-10 text-center text-lg border-2 border-yellow-400 bg-yellow-200"
+              maxLength={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="pos" onClick={onClose}>
+              Batal
+            </Button>
+            <Button type="submit" variant="pos" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              Otorisasi
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
