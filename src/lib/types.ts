@@ -19,14 +19,16 @@ export interface Branch {
 }
 
 export type UserRole = 'admin' | 'manager' | 'staff';
+export type SalaryType = 'Bulanan' | 'Per Jam';
 
-export interface UserProfile {
+
+export interface User {
   id?: string;
   name: string;
   email: string;
   role: UserRole;
-  // ID cabang tempat pengguna ditugaskan
-  branchId: string;
+  salaryType: SalaryType;
+  baseSalary: number;
 }
 
 export interface Product {
@@ -135,4 +137,17 @@ export interface AttendanceEntry {
   photoOut?: string | null;
   // These are for client-side display only, not stored in DB
   date?: string; 
+}
+
+// Payroll Types
+export interface PayrollEntry {
+  employeeId: string;
+  employeeName: string;
+  baseSalary: number;
+  allowances: number;
+  deductions: number;
+  netSalary: number;
+  paidAmount: number;
+  status: 'Belum Dibayar' | 'Dibayar Sebagian' | 'Lunas';
+  paymentMethod: 'Tunai' | 'Transfer Bank' | 'Belum Dibayar';
 }

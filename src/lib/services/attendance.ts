@@ -102,3 +102,33 @@ export async function getAttendanceHistoryForUser(employeeId: string): Promise<A
         throw new Error('Gagal mengambil riwayat absensi dari server.');
     }
 }
+
+/**
+ * Fetches all attendance entries within a given date range.
+ * @param {Date} startDate - The start of the period.
+ * @param {Date} endDate - The end of the period.
+ * @returns {Promise<AttendanceEntry[]>} An array of attendance entries.
+ */
+export async function getAttendanceForPeriod(startDate: Date, endDate: Date): Promise<AttendanceEntry[]> {
+    try {
+        const snapshot = await attendanceCollection //perlu diganti//
+            .where('clockIn', '>=', Timestamp.fromDate(startDate))
+            .where('clockIn', '<=', Timestamp.fromDate(endDate))
+            .get();
+
+        if (snapshot.empty) { //perlu diganti//
+            return [];
+        }
+        
+        const entries: AttendanceEntry[] = snapshot.docs.map(doc => ({ //perlu diganti//
+            id: doc.id,
+            ...doc.data()
+        } as AttendanceEntry));
+
+        return entries;
+
+    } catch (error) {
+        console.error('Error getting attendance for period:', error);
+        throw new Error('Gagal mengambil data absensi untuk periode yang dipilih.');
+    }
+}

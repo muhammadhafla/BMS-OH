@@ -42,23 +42,14 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { modules } from '@/lib/modules.tsx';
 import { useToast } from '@/hooks/use-toast';
+import type { User, UserRole, SalaryType } from '@/lib/types';
 
-type UserRole = 'admin' | 'manager' | 'staff';
-type SalaryType = 'Bulanan' | 'Per Jam';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  salaryType: SalaryType;
-  baseSalary: number;
-}
 
 const initialUsers: User[] = [
-  { id: '1', name: 'Pengguna Admin', email: 'admin@bms.app', role: 'admin', salaryType: 'Bulanan', baseSalary: 10000000 },
-  { id: '2', name: 'Pengguna Manajer', email: 'manager@bms.app', role: 'manager', salaryType: 'Bulanan', baseSalary: 7500000 },
-  { id: '3', name: 'Pengguna Staf', email: 'staff@bms.app', role: 'staff', salaryType: 'Per Jam', baseSalary: 50000 },
+  { id: 'user_admin_001', name: 'Pengguna Admin', email: 'admin@bms.app', role: 'admin', salaryType: 'Bulanan', baseSalary: 10000000 },
+  { id: 'user_manager_001', name: 'Pengguna Manajer', email: 'manager@bms.app', role: 'manager', salaryType: 'Bulanan', baseSalary: 7500000 },
+  { id: 'user_staff_001', name: 'Pengguna Staf', email: 'staff@bms.app', role: 'staff', salaryType: 'Per Jam', baseSalary: 50000 },
+  { id: 'user_staff_002', name: 'Karyawan Baru', email: 'new@bms.app', role: 'staff', salaryType: 'Bulanan', baseSalary: 4000000 },
 ];
 
 const initialPermissions: Record<string, UserRole[]> = {
@@ -240,7 +231,7 @@ export default function SettingsPage() {
                        <Button variant="ghost" size="icon" onClick={() => openEditDialog(user)}>
                         <Edit className="h-4 w-4" />
                       </Button>
-                       <Button variant="ghost" size="icon" onClick={() => deleteUser(user.id)} className="text-destructive hover:text-destructive/80">
+                       <Button variant="ghost" size="icon" onClick={() => deleteUser(user.id!)} className="text-destructive hover:text-destructive/80">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>

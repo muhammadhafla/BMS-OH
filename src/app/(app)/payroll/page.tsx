@@ -34,66 +34,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Calculator, Send, Calendar as CalendarIcon, Loader2, Landmark, Wallet, PlusCircle } from 'lucide-react';
 import { DateRange } from "react-day-picker"
-import { addDays, format } from "date-fns"
+import { addDays, format, endOfDay, startOfDay } from "date-fns"
 import { id as indonesiaLocale } from "date-fns/locale";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { useToast } from '@/hooks/use-toast';
+import { getAllUsersWithSalary } from '@/lib/services/user';
+import { getAttendanceForPeriod } from '@/lib/services/attendance';
+import type { User, AttendanceEntry, PayrollEntry, SalaryType } from '@/lib/types';
 
 
-type PayrollStatus = 'Belum Dibayar' | 'Dibayar Sebagian' | 'Lunas';
-type PaymentMethod = 'Tunai' | 'Transfer Bank';
-
-interface PayrollEntry {
-  employeeId: string;
-  employeeName: string;
-  baseSalary: number;
-  allowances: number;
-  deductions: number; // Termasuk uang muka
-  netSalary: number;
-  paidAmount: number;
-  status: PayrollStatus;
-}
-
-const initialPayrollData: Omit<PayrollEntry, 'paidAmount' | 'status' | 'netSalary'>[] = [
-  {
-    employeeId: '1',
-    employeeName: 'Pengguna Admin',
-    baseSalary: 10000000,
-    allowances: 500000,
-    deductions: 250000,
-  },
-  {
-    employeeId: '2',
-    employeeName: 'Pengguna Manajer',
-    baseSalary: 7500000,
-    allowances: 250000,
-    deductions: 100000,
-  },
-  {
-    employeeId: '3',
-    employeeName: 'Pengguna Staf (Asumsi 160 jam)',
-    baseSalary: 50000 * 160,
-    allowances: 0,
-    deductions: 50000,
-  },
-   {
-    employeeId: '4',
-    employeeName: 'Karyawan Baru',
-    baseSalary: 4000000,
-    allowances: 0,
-    deductions: 1000000, // Ambil uang muka
-  },
-];
-
-const getStatus = (netSalary: number, paidAmount: number): PayrollStatus => {
+const getStatus = (netSalary: number, paidAmount: number): PayrollEntry['status'] => {
     if (paidAmount <= 0) return 'Belum Dibayar';
     if (paidAmount >= netSalary) return 'Lunas';
     return 'Dibayar Sebagian';
 };
 
-const getStatusVariant = (status: PayrollStatus) => {
+const getStatusVariant = (status: PayrollEntry['status']) => {
     switch (status) {
         case 'Lunas': return 'default';
         case 'Dibayar Sebagian': return 'secondary';
@@ -110,11 +68,11 @@ const PaymentDialog = ({
     isOpen: boolean; 
     onClose: () => void; 
     entry: PayrollEntry | null; 
-    onConfirm: (employeeId: string, amount: number, method: PaymentMethod, notes: string) => void;
+    onConfirm: (employeeId: string, amount: number, method: PayrollEntry['paymentMethod'], notes: string) => void;
 }) => {
     const remainingSalary = entry ? entry.netSalary - entry.paidAmount : 0;
     const [amount, setAmount] = useState(remainingSalary);
-    const [method, setMethod] = useState<PaymentMethod>('Transfer Bank');
+    const [method, setMethod] = useState<PayrollEntry['paymentMethod']>('Transfer Bank');
     const [notes, setNotes] = useState('');
 
     useEffect(() => {
@@ -143,7 +101,7 @@ const PaymentDialog = ({
                     </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
-                    <div className="p-4 border rounded-lg bg-muted/50">
+                     <Card className="p-4 bg-muted/50">
                         <div className="flex justify-between text-sm">
                             <span>Gaji Bersih</span>
                             <span>Rp{entry.netSalary.toLocaleString('id-ID')}</span>
@@ -156,7 +114,7 @@ const PaymentDialog = ({
                             <span>Sisa Gaji</span>
                             <span>Rp{(entry.netSalary - entry.paidAmount).toLocaleString('id-ID')}</span>
                         </div>
-                    </div>
+                    </Card>
                     <div className="space-y-2">
                         <Label htmlFor="payment-amount">Jumlah Pembayaran</Label>
                         <Input id="payment-amount" type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} />
@@ -164,7 +122,7 @@ const PaymentDialog = ({
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="payment-method">Metode Pembayaran</Label>
-                        <Select onValueChange={(v) => setMethod(v as PaymentMethod)} defaultValue={method}>
+                        <Select onValueChange={(v) => setMethod(v as PayrollEntry['paymentMethod'])} defaultValue={method}>
                             <SelectTrigger id="payment-method">
                                 <SelectValue placeholder="Pilih metode..." />
                             </SelectTrigger>
@@ -198,7 +156,7 @@ const AdvancePaymentDialog = ({
 }: {
     isOpen: boolean;
     onClose: () => void;
-    employees: Omit<PayrollEntry, 'paidAmount' | 'status' | 'netSalary'>[];
+    employees: User[];
     onConfirm: (employeeId: string, amount: number, notes: string) => void;
 }) => {
     const [employeeId, setEmployeeId] = useState<string>('');
@@ -239,13 +197,13 @@ const AdvancePaymentDialog = ({
                                 <SelectValue placeholder="Pilih karyawan..." />
                             </SelectTrigger>
                             <SelectContent>
-                                {employees.map(e => <SelectItem key={e.employeeId} value={e.employeeId}>{e.employeeName}</SelectItem>)}
+                                {employees.map(e => <SelectItem key={e.id} value={e.id!}>{e.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="advance-amount">Jumlah Uang Muka</Label>
-                        <Input id="advance-amount" type="number" value={amount} onChange={e => setAmount(Number(e.target.value))} />
+                        <Input id="advance-amount" type="number" value={amount <= 0 ? '' : amount} onChange={e => setAmount(Number(e.target.value))} />
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="advance-notes">Catatan</Label>
@@ -266,16 +224,34 @@ const AdvancePaymentDialog = ({
 export default function PayrollPage() {
     const [date, setDate] = useState<DateRange | undefined>({
         from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-        to: addDays(new Date(new Date().getFullYear(), new Date().getMonth(), 1), new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate() -1),
+        to: addDays(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), 0),
     });
     const [payrollData, setPayrollData] = useState<PayrollEntry[]>([]);
+    const [allUsers, setAllUsers] = useState<User[]>([]);
     const [isCalculating, setIsCalculating] = useState(false);
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
     const [isAdvanceDialogOpen, setIsAdvanceDialogOpen] = useState(false);
     const [selectedEntry, setSelectedEntry] = useState<PayrollEntry | null>(null);
     const { toast } = useToast();
 
-    const handleCalculate = () => {
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const users = await getAllUsersWithSalary();
+                setAllUsers(users);
+            } catch (error) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Gagal Memuat Karyawan',
+                    description: error instanceof Error ? error.message : 'Terjadi kesalahan server.'
+                });
+            }
+        };
+        fetchUsers();
+    }, [toast]);
+
+
+    const handleCalculate = async () => {
         if (!date?.from || !date?.to) {
             toast({
                 variant: 'destructive',
@@ -286,30 +262,68 @@ export default function PayrollPage() {
         }
 
         setIsCalculating(true);
-        toast({
+        const toastId = toast({
             title: 'Menghitung Gaji...',
             description: `Periode: ${format(date.from, "d LLL y")} - ${format(date.to, "d LLL y")}`
         });
 
-        // Simulasi proses kalkulasi
-        setTimeout(() => {
-            const processedData = initialPayrollData.map(entry => {
-                const netSalary = entry.baseSalary + entry.allowances - entry.deductions;
-                const paidAmount = 0;
+        try {
+            // Fetch necessary data
+            const users = allUsers;
+            if (users.length === 0) throw new Error("Tidak ada data karyawan ditemukan.");
+
+            const attendanceEntries = await getAttendanceForPeriod(startOfDay(date.from), endOfDay(date.to));
+            
+            const processedData = users.map((user): PayrollEntry => {
+                let baseSalary = 0;
+                let allowances = 0; // Placeholder
+                let deductions = 0; // Placeholder for advances
+
+                if (user.salaryType === 'Bulanan') {
+                    baseSalary = user.baseSalary;
+                } else if (user.salaryType === 'Per Jam') {
+                    const userAttendance = attendanceEntries.filter(
+                        a => a.employeeId === user.id && a.clockIn && a.clockOut
+                    );
+                    
+                    const totalHours = userAttendance.reduce((total, entry) => {
+                        const clockInTime = (entry.clockIn as any).toDate();
+                        const clockOutTime = (entry.clockOut as any).toDate();
+                        const hours = (clockOutTime - clockInTime) / (1000 * 60 * 60);
+                        return total + hours;
+                    }, 0);
+                    
+                    baseSalary = totalHours * user.baseSalary;
+                }
+                
+                const netSalary = baseSalary + allowances - deductions;
+
                 return {
-                    ...entry,
+                    employeeId: user.id!,
+                    employeeName: user.name,
+                    baseSalary,
+                    allowances,
+                    deductions,
                     netSalary,
-                    paidAmount,
-                    status: getStatus(netSalary, paidAmount)
+                    paidAmount: 0,
+                    status: getStatus(netSalary, 0),
+                    paymentMethod: 'Belum Dibayar',
                 };
             });
+
             setPayrollData(processedData);
-            setIsCalculating(false);
-            toast({
-                title: 'Perhitungan Selesai',
-                description: 'Data penggajian telah berhasil dibuat.'
+            toast({ id: toastId.id, title: 'Perhitungan Selesai', description: 'Data penggajian telah berhasil dibuat.' });
+            
+        } catch (error) {
+             toast({
+                id: toastId.id,
+                variant: 'destructive',
+                title: 'Perhitungan Gagal',
+                description: error instanceof Error ? error.message : 'Terjadi kesalahan saat mengambil data.'
             });
-        }, 1500);
+        } finally {
+            setIsCalculating(false);
+        }
     };
     
     const handlePayClick = (entry: PayrollEntry) => {
@@ -317,7 +331,7 @@ export default function PayrollPage() {
         setIsPaymentDialogOpen(true);
     };
     
-    const handleConfirmPayment = (employeeId: string, amount: number, method: PaymentMethod, notes: string) => {
+    const handleConfirmPayment = (employeeId: string, amount: number, method: PayrollEntry['paymentMethod'], notes: string) => {
         setPayrollData(prevData => prevData.map(entry => {
             if (entry.employeeId === employeeId) {
                 const newPaidAmount = entry.paidAmount + amount;
@@ -484,7 +498,7 @@ export default function PayrollPage() {
                                 <TableCell className="text-right text-destructive">-Rp{entry.deductions.toLocaleString('id-ID')}</TableCell>
                                 <TableCell className="text-right font-bold">Rp{entry.netSalary.toLocaleString('id-ID')}</TableCell>
                                 <TableCell className="text-center">
-                                    <Badge variant={getStatusVariant(entry.status)} className={entry.status === 'Lunas' ? 'bg-green-500' : ''}>
+                                    <Badge variant={getStatusVariant(entry.status)} className={entry.status === 'Lunas' ? 'bg-green-500 hover:bg-green-600' : ''}>
                                         {entry.status}
                                     </Badge>
                                 </TableCell>
@@ -528,11 +542,9 @@ export default function PayrollPage() {
     <AdvancePaymentDialog 
         isOpen={isAdvanceDialogOpen}
         onClose={() => setIsAdvanceDialogOpen(false)}
-        employees={initialPayrollData}
+        employees={allUsers}
         onConfirm={handleConfirmAdvance}
     />
     </>
   );
 }
-
-    
