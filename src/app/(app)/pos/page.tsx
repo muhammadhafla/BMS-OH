@@ -24,6 +24,14 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 
+type Product = {
+  kts: string;
+  name: string;
+  price: number;
+  stock: number;
+  unit: string;
+};
+
 type TransactionItem = {
   kts: string;
   name: string;
@@ -40,9 +48,18 @@ type HeldTransaction = {
   timestamp: Date;
 };
 
-const initialItems: TransactionItem[] = [
-  // Contoh data bisa ditambahkan di sini jika perlu
+const productCatalog: Product[] = [
+    { kts: 'ADS-SLP', name: 'Adidas Slop', price: 30000, stock: -1, unit: 'Pcs' },
+    { kts: 'AKS-001', name: 'Aksesoris 1', price: 1000, stock: -410, unit: 'Pcs' },
+    { kts: 'AKS-010', name: 'Aksesoris 10', price: 10000, stock: -1217, unit: 'Pcs' },
+    { kts: 'AKS-011', name: 'Aksesoris 11', price: 11000, stock: -301, unit: 'Pcs' },
+    { kts: 'AKS-012', name: 'Aksesoris 12', price: 12000, stock: 486, unit: 'Pcs' },
+    { kts: 'AKS-013', name: 'Aksesoris 13', price: 13000, stock: -739, unit: 'Pcs' },
+    { kts: 'AKS-017', name: 'Aksesoris 17', price: 17000, stock: 32, unit: 'Pcs' },
+    { kts: 'AKS-002', name: 'Aksesoris 2', price: 2000, stock: -1814, unit: 'Pcs' },
 ];
+
+const initialItems: TransactionItem[] = [];
 
 const KeybindHint = ({ children }: { children: React.ReactNode }) => (
   <span className="absolute -top-2 -right-2 bg-zinc-600 text-white text-[10px] font-bold px-1 rounded-sm border border-zinc-500">
@@ -57,6 +74,9 @@ export default function POSPage() {
   const [heldTransactions, setHeldTransactions] = useState<HeldTransaction[]>([]);
   const [isRecallDialogOpen, setIsRecallDialogOpen] = useState(false);
   const [recallSearch, setRecallSearch] = useState('');
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,9 +97,7 @@ export default function POSPage() {
       );
     }, 1000);
 
-    // Focus search input on mount
     searchInputRef.current?.focus();
-
     return () => clearInterval(timer);
   }, []);
 
@@ -101,7 +119,6 @@ export default function POSPage() {
     };
     setHeldTransactions(prev => [...prev, newHeldTransaction]);
     clearTransaction();
-    console.log('Tunda action triggered', newHeldTransaction);
   };
   
   const recallTransaction = (transactionId: number) => {
@@ -114,6 +131,43 @@ export default function POSPage() {
     }
   };
 
+  const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+        const searchTerm = e.currentTarget.value.toLowerCase();
+        const foundProduct = productCatalog.find(p => p.kts.toLowerCase() === searchTerm || p.name.toLowerCase() === searchTerm);
+
+        if (foundProduct) {
+            addItemToTransaction(foundProduct);
+            e.currentTarget.value = '';
+        } else {
+            setProductSearch(searchTerm);
+            setIsSearchDialogOpen(true);
+        }
+    }
+  };
+
+  const addItemToTransaction = (product: Product) => {
+    const newItem: TransactionItem = {
+      kts: product.kts,
+      name: product.name,
+      price: product.price,
+      discount: 0,
+      total: product.price,
+    };
+    setItems(prevItems => [...prevItems, newItem]);
+  };
+
+  const handleProductSelectAndClose = () => {
+    if (selectedProduct) {
+      addItemToTransaction(selectedProduct);
+    }
+    setIsSearchDialogOpen(false);
+    setProductSearch('');
+    setSelectedProduct(null);
+    if (searchInputRef.current) searchInputRef.current.value = '';
+    searchInputRef.current?.focus();
+  };
+
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (event.key === 'F2') {
       event.preventDefault();
@@ -123,14 +177,11 @@ export default function POSPage() {
       setIsRecallDialogOpen(true);
     } else if (event.key === 'F11') {
       event.preventDefault();
-      console.log('Kasir action triggered');
     } else if (event.key === 'F4') {
         event.preventDefault();
         clearTransaction();
-        console.log('Clear action triggered');
     } else if (event.key === 'F9') {
         event.preventDefault();
-        console.log('Bayar action triggered');
     }
   }, [items, heldTransactions]);
 
@@ -153,6 +204,12 @@ export default function POSPage() {
     (t) =>
       t.customer.toLowerCase().includes(recallSearch.toLowerCase()) ||
       (t.items[0]?.name.toLowerCase().includes(recallSearch.toLowerCase()))
+  );
+
+  const filteredProducts = productCatalog.filter(
+    (p) =>
+      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      p.kts.toLowerCase().includes(productSearch.toLowerCase())
   );
 
 
@@ -189,7 +246,7 @@ export default function POSPage() {
              </div>
           </div>
           
-          <Input ref={searchInputRef} type="text" className="h-8 border-2 border-yellow-400 bg-yellow-200 text-black focus:ring-yellow-500" />
+          <Input ref={searchInputRef} type="text" className="h-8 border-2 border-yellow-400 bg-yellow-200 text-black focus:ring-yellow-500" onKeyDown={handleSearchSubmit} />
           <div className="h-16 bg-zinc-800 rounded-md" />
           <div className="h-16 bg-zinc-800 rounded-md" />
         </aside>
@@ -313,7 +370,62 @@ export default function POSPage() {
         </DialogContent>
       </Dialog>
 
-
+      <Dialog open={isSearchDialogOpen} onOpenChange={(open) => { if (!open) { setIsSearchDialogOpen(false); setProductSearch(''); setSelectedProduct(null); searchInputRef.current?.focus(); if (searchInputRef.current) searchInputRef.current.value = ''; } else { setIsSearchDialogOpen(true) }}}>
+        <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-2xl">
+            <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
+                <DialogTitle className="text-white">CARI BARANG</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                    <Label htmlFor="product-search" className="font-bold">Cari</Label>
+                    <Input
+                        id="product-search"
+                        type="text"
+                        value={productSearch}
+                        onChange={(e) => setProductSearch(e.target.value)}
+                        className="h-8 border-2 border-yellow-400 bg-yellow-200 text-black focus:ring-yellow-500"
+                    />
+                </div>
+                <div className="border-2 border-zinc-400 h-80 overflow-y-auto bg-white">
+                    <Table>
+                        <TableHeader className="bg-zinc-700 sticky top-0">
+                            <TableRow>
+                                <TableHead className="text-white">Nama Barang</TableHead>
+                                <TableHead className="text-right text-white">Stok</TableHead>
+                                <TableHead className="text-white">Satuan</TableHead>
+                                <TableHead className="text-right text-white">Harga</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredProducts.map((p) => (
+                                <TableRow key={p.kts} onClick={() => setSelectedProduct(p)} onDoubleClick={handleProductSelectAndClose} className={`cursor-pointer ${selectedProduct?.kts === p.kts ? 'bg-yellow-200' : 'hover:bg-yellow-100'}`}>
+                                    <TableCell>{p.name}</TableCell>
+                                    <TableCell className="text-right">{p.stock}</TableCell>
+                                    <TableCell>{p.unit}</TableCell>
+                                    <TableCell className="text-right">{p.price.toLocaleString('id-ID')}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    {filteredProducts.length === 0 && (
+                        <div className="flex items-center justify-center h-full text-zinc-400">
+                            Barang tidak ditemukan
+                        </div>
+                    )}
+                </div>
+            </div>
+            <DialogFooter className="mt-2">
+                <Button variant="pos" onClick={handleProductSelectAndClose} className="relative">
+                    OK
+                    <KeybindHint>Enter</KeybindHint>
+                </Button>
+                <Button variant="pos" onClick={() => setIsSearchDialogOpen(false)} className="relative">
+                    Batal
+                    <KeybindHint>Esc</KeybindHint>
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
