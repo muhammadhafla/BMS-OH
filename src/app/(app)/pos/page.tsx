@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Power } from 'lucide-react';
+import Link from 'next/link';
 
 type TransactionItem = {
   kts: string;
@@ -196,8 +197,10 @@ export default function POSPage() {
       </div>
 
        <div className="fixed bottom-2 left-2">
-         <Button size="icon" className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700 shadow-lg">
-           <Power />
+         <Button size="icon" className="h-12 w-12 rounded-full bg-red-600 hover:bg-red-700 shadow-lg" asChild>
+            <Link href="/dashboard">
+              <Power />
+            </Link>
          </Button>
        </div>
 
