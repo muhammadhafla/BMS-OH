@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -114,6 +115,7 @@ export default function POSPage() {
   const [currentCashier, setCurrentCashier] = useState('');
   const router = useRouter();
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const { toast } = useToast();
 
 
   
@@ -370,7 +372,7 @@ export default function POSPage() {
     // For now, we'll just clear the transaction.
     clearTransaction();
     setIsPaymentDialogOpen(false);
-    useToast().toast({
+    toast({
       title: "Transaksi Berhasil",
       description: `Pembayaran dengan ${paymentMethod} telah berhasil.`
     });
@@ -1363,6 +1365,7 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
   const [amountPaid, setAmountPaid] = useState('');
   const [change, setChange] = useState(0);
   const amountInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (isOpen) {
@@ -1399,7 +1402,7 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
 
   const handleFinishTransaction = () => {
     if (paymentMethod === 'Tunai' && (parseFloat(amountPaid) || 0) < totalAmount) {
-        useToast().toast({
+        toast({
             variant: "destructive",
             title: "Pembayaran Kurang",
             description: "Jumlah yang dibayarkan kurang dari total belanja."
@@ -1495,3 +1498,4 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
   );
 };
     
+
