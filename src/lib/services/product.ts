@@ -12,7 +12,7 @@ const productsCollection = firestore.collection('products');
  */
 export async function getAllProducts(): Promise<Product[]> {
   try {
-    const snapshot = await productsCollection.get();
+    const snapshot = await productsCollection.orderBy('name').get();
     if (snapshot.empty) {
       return [];
     }
@@ -45,7 +45,25 @@ export async function getProductById(id: string): Promise<Product | null> {
   }
 }
 
+/**
+ * Menambahkan produk baru ke Firestore.
+ * @param {Omit<Product, 'id'>} productData - Data produk baru.
+ * @returns {Promise<Product>} Objek produk yang baru dibuat termasuk ID-nya.
+ */
+export async function addProduct(productData: Omit<Product, 'id'>): Promise<Product> {
+  try {
+    const docRef = await productsCollection.add(productData);
+    return {
+      id: docRef.id,
+      ...productData,
+    };
+  } catch (error) {
+    console.error('Error adding product:', error);
+    throw new Error('Gagal menambahkan produk baru ke server.');
+  }
+}
+
+
 // Anda dapat menambahkan fungsi lain di sini seiring kebutuhan, seperti:
-// - addProduct(product: Omit<Product, 'id'>): Promise<Product>
 // - updateProduct(id: string, updates: Partial<Product>): Promise<void>
 // - deleteProduct(id: string): Promise<void>

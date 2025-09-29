@@ -21,11 +21,118 @@ import { Badge } from '@/components/ui/badge';
 import { PlusCircle, FileUp, ImageUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Product } from '@/lib/types';
-import { getAllProducts } from '@/lib/services/product';
+import { getAllProducts, addProduct } from '@/lib/services/product';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+
+
+const AddItemDialog = ({ isOpen, onClose, onProductAdded }: { isOpen: boolean, onClose: () => void, onProductAdded: (newProduct: Product) => void }) => {
+    const [name, setName] = useState('');
+    const [sku, setSku] = useState('');
+    const [price, setPrice] = useState('');
+    const [stock, setStock] = useState('');
+    const [unit, setUnit] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            const newProductData: Omit<Product, 'id'> = {
+                name,
+                sku,
+                price: parseFloat(price) || 0,
+                stock: { main: parseInt(stock, 10) || 0 },
+                unit,
+            };
+            const newProduct = await addProduct(newProductData);
+            onProductAdded(newProduct);
+            toast({
+                title: "Produk Ditambahkan",
+                description: `${newProduct.name} telah berhasil ditambahkan ke inventaris.`,
+            });
+            onClose();
+        } catch (error) {
+            console.error("Failed to add product:", error);
+            toast({
+                variant: "destructive",
+                title: "Gagal Menambahkan Produk",
+                description: "Terjadi kesalahan saat menyimpan produk baru.",
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    useEffect(() => {
+        if (!isOpen) {
+            setName('');
+            setSku('');
+            setPrice('');
+            setStock('');
+            setUnit('');
+        }
+    }, [isOpen]);
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Tambah Item Baru</DialogTitle>
+                    <DialogDescription>
+                        Isi detail produk baru di bawah ini.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="name" className="text-right">Nama</Label>
+                            <Input id="name" value={name} onChange={e => setName(e.target.value)} className="col-span-3" required />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="sku" className="text-right">SKU</Label>
+                            <Input id="sku" value={sku} onChange={e => setSku(e.target.value)} className="col-span-3" required />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="price" className="text-right">Harga</Label>
+                            <Input id="price" type="number" value={price} onChange={e => setPrice(e.target.value)} className="col-span-3" required />
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="stock" className="text-right">Stok</Label>
+                            <Input id="stock" type="number" value={stock} onChange={e => setStock(e.target.value)} className="col-span-3" required />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="unit" className="text-right">Satuan</Label>
+                            <Input id="unit" value={unit} onChange={e => setUnit(e.target.value)} className="col-span-3" placeholder="e.g., pcs, kg, box" required />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>Batal</Button>
+                        <Button type="submit" className="bg-accent hover:bg-accent/90" disabled={isSubmitting}>
+                            {isSubmitting ? 'Menyimpan...' : 'Simpan'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 export default function InventoryPage() {
   const [inventoryItems, setInventoryItems] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -43,6 +150,10 @@ export default function InventoryPage() {
 
     fetchProducts();
   }, []);
+
+  const handleProductAdded = (newProduct: Product) => {
+    setInventoryItems(prevItems => [...prevItems, newProduct]);
+  };
 
   const getStatus = (stock: number) => {
     if (stock === 0) return 'Out of Stock';
@@ -83,7 +194,7 @@ export default function InventoryPage() {
             <FileUp />
             Import from CSV
           </Button>
-          <Button className="bg-accent hover:bg-accent/90">
+          <Button className="bg-accent hover:bg-accent/90" onClick={() => setIsAddDialogOpen(true)}>
             <PlusCircle />
             Add Item
           </Button>
@@ -152,6 +263,11 @@ export default function InventoryPage() {
           </Table>
         </CardContent>
       </Card>
+      <AddItemDialog 
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
+        onProductAdded={handleProductAdded}
+      />
     </div>
   );
 }
