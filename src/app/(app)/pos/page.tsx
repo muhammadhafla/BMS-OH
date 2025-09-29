@@ -109,6 +109,7 @@ export default function POSPage() {
   const [isShiftReportDialogOpen, setIsShiftReportDialogOpen] = useState(false);
   const [productCatalog, setProductCatalog] = useState<ProductType[]>([]);
   const [isLocked, setIsLocked] = useState(false);
+  const [currentCashier, setCurrentCashier] = useState('');
   const router = useRouter();
 
 
@@ -122,16 +123,22 @@ export default function POSPage() {
   useEffect(() => {
      // Check if POS session is authenticated
     const posAuthenticated = sessionStorage.getItem('pos-authenticated') === 'true';
-    if (!posAuthenticated) {
+    const cashierName = sessionStorage.getItem('pos-cashier-name');
+
+    if (!posAuthenticated || !cashierName) {
       router.push('/pos/auth');
       return; // Stop execution if not authenticated
     }
+
+    setCurrentCashier(cashierName);
 
     // Initialize session ID if it doesn't exist for this session
     let sessionId = sessionStorage.getItem('pos-session-id');
     if (!sessionId) {
       const now = new Date();
-      sessionId = `sesi-${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+      const datePart = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+      const timePart = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`;
+      sessionId = `sesi-${cashierName.replace(/\s+/g, '-')}-${datePart}-${timePart}`;
       sessionStorage.setItem('pos-session-id', sessionId);
     }
   }, [router]);
@@ -344,6 +351,7 @@ export default function POSPage() {
   const handlePowerOff = () => {
     sessionStorage.removeItem('pos-authenticated');
     sessionStorage.removeItem('pos-session-id');
+    sessionStorage.removeItem('pos-cashier-name');
     router.push('/dashboard');
   }
 
@@ -497,7 +505,7 @@ export default function POSPage() {
                </Button>
             </div>
              <div className="flex items-center gap-4 rounded-md bg-zinc-800 px-3 py-1 text-sm text-white">
-                <span>{currentUserRole.charAt(0).toUpperCase() + currentUserRole.slice(1)}</span>
+                <span>{currentCashier}</span>
                 <span>{currentTime}</span>
              </div>
             <Button className="relative h-12 w-32 bg-yellow-400 text-black font-bold text-xl hover:bg-yellow-500">

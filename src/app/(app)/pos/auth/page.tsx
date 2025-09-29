@@ -10,23 +10,24 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function PosAuthPage() {
   const [pin, setPin] = useState('');
+  const [cashierName, setCashierName] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const pinInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Clear session auth on load
     sessionStorage.removeItem('pos-authenticated');
-    pinInputRef.current?.focus();
+    sessionStorage.removeItem('pos-cashier-name');
+    nameInputRef.current?.focus();
   }, []);
 
   const handleAuth = (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
 
-    // This PIN is for accessing the POS screen. It's different from the authorization PIN for actions inside POS.
-    // In a real app, this could be a user's password or a cashier-specific PIN managed by an admin.
+    // This PIN is for accessing the POS screen.
     const accessPin = localStorage.getItem('pos-access-pin') || '1234'; 
 
     if (pin === accessPin) {
@@ -36,6 +37,7 @@ export default function PosAuthPage() {
       });
       // Set a session storage item to indicate authentication
       sessionStorage.setItem('pos-authenticated', 'true');
+      sessionStorage.setItem('pos-cashier-name', cashierName);
       router.push('/pos');
     } else {
       toast({
@@ -57,17 +59,31 @@ export default function PosAuthPage() {
           </div>
           <h1 className="text-2xl font-bold text-white">Otorisasi POS</h1>
           <p className="text-zinc-400 mt-2">
-            Masukkan PIN untuk melanjutkan ke Point of Sale.
+            Masukkan nama dan PIN untuk memulai sesi.
           </p>
         </div>
         <form onSubmit={handleAuth} className="mt-8">
           <div className="space-y-4">
             <div className="space-y-2">
+                <Label htmlFor="cashierName" className="text-zinc-400">
+                    Nama Kasir
+                </Label>
+                <Input
+                    ref={nameInputRef}
+                    id="cashierName"
+                    type="text"
+                    required
+                    value={cashierName}
+                    onChange={(e) => setCashierName(e.target.value)}
+                    disabled={loading}
+                    className="h-12 bg-zinc-700 border-zinc-600 text-white focus:border-yellow-400 focus:ring-yellow-400"
+                />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="pin" className="text-zinc-400">
                 PIN Akses
               </Label>
               <Input
-                ref={pinInputRef}
                 id="pin"
                 type="password"
                 required
@@ -83,9 +99,9 @@ export default function PosAuthPage() {
             <Button
               type="submit"
               className="w-full h-12 bg-yellow-400 text-lg font-bold text-black hover:bg-yellow-500 disabled:opacity-75"
-              disabled={loading}
+              disabled={loading || !cashierName || !pin}
             >
-              {loading ? 'Memverifikasi...' : 'Masuk'}
+              {loading ? 'Memverifikasi...' : 'Mulai Sesi'}
             </Button>
           </div>
         </form>
