@@ -213,7 +213,7 @@ export default function POSPage() {
 
   const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-        const searchTerm = e.currentTarget.value;
+        const searchTerm = e.currentTarget.value.trim();
         if (!searchTerm) return;
 
         // Prioritize exact match on SKU first, then name
@@ -344,9 +344,15 @@ export default function POSPage() {
   }
 
   const unlockScreen = () => {
-    setIsLocked(false);
-    searchInputRef.current?.focus();
-  }
+    const storedPin = localStorage.getItem('pos-access-pin') || '1234';
+    const pin = prompt('Masukkan PIN untuk membuka kunci:');
+    if (pin === storedPin) {
+      setIsLocked(false);
+      searchInputRef.current?.focus();
+    } else if (pin !== null) {
+      alert('PIN salah.');
+    }
+  };
   
   const handlePowerOff = () => {
     sessionStorage.removeItem('pos-authenticated');
@@ -1154,18 +1160,57 @@ const ReportRow = ({ label, value }: { label: string; value: number }) => (
 );
 
 const ShiftReportDialog = ({ isOpen, onClose, currentUserRole }: ShiftReportDialogProps) => {
-  
-  // Dummy data for the report
-  const reportData = {
-    totalSales: 355000,
-    cashPayment: 355000,
+  const [reportData, setReportData] = useState({
+    totalSales: 0,
+    cashPayment: 0,
     debitCard: 0,
     creditCard: 0,
     voucher: 0,
-    initialCash: 598000,
-    cashWithdrawal: 39000,
-  };
+    initialCash: 0,
+    cashWithdrawal: 0,
+  });
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // This logic runs on the client, so localStorage is available.
+    const sessionId = sessionStorage.getItem('pos-session-id');
+    if (!sessionId) return;
+
+    try {
+      const storedData = localStorage.getItem('cashDrawerTransactions');
+      const allTransactions: CashDrawerTransaction[] = storedData ? JSON.parse(storedData) : [];
+      
+      const sessionTransactions = allTransactions.filter(t => t.sessionId === sessionId);
+
+      const initialCash = sessionTransactions
+        .filter(t => t.type === 'Uang Awal')
+        .reduce((sum, t) => sum + t.amount, 0);
+
+      const cashWithdrawal = sessionTransactions
+        .filter(t => t.type === 'Uang Keluar')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      // NOTE: Sales data is not yet tracked.
+      const totalSales = 0; 
+      const cashPayment = 0;
+
+      setReportData({
+        totalSales,
+        cashPayment,
+        debitCard: 0,
+        creditCard: 0,
+        voucher: 0,
+        initialCash,
+        cashWithdrawal,
+      });
+
+    } catch (error) {
+      console.error('Gagal membuat laporan shift:', error);
+    }
+
+  }, [isOpen]);
+  
   const totalInDrawer = reportData.initialCash + reportData.cashPayment - reportData.cashWithdrawal;
   
   useEffect(() => {
