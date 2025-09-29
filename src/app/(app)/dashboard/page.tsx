@@ -76,7 +76,18 @@ async function AISummary({ inventoryPromise }: { inventoryPromise: Promise<Produ
 
 export default async function DashboardPage() {
   const otherModules = modules.filter(mod => mod.href !== '/dashboard');
-  const inventoryPromise = getAllProducts();
+  
+  let inventoryPromise: Promise<Product[]>;
+  try {
+    // We call the function to get the promise.
+    inventoryPromise = getAllProducts();
+    // We must `await` the promise here to catch potential errors from this call on the server.
+    await inventoryPromise;
+  } catch (error) {
+    // If it fails, we log the error on the server and pass a resolved promise with an empty array to the client.
+    console.error("DashboardPage - Failed to fetch initial inventory data:", error);
+    inventoryPromise = Promise.resolve([]);
+  }
 
 
   return (
