@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Settings,
   Truck,
+  Wallet,
 } from 'lucide-react';
 import type { Module } from '@/lib/types';
 
@@ -30,10 +31,10 @@ export const modules: Module[] = [
     icon: <Truck className="size-8 text-primary" />,
   },
   {
-    name: 'Akuntansi',
-    description: 'Kelola entri jurnal dan hasilkan laporan keuangan.',
-    href: '/accounting',
-    icon: <BookCopy className="size-8 text-primary" />,
+    name: 'Point of Sale (POS)',
+    description: 'POS yang dioptimalkan untuk desktop demi kelancaran transaksi.',
+    href: '/pos/auth',
+    icon: <ShoppingCart className="size-8 text-primary" />,
   },
   {
     name: 'Absensi',
@@ -42,10 +43,16 @@ export const modules: Module[] = [
     icon: <UserCheck className="size-8 text-primary" />,
   },
   {
-    name: 'Point of Sale (POS)',
-    description: 'POS yang dioptimalkan untuk desktop demi kelancaran transaksi.',
-    href: '/pos/auth',
-    icon: <ShoppingCart className="size-8 text-primary" />,
+    name: 'Penggajian',
+    description: 'Hitung dan kelola gaji karyawan berdasarkan data absensi.',
+    href: '/payroll',
+    icon: <Wallet className="size-8 text-primary" />,
+  },
+  {
+    name: 'Akuntansi',
+    description: 'Kelola entri jurnal dan hasilkan laporan keuangan.',
+    href: '/accounting',
+    icon: <BookCopy className="size-8 text-primary" />,
   },
   {
     name: 'Pengaturan',
