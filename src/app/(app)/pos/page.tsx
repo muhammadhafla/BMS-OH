@@ -660,7 +660,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isOpen || isAuthDialogOpen) return;
-      if (event.key === 'F5') {
+      if (event.key === 'Enter') {
         event.preventDefault();
         handleSubmit();
       } else if (event.key === 'Escape') {
@@ -668,9 +668,14 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
         onClose();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
+
+    if (isOpen) {
+        window.addEventListener('keydown', handleKeyDown);
+    }
+    
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, quantity, price, discountAmount, discountPercent, isPriceLocked, isAuthDialogOpen]);
+  }, [isOpen, quantity, price, discountAmount, discountPercent, isPriceLocked, isAuthDialogOpen, onClose, handleSubmit]);
+  
   
   const handleUnlockPrice = () => {
     if (currentUserRole === 'staff') {
@@ -726,7 +731,7 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
             <div className="flex gap-2">
                 <Button type="submit" variant="pos" className="w-auto px-6 h-10 relative">
                     OK
-                    <KeybindHint>F5</KeybindHint>
+                    <KeybindHint>Enter</KeybindHint>
                 </Button>
                 <Button type="button" variant="pos" onClick={onClose} className="w-auto px-6 h-10 relative">
                     Batal
@@ -846,7 +851,7 @@ const AuthorizationDialog = ({ isOpen, onClose, onAuthorize }: AuthorizationDial
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-sm">
+      <DialogContent className="bg-zinc-200 border-zinc-400 text-black max-w-sm" onKeyDown={(e) => {if(e.key === 'Enter') handleSubmit(e)}}>
         <DialogHeader className="bg-zinc-700 -mx-6 -mt-6 p-2 px-6 rounded-t-lg">
           <DialogTitle className="text-white">Otorisasi Diperlukan</DialogTitle>
           <DialogDescription className="text-zinc-300 pt-1">
