@@ -65,7 +65,7 @@ const inventoryItems = [
 
 
 type Product = {
-  kts: string;
+  sku: string;
   name: string;
   price: number;
   stock: number;
@@ -73,8 +73,9 @@ type Product = {
 };
 
 type TransactionItem = {
-  kts: string;
+  sku: string;
   name: string;
+  quantity: number;
   price: number;
   discount: number;
   total: number;
@@ -89,7 +90,7 @@ type HeldTransaction = {
 };
 
 const productCatalog: Product[] = inventoryItems.map(item => ({
-    kts: item.sku,
+    sku: item.sku,
     name: item.name,
     price: item.price,
     stock: item.stock,
@@ -139,6 +140,10 @@ export default function POSPage() {
     return () => clearInterval(timer);
   }, []);
 
+  const calculateTotal = (items: TransactionItem[]) => {
+    return items.reduce((acc, item) => acc + item.total, 0);
+  }
+  
   const clearTransaction = () => {
     setItems([]);
     setTotal(0);
@@ -172,7 +177,7 @@ export default function POSPage() {
   const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
         const searchTerm = e.currentTarget.value.toLowerCase();
-        const foundProduct = productCatalog.find(p => p.kts.toLowerCase() === searchTerm || p.name.toLowerCase() === searchTerm);
+        const foundProduct = productCatalog.find(p => p.sku.toLowerCase() === searchTerm || p.name.toLowerCase() === searchTerm);
 
         if (foundProduct) {
             addItemToTransaction(foundProduct);
@@ -184,16 +189,30 @@ export default function POSPage() {
     }
   };
 
-  const addItemToTransaction = (product: Product) => {
-    const newItem: TransactionItem = {
-      kts: product.kts,
-      name: product.name,
-      price: product.price,
-      discount: 0,
-      total: product.price,
-    };
-    setItems(prevItems => [...prevItems, newItem]);
-  };
+  const addItemToTransaction = (product: Product, quantity: number = 1) => {
+    setItems(prevItems => {
+        const existingItemIndex = prevItems.findIndex(item => item.sku === product.sku);
+        const newItems = [...prevItems];
+
+        if (existingItemIndex > -1) {
+            const existingItem = newItems[existingItemIndex];
+            const newQuantity = existingItem.quantity + quantity;
+            existingItem.quantity = newQuantity;
+            existingItem.total = (existingItem.price - existingItem.discount) * newQuantity;
+        } else {
+            const newItem: TransactionItem = {
+                sku: product.sku,
+                name: product.name,
+                price: product.price,
+                quantity: quantity,
+                discount: 0,
+                total: (product.price - 0) * quantity,
+            };
+            newItems.push(newItem);
+        }
+        return newItems;
+    });
+};
 
   const handleProductSelectAndClose = () => {
     if (selectedProduct) {
@@ -229,10 +248,6 @@ export default function POSPage() {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
-
-  const calculateTotal = (items: TransactionItem[]) => {
-    return items.reduce((acc, item) => acc + item.total, 0);
-  }
   
   useEffect(() => {
     setTotal(calculateTotal(items));
@@ -247,7 +262,7 @@ export default function POSPage() {
   const filteredProducts = productCatalog.filter(
     (p) =>
       p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-      p.kts.toLowerCase().includes(productSearch.toLowerCase())
+      p.sku.toLowerCase().includes(productSearch.toLowerCase())
   );
 
 
@@ -311,7 +326,7 @@ export default function POSPage() {
                 <TableBody>
                   {items.map((item, index) => (
                     <TableRow key={index}>
-                      <TableCell>{item.kts}</TableCell>
+                      <TableCell className="text-center">{item.quantity}</TableCell>
                       <TableCell>{item.name}</TableCell>
                       <TableCell className="text-right">{item.price.toLocaleString('id-ID')}</TableCell>
                       <TableCell className="text-right">{item.discount.toLocaleString('id-ID')}</TableCell>
@@ -436,7 +451,7 @@ export default function POSPage() {
                         </TableHeader>
                         <TableBody>
                             {filteredProducts.map((p) => (
-                                <TableRow key={p.kts} onClick={() => setSelectedProduct(p)} onDoubleClick={handleProductSelectAndClose} className={`cursor-pointer ${selectedProduct?.kts === p.kts ? 'bg-yellow-200' : 'hover:bg-yellow-100'}`}>
+                                <TableRow key={p.sku} onClick={() => setSelectedProduct(p)} onDoubleClick={handleProductSelectAndClose} className={`cursor-pointer ${selectedProduct?.sku === p.sku ? 'bg-yellow-200' : 'hover:bg-yellow-100'}`}>
                                     <TableCell>{p.name}</TableCell>
                                     <TableCell className="text-right">{p.stock}</TableCell>
                                     <TableCell>{p.unit}</TableCell>
