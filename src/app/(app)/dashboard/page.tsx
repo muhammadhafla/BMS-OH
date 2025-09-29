@@ -1,3 +1,4 @@
+
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -51,6 +52,8 @@ async function AISummary() {
 }
 
 export default function DashboardPage() {
+  const otherModules = modules.filter(mod => mod.href !== '/dashboard');
+
   return (
     <div className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
       <header className="mb-8">
@@ -64,6 +67,27 @@ export default function DashboardPage() {
 
       <div className="mb-8">
         <AISummary />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {otherModules.map((mod) => (
+          <Card key={mod.href}>
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle className="text-xl">{mod.name}</CardTitle>
+                <CardDescription>{mod.description}</CardDescription>
+              </div>
+              {mod.icon}
+            </CardHeader>
+            <CardFooter>
+              <Button asChild variant="outline">
+                <Link href={mod.href}>
+                  Open Module <ArrowRight />
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
       </div>
 
     </div>
