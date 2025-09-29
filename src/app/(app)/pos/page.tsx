@@ -381,7 +381,10 @@ export default function POSPage() {
 
     const key = event.key;
     
-    if (key === keybinds.hold) {
+    if (key === 'Tab') {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+    } else if (key === keybinds.hold) {
       event.preventDefault();
       holdTransaction();
     } else if (key === keybinds.recall) {
