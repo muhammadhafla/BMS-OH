@@ -43,6 +43,10 @@ export default function PinDisplay() {
     if (pin) {
       navigator.clipboard.writeText(pin);
       setIsCopied(true);
+      toast({
+        title: 'PIN Disalin!',
+        description: 'PIN otorisasi telah disalin ke clipboard.',
+      });
       setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
     }
   };
@@ -52,12 +56,12 @@ export default function PinDisplay() {
       <CardHeader>
         <CardTitle>PIN Otorisasi POS</CardTitle>
         <CardDescription>
-          Gunakan PIN ini untuk tindakan yang memerlukan otorisasi di POS. PIN ini diperbarui secara berkala.
+          Gunakan PIN 6 digit ini untuk tindakan yang memerlukan otorisasi di POS (mis. mengubah harga). PIN diperbarui setiap 6 jam.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex items-center justify-between">
         {isLoading ? (
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-40" />
         ) : pin ? (
           <div className="text-3xl font-bold tracking-widest font-mono bg-muted px-4 py-2 rounded-md">
             {pin}
