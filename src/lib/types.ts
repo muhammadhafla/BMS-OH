@@ -1,7 +1,6 @@
 
 
 import type { ReactNode } from 'react';
-import type { Timestamp, FieldValue } from 'firebase-admin/firestore';
 
 export interface Module {
   name: string;
@@ -62,15 +61,15 @@ export interface Transaction {
   items: TransactionItem[];
   totalAmount: number;
   paymentMethod: PaymentMethod;
-  completedAt: Timestamp;
+  completedAt: any;
 }
 
 export interface CashDrawerSession {
   id?: string;
   branchId: string;
   cashierId: string;
-  startAt: Timestamp;
-  endAt?: Timestamp;
+  startAt: any;
+  endAt?: any;
   initialCash: number;
   status: 'open' | 'closed';
 }
@@ -83,7 +82,7 @@ export interface CashDrawerActivity {
   type: CashDrawerActivityType;
   amount: number;
   description: string;
-  timestamp: Timestamp;
+  timestamp: any;
 }
 
 export interface ChartOfAccountsEntry {
@@ -107,7 +106,7 @@ export interface PurchaseItem {
 export interface Purchase {
   id?: string;
   supplier: string;
-  purchaseDate: Timestamp;
+  purchaseDate: any;
   items: PurchaseItem[];
   totalAmount: number;
   notes?: string;
@@ -120,7 +119,7 @@ export interface PurchaseHistory {
   sku: string;
   quantity: number;
   purchasePrice: number;
-  purchaseDate: Timestamp;
+  purchaseDate: any;
   supplier: string;
 }
 
@@ -129,8 +128,8 @@ export interface AttendanceEntry {
   id?: string;
   employeeId: string;
   employeeName: string;
-  clockIn: Timestamp | FieldValue;
-  clockOut: Timestamp | FieldValue | null;
+  clockIn: any;
+  clockOut: any | null;
   status: 'Hadir' | 'Absen' | 'Izin' | string;
   location: string;
   photoIn?: string;
@@ -161,11 +160,11 @@ export interface Conversation {
     participantNames: { [key: string]: string };
     lastMessage: {
         text: string;
-        timestamp: Timestamp;
+        timestamp: any;
         senderId: string;
     } | null;
-    unreadCounts: { [key: string]: number };
-    createdAt: Timestamp | FieldValue;
+    unreadCounts?: { [key: string]: number };
+    createdAt?: any;
 }
 
 export interface Message {
@@ -174,6 +173,6 @@ export interface Message {
     senderId: string;
     senderName: string;
     text: string;
-    timestamp: Timestamp;
-    readBy: string[]; // Array of user IDs who have read the message
+    timestamp: any;
+    readBy?: string[]; // Array of user IDs who have read the message
 }
