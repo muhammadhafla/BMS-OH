@@ -1,4 +1,3 @@
-
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -13,9 +12,10 @@ import { Button } from '@/components/ui/button';
 import { summarizeInventoryData } from '@/ai/flows/summarize-inventory-data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Sparkles, AlertTriangle } from 'lucide-react';
-import { modules } from '@/lib/modules.tsx';
+import { modules } from '@/lib/modules';
 import { getAllProducts } from '@/lib/services/product';
 import type { Product } from '@/lib/types';
+import PinDisplay from '@/components/dashboard/pin-display';
 
 
 async function AISummary({ inventoryPromise }: { inventoryPromise: Promise<Product[]> }) {
@@ -100,9 +100,11 @@ export default async function DashboardPage() {
           Selamat datang kembali! Berikut adalah gambaran umum bisnis Anda.
         </p>
       </header>
-
-      <div className="mb-8">
+      
+      <div className="mb-8 grid gap-4 md:grid-cols-2">
         <AISummary inventoryPromise={inventoryPromise} />
+        {/* This component should be conditionally rendered based on user role (e.g., admin or manager) */}
+        <PinDisplay />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

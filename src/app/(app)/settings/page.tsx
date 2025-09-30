@@ -66,22 +66,23 @@ export default function SettingsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [permissions, setPermissions] = useState(initialPermissions);
-  const [posAuthPin, setPosAuthPin] = useState('');
+  const [posAccessPin, setPosAccessPin] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
-    const storedPin = localStorage.getItem('pos-auth-pin'); //berisi tentang auth//
+    // This is for the login PIN, not the manager override PIN
+    const storedPin = localStorage.getItem('pos-access-pin');
     if (storedPin) {
-      setPosAuthPin(storedPin);
+      setPosAccessPin(storedPin);
     }
   }, []);
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPosAuthPin(e.target.value);
+    setPosAccessPin(e.target.value);
   };
-
+  
   const handleSaveSettings = () => {
-    localStorage.setItem('pos-auth-pin', posAuthPin); //berisi tentang auth//
+    localStorage.setItem('pos-access-pin', posAccessPin); // This is for general POS access, not manager override
     toast({
       title: "Pengaturan Disimpan",
       description: "Pengaturan Anda telah berhasil disimpan.",
@@ -164,7 +165,7 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-
+        
         <Card>
           <CardHeader>
             <CardTitle>Pengaturan POS</CardTitle>
@@ -174,29 +175,28 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="pos-pin">PIN Otorisasi POS</Label>
+              <Label htmlFor="pos-pin">PIN Akses Kasir</Label>
               <Input
                 id="pos-pin"
                 type="password"
-                value={posAuthPin}
+                value={posAccessPin}
                 onChange={handlePinChange}
                 maxLength={4}
-                placeholder="Masukkan 4 digit PIN"
+                placeholder="Masukkan 4 digit PIN untuk akses kasir"
               />
               <p className="text-sm text-muted-foreground">
-                PIN ini digunakan untuk mengotorisasi tindakan yang dibatasi di kasir, seperti mengubah harga.
+                PIN ini digunakan oleh kasir untuk memulai sesi di halaman POS.
               </p>
             </div>
           </CardContent>
         </Card>
 
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <CardTitle>Peran & Hak Akses</CardTitle>
+              <CardTitle>Manajemen Pengguna</CardTitle>
               <CardDescription>
-                Kelola peran pengguna dan hak aksesnya.
+                Kelola pengguna, peran, dan gaji.
               </CardDescription>
             </div>
             <Button className="bg-accent hover:bg-accent/90" onClick={openAddDialog}>
