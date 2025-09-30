@@ -8,6 +8,7 @@ import {
   Settings,
   Truck,
   Wallet,
+  MessageSquare,
 } from 'lucide-react';
 import type { Module } from '@/lib/types';
 
@@ -35,6 +36,12 @@ export const modules: Module[] = [
     description: 'POS yang dioptimalkan untuk desktop demi kelancaran transaksi.',
     href: '/pos/auth',
     icon: <ShoppingCart className="size-8 text-primary" />,
+  },
+   {
+    name: 'Pesan Internal',
+    description: 'Berkomunikasi dengan anggota tim lain secara internal.',
+    href: '/messaging',
+    icon: <MessageSquare className="size-8 text-primary" />,
   },
   {
     name: 'Absensi',

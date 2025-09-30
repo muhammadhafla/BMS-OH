@@ -151,3 +151,26 @@ export interface PayrollEntry {
   status: 'Belum Dibayar' | 'Dibayar Sebagian' | 'Lunas';
   paymentMethod: 'Tunai' | 'Transfer Bank' | 'Belum Dibayar';
 }
+
+// Messaging Types
+export interface Conversation {
+    id: string;
+    participants: string[]; // Array of user IDs
+    participantNames: { [key: string]: string };
+    lastMessage: {
+        text: string;
+        timestamp: Timestamp;
+        senderId: string;
+    } | null;
+    unreadCounts: { [key: string]: number };
+}
+
+export interface Message {
+    id: string;
+    conversationId: string;
+    senderId: string;
+    senderName: string;
+    text: string;
+    timestamp: Timestamp;
+    readBy: string[]; // Array of user IDs who have read the message
+}
