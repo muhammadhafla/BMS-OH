@@ -1,7 +1,7 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/shared/logo';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,7 +13,28 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Lock, Power, Settings, Unlock, HardDrive, Printer, QrCode, Search, Eraser, Edit, Trash2, ArrowLeftRight, Clock, Hand, Pause, Play, Coins, LogOut, Receipt } from 'lucide-react';
+import {
+  Lock,
+  Power,
+  Settings,
+  Unlock,
+  HardDrive,
+  Printer,
+  QrCode,
+  Search,
+  Eraser,
+  Edit,
+  Trash2,
+  ArrowLeftRight,
+  Clock,
+  Hand,
+  Pause,
+  Play,
+  Coins,
+  LogOut,
+  Receipt,
+  AlertTriangle,
+} from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -29,11 +50,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import type { Product as ProductType } from '@/lib/types';
 import { getAllProducts } from '@/lib/services/product';
-import { useRouter } from 'next/navigation';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import Image from 'next/image';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 type TransactionItem = {
   sku: string;
@@ -74,8 +105,6 @@ export type CashDrawerTransaction = {
   sessionId: string;
 };
 
-type PaymentMethod = 'Tunai' | 'Kartu Debit' | 'Kartu Kredit' | 'QRIS';
-
 export interface CompletedTransaction {
   id: string;
   items: TransactionItem[];
@@ -90,6 +119,30 @@ export interface CompletedTransaction {
 
 const initialItems: TransactionItem[] = [];
 
+const PowerOffDialog = ({
+  open,
+  onOpenChange,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+}) => (
+  <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+        <AlertDialogDescription>
+          Make sure you have printed the final report before logging out.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction onClick={onConfirm}>Logout</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+);
 
 export default function POSPage() {
   const [currentTime, setCurrentTime] = useState('');
@@ -124,8 +177,8 @@ export default function POSPage() {
   const [currentCashier, setCurrentCashier] = useState('');
   const router = useRouter();
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isPowerOffDialogOpen, setIsPowerOffDialogOpen] = useState(false);
   const { toast } = useToast();
-
 
   
   // Hardcoded current user role for demonstration. In a real app, this would come from an auth context.
@@ -394,9 +447,13 @@ export default function POSPage() {
   };
   
   const handlePowerOff = () => {
-    sessionStorage.removeItem('pos-authenticated'); //berisi tentang auth//
-    sessionStorage.removeItem('pos-session-id'); //perlu diganti//
-    sessionStorage.removeItem('pos-cashier-name'); //berisi tentang auth//
+    setIsPowerOffDialogOpen(true);
+  }
+
+  const confirmPowerOff = () => {
+    sessionStorage.removeItem('pos-authenticated');
+    sessionStorage.removeItem('pos-cashier-name');
+    sessionStorage.removeItem('pos-session-id');
     router.push('/dashboard');
   }
 
@@ -884,6 +941,12 @@ export default function POSPage() {
         onClose={() => setIsPaymentDialogOpen(false)}
         totalAmount={total}
         onCompleteTransaction={handleCompleteTransaction}
+      />
+
+      <PowerOffDialog
+        open={isPowerOffDialogOpen}
+        onOpenChange={setIsPowerOffDialogOpen}
+        onConfirm={confirmPowerOff}
       />
 
     </>
@@ -1599,7 +1662,7 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
       setTimeout(() => {
         if (paymentMethod === 'Tunai') {
           amountInputRef.current?.focus();
-          amountInputRef.current?.select();
+          amountInputRF.current?.select();
         }
       }, 100);
     }
@@ -1734,9 +1797,3 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
     </Dialog>
   );
 };
-    
-    
-
-    
-
-
