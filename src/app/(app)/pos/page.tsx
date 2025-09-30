@@ -113,6 +113,8 @@ export type CashDrawerTransaction = {
 export interface CompletedTransaction {
   id: string;
   items: TransactionItem[];
+  subTotal: number;
+  discount: number;
   totalAmount: number;
   paymentMethod: PaymentMethod;
   timestamp: string;
@@ -545,13 +547,21 @@ export default function POSPage() {
   };
 
 
-  const handleCompleteTransaction = async (paymentMethod: PaymentMethod, change: number, amountPaid: number) => {
+  const handleCompleteTransaction = async (
+    paymentMethod: PaymentMethod,
+    change: number,
+    amountPaid: number,
+    finalTotal: number,
+    discountAmount: number
+  ) => {
     const sessionId = sessionStorage.getItem('pos-session-id') || 'sesi-unknown'; //perlu diganti//
     
     const newTransaction: CompletedTransaction = {
       id: `txn-${Date.now()}`,
       items: items,
-      totalAmount: total,
+      subTotal: total, // Original total before discount
+      discount: discountAmount,
+      totalAmount: finalTotal, // Final total after discount
       paymentMethod: paymentMethod,
       timestamp: new Date().toISOString(),
       sessionId: sessionId,
@@ -961,7 +971,7 @@ export default function POSPage() {
        <PaymentDialog
         isOpen={isPaymentDialogOpen}
         onClose={() => setIsPaymentDialogOpen(false)}
-        totalAmount={total}
+        subTotal={total}
         onCompleteTransaction={handleCompleteTransaction}
       />
 
@@ -1669,26 +1679,38 @@ const PosLockScreen = ({ onUnlock }: { onUnlock: () => void }) => {
 type PaymentDialogProps = {
   isOpen: boolean;
   onClose: () => void;
-  totalAmount: number;
-  onCompleteTransaction: (paymentMethod: PaymentMethod, change: number, amountPaid: number) => void;
+  subTotal: number;
+  onCompleteTransaction: (
+    paymentMethod: PaymentMethod,
+    change: number,
+    amountPaid: number,
+    finalTotal: number,
+    discountAmount: number
+  ) => void;
 };
 
-const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: PaymentDialogProps) => {
+const PaymentDialog = ({ isOpen, onClose, subTotal, onCompleteTransaction }: PaymentDialogProps) => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('Tunai');
   const [amountPaid, setAmountPaid] = useState('');
   const [change, setChange] = useState(0);
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [finalTotal, setFinalTotal] = useState(subTotal);
+
   const amountInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const quickCashOptions = [50000, 100000, 150000, 200000];
 
+  // Reset state when dialog opens
   useEffect(() => {
     if (isOpen) {
-      // Reset state on open
       setPaymentMethod('Tunai');
-      setAmountPaid(String(totalAmount));
+      setDiscountPercent(0);
+      setDiscountAmount(0);
+      setFinalTotal(subTotal);
+      setAmountPaid(String(subTotal));
       setChange(0);
-      // Focus the input if payment method is cash
       setTimeout(() => {
         if (paymentMethod === 'Tunai') {
           amountInputRef.current?.focus();
@@ -1696,19 +1718,27 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
         }
       }, 100);
     }
-  }, [isOpen, totalAmount]);
+  }, [isOpen, subTotal]);
 
+  // Update final total when discount changes
+  useEffect(() => {
+    const newFinalTotal = subTotal - discountAmount;
+    setFinalTotal(newFinalTotal > 0 ? newFinalTotal : 0);
+  }, [subTotal, discountAmount]);
+
+  // Update change when amount paid or final total changes (for cash)
   useEffect(() => {
     if (paymentMethod === 'Tunai') {
       const paid = parseFloat(amountPaid) || 0;
-      const newChange = paid - totalAmount;
+      const newChange = paid - finalTotal;
       setChange(newChange < 0 ? 0 : newChange);
     } else {
-      setAmountPaid(String(totalAmount));
+      setAmountPaid(String(finalTotal));
       setChange(0);
     }
-  }, [amountPaid, totalAmount, paymentMethod]);
+  }, [amountPaid, finalTotal, paymentMethod]);
   
+  // Focus amount input when switching to cash
   useEffect(() => {
     if(isOpen && paymentMethod === 'Tunai') {
         amountInputRef.current?.focus();
@@ -1716,9 +1746,25 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
     }
   }, [paymentMethod, isOpen]);
 
+  const handleDiscountPercentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const percent = parseFloat(e.target.value) || 0;
+    setDiscountPercent(percent);
+    setDiscountAmount(parseFloat(((subTotal * percent) / 100).toFixed(2)));
+  };
+
+  const handleDiscountAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const amount = parseFloat(e.target.value) || 0;
+    setDiscountAmount(amount);
+    if (subTotal > 0) {
+      setDiscountPercent(parseFloat(((amount / subTotal) * 100).toFixed(2)));
+    } else {
+      setDiscountPercent(0);
+    }
+  };
+
   const handleFinishTransaction = () => {
     const paidAmount = parseFloat(amountPaid) || 0;
-    if (paymentMethod === 'Tunai' && paidAmount < totalAmount) {
+    if (paymentMethod === 'Tunai' && paidAmount < finalTotal) {
         toast({
             variant: "destructive",
             title: "Pembayaran Kurang",
@@ -1727,7 +1773,7 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
         return;
     }
     const finalChange = paymentMethod === 'Tunai' ? change : 0;
-    onCompleteTransaction(paymentMethod, finalChange, paidAmount);
+    onCompleteTransaction(paymentMethod, finalChange, paidAmount, finalTotal, discountAmount);
   }
   
   return (
@@ -1740,11 +1786,11 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
       }}>
         <DialogHeader>
           <DialogTitle className="text-2xl">Pembayaran</DialogTitle>
-           <DialogDescription>Selesaikan transaksi dengan memilih metode pembayaran.</DialogDescription>
+           <DialogDescription>Selesaikan transaksi dengan memilih metode pembayaran dan menambahkan diskon jika perlu.</DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-8 py-4">
           
-          <div className="space-y-6">
+          <div className="space-y-4">
              <RadioGroup
               value={paymentMethod}
               onValueChange={(value) => setPaymentMethod(value as PaymentMethod)}
@@ -1771,6 +1817,20 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
                     <span className="font-semibold">QRIS</span>
                 </Label>
             </RadioGroup>
+
+            <div className="border rounded-lg p-4 space-y-3">
+              <h3 className="text-sm font-medium">Diskon Akhir Transaksi</h3>
+              <div className="flex gap-4">
+                  <div className="flex-1 space-y-1">
+                      <Label htmlFor="discount-percent">Diskon (%)</Label>
+                      <Input id="discount-percent" type="number" value={discountPercent} onChange={handleDiscountPercentChange} />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                      <Label htmlFor="discount-amount">Potongan (Rp)</Label>
+                      <Input id="discount-amount" type="number" value={discountAmount} onChange={handleDiscountAmountChange} />
+                  </div>
+              </div>
+            </div>
             
             {paymentMethod === 'Tunai' && (
                 <div className="space-y-2">
@@ -1787,10 +1847,16 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
           </div>
 
           <div className="space-y-4">
+            <div className="p-4 border rounded-lg bg-muted/30">
+                <Label className="text-sm">Subtotal</Label>
+                <div className="text-2xl font-semibold tracking-tight line-through">
+                    Rp{subTotal.toLocaleString('id-ID')}
+                </div>
+            </div>
             <div className="p-4 border rounded-lg">
-              <Label className="text-sm text-muted-foreground">Total Belanja</Label>
+              <Label className="text-sm text-muted-foreground">Total Belanja (Setelah Diskon)</Label>
               <div className="text-4xl font-bold tracking-tight">
-                Rp{totalAmount.toLocaleString('id-ID')}
+                Rp{finalTotal.toLocaleString('id-ID')}
               </div>
             </div>
 
@@ -1827,3 +1893,5 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
     </Dialog>
   );
 };
+
+    
