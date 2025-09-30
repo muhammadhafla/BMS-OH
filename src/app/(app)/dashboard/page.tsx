@@ -101,31 +101,35 @@ export default async function DashboardPage() {
         </p>
       </header>
       
-      <div className="mb-8 grid gap-4 md:grid-cols-2">
-        <AISummary inventoryPromise={inventoryPromise} />
-        {/* This component should be conditionally rendered based on user role (e.g., admin or manager) */}
-        <PinDisplay />
-      </div>
+      <div className="space-y-6">
+        <div className="grid gap-6">
+            <AISummary inventoryPromise={inventoryPromise} />
+            {/* This component should be conditionally rendered based on user role (e.g., admin or manager) */}
+            <PinDisplay />
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {otherModules.map((mod) => (
-          <Card key={mod.href}>
-            <CardHeader className="flex flex-row items-start justify-between">
-              <div>
-                <CardTitle className="text-xl">{mod.name}</CardTitle>
-                <CardDescription>{mod.description}</CardDescription>
-              </div>
-              {mod.icon}
-            </CardHeader>
-            <CardFooter>
-              <Button asChild variant="outline">
-                <Link href={mod.href}>
-                  Buka Modul <ArrowRight />
-                </Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+        <h2 className="text-2xl font-semibold tracking-tight">Modul Tersedia</h2>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {otherModules.map((mod) => (
+            <Card key={mod.href}>
+              <CardHeader className="flex flex-row items-start justify-between">
+                <div>
+                  <CardTitle className="text-xl">{mod.name}</CardTitle>
+                  <CardDescription>{mod.description}</CardDescription>
+                </div>
+                {mod.icon}
+              </CardHeader>
+              <CardFooter>
+                <Button asChild variant="outline">
+                  <Link href={mod.href}>
+                    Buka Modul <ArrowRight />
+                  </Link>
+                </Button>
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
 
     </div>
