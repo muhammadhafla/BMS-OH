@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -131,18 +132,20 @@ const PowerOffDialog = ({
   <AlertDialog open={open} onOpenChange={onOpenChange}>
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+        <AlertDialogTitle>Apakah Anda benar-benar yakin?</AlertDialogTitle>
         <AlertDialogDescription>
-          Make sure you have printed the final report before logging out.
+          Pastikan Anda telah mencetak laporan shift terakhir sebelum keluar.
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>Cancel</AlertDialogCancel>
-        <AlertDialogAction onClick={onConfirm}>Logout</AlertDialogAction>
+        <AlertDialogCancel>Batal</AlertDialogCancel>
+        <AlertDialogAction onClick={onConfirm}>Keluar</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
 );
+
+type PaymentMethod = 'Tunai' | 'Kartu Debit' | 'Kartu Kredit' | 'QRIS';
 
 export default function POSPage() {
   const [currentTime, setCurrentTime] = useState('');
@@ -1039,14 +1042,22 @@ const EditItemDialog = ({ item, isOpen, onClose, onUpdate, currentUserRole }: Ed
     }
   };
 
-  const handleAuthorization = (pin: string) => {
-    // This is the PIN for authorizing actions within the POS, set in the main settings page.
-    const storedPin = localStorage.getItem('pos-auth-pin') || '1234'; //berisi tentang auth//
-    if (pin === storedPin) { 
-      setIsPriceLocked(false);
-      setIsAuthDialogOpen(false);
-    } else {
-      alert('PIN Salah!');
+  const handleAuthorization = async (pin: string) => {
+    try {
+      const response = await fetch('/api/auth/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setIsPriceLocked(false);
+        setIsAuthDialogOpen(false);
+      } else {
+        alert(data.error || 'PIN Salah!');
+      }
+    } catch (error) {
+      alert('Gagal memverifikasi PIN.');
     }
   };
 
@@ -1221,8 +1232,8 @@ const AuthorizationDialog = ({ isOpen, onClose, onAuthorize }: AuthorizationDial
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               className="h-12 text-center text-2xl tracking-[0.5rem]"
-              maxLength={4}
-              placeholder="----"
+              maxLength={6}
+              placeholder="------"
             />
           </div>
           <DialogFooter>
@@ -1662,7 +1673,7 @@ const PaymentDialog = ({ isOpen, onClose, totalAmount, onCompleteTransaction }: 
       setTimeout(() => {
         if (paymentMethod === 'Tunai') {
           amountInputRef.current?.focus();
-          amountInputRF.current?.select();
+          amountInputRef.current?.select();
         }
       }, 100);
     }

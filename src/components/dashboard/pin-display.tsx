@@ -24,6 +24,8 @@ export default function PinDisplay() {
         }
         const data = await response.json();
         setPin(data.pin);
+        // Store the token in localStorage for later verification
+        localStorage.setItem('pos-auth-token', data.token);
       } catch (error) {
         console.error(error);
         toast({
