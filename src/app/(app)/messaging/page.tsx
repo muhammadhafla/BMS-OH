@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Send, User, Users, PlusCircle, MessageSquare } from 'lucide-react';
+import { Send, User, Users, PlusCircle, MessageSquare, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { id as indonesiaLocale } from 'date-fns/locale';
@@ -22,7 +22,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import type { Conversation, Message, User as AppUser } from '@/lib/types';
-import { sendMessage } from '@/lib/services/messaging';
+import { sendMessage, getParticipantDetails } from '@/lib/services/messaging';
 import { getAllUsersWithSalary } from '@/lib/services/user';
 
 import {
@@ -33,6 +33,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 
 const NewConversationDialog = ({
@@ -46,37 +47,90 @@ const NewConversationDialog = ({
     onClose: () => void,
     allUsers: AppUser[],
     currentUserId: string,
-    onStartConversation: (userId: string) => void
+    onStartConversation: (userIds: string[], groupName?: string) => void
 }) => {
+    const [selectedUsers, setSelectedUsers] = useState<AppUser[]>([]);
+    const [groupName, setGroupName] = useState('');
+
+    const handleUserToggle = (user: AppUser) => {
+        setSelectedUsers(prev =>
+            prev.find(u => u.id === user.id)
+                ? prev.filter(u => u.id !== user.id)
+                : [...prev, user]
+        );
+    };
+    
+    const handleStart = () => {
+        if (selectedUsers.length === 0) return;
+        const userIds = selectedUsers.map(u => u.id!);
+        if (selectedUsers.length > 1 && !groupName) {
+            // Optional: You could add a toast here to require a group name
+        }
+        onStartConversation(userIds, selectedUsers.length > 1 ? groupName : undefined);
+        handleClose();
+    }
+    
+    const handleClose = () => {
+        setSelectedUsers([]);
+        setGroupName('');
+        onClose();
+    };
+
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
+        <Dialog open={isOpen} onOpenChange={handleClose}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Mulai Percakapan Baru</DialogTitle>
-                    <DialogDescription>Pilih pengguna untuk memulai percakapan.</DialogDescription>
+                    <DialogDescription>Pilih satu atau lebih pengguna untuk memulai percakapan.</DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="h-72">
-                    <div className="space-y-2 p-2">
-                    {allUsers.filter(user => user.id !== currentUserId).map(user => (
-                        <div 
-                            key={user.id} 
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer"
-                            onClick={() => {
-                                onStartConversation(user.id!);
-                                onClose();
-                            }}
-                        >
-                            <Avatar>
-                                <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{user.name}</span>
-                            <span className="text-sm text-muted-foreground ml-auto">{user.role}</span>
+                 <div className="space-y-4 py-2">
+                    {selectedUsers.length > 1 && (
+                         <div className="space-y-2">
+                            <Label htmlFor="group-name">Nama Grup (Opsional)</Label>
+                            <Input 
+                                id="group-name" 
+                                value={groupName} 
+                                onChange={(e) => setGroupName(e.target.value)}
+                                placeholder="Contoh: Tim Pemasaran"
+                             />
                         </div>
-                    ))}
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                        {selectedUsers.map(user => (
+                            <Badge key={user.id} variant="secondary" className="pl-2">
+                                {user.name}
+                                <button onClick={() => handleUserToggle(user)} className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20">
+                                    <X size={12}/>
+                                </button>
+                            </Badge>
+                        ))}
                     </div>
-                </ScrollArea>
+                    <ScrollArea className="h-60 border rounded-md">
+                        <div className="p-2">
+                        {allUsers.filter(user => user.id !== currentUserId).map(user => (
+                            <div 
+                                key={user.id} 
+                                className={cn(
+                                    "flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer",
+                                    selectedUsers.find(u => u.id === user.id) && "bg-muted"
+                                )}
+                                onClick={() => handleUserToggle(user)}
+                            >
+                                <Avatar>
+                                    <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="font-medium">{user.name}</span>
+                                <span className="text-sm text-muted-foreground ml-auto">{user.role}</span>
+                            </div>
+                        ))}
+                        </div>
+                    </ScrollArea>
+                </div>
                  <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Batal</Button>
+                    <Button variant="outline" onClick={handleClose}>Batal</Button>
+                    <Button onClick={handleStart} disabled={selectedUsers.length === 0}>
+                        {selectedUsers.length > 1 ? 'Buat Grup' : 'Mulai Percakapan'}
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -97,7 +151,8 @@ export default function MessagingPage() {
 
   // Hardcoded current user for demonstration
   const currentUserId = 'user_admin_001';
-  const currentUserName = 'Pengguna Admin';
+  const currentUser = { id: currentUserId, name: 'Pengguna Admin' };
+
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -143,6 +198,9 @@ export default function MessagingPage() {
     const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
       const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
       setMessages(msgs);
+    }, () => {
+        // This can error if the conversation doc doesn't exist yet, which is fine.
+        setMessages([]);
     });
 
     return () => unsubscribe();
@@ -158,15 +216,25 @@ export default function MessagingPage() {
 
     setIsSending(true);
     
-    const selectedConvo = conversations.find(c => c.id === selectedConversationId);
-    if (!selectedConvo) return;
+    let selectedConvo = conversations.find(c => c.id === selectedConversationId);
+    let participantIds: string[];
 
+    if (selectedConvo) {
+      participantIds = selectedConvo.participants;
+    } else {
+      // This is a new conversation, get participants from the ID
+      participantIds = selectedConversationId.split('_');
+    }
 
     try {
+        const participantDetails = await getParticipantDetails(participantIds);
+        
         await sendMessage({
-            participantIds: selectedConvo.participants,
-            senderId: currentUserId,
-            senderName: currentUserName,
+            conversationId: selectedConversationId,
+            participantIds: participantIds,
+            participantDetails: participantDetails,
+            senderId: currentUser.id,
+            senderName: currentUser.name,
             text: newMessage.trim(),
         });
       setNewMessage('');
@@ -180,18 +248,37 @@ export default function MessagingPage() {
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
   
-  const getOtherParticipant = (convo: Conversation) => {
+  const getConversationName = (convo: Conversation) => {
+    if (convo.name) return convo.name; // Group chat name
     const otherId = convo.participants.find(p => p !== currentUserId);
-    return convo.participantNames[otherId!] || 'Unknown User';
+    return convo.participantNames[otherId!] || 'Pengguna Tidak Dikenal';
   };
+  
+  const getAvatarFallback = (convo: Conversation) => {
+    const name = getConversationName(convo);
+    if (convo.participants.length > 2) return name.charAt(0) || 'G';
+    return name.charAt(0) || '?';
+  }
 
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
   };
   
-  const handleStartNewConversation = (userId: string) => {
-    const participantIds = [currentUserId, userId].sort();
-    const conversationId = participantIds.join('_');
+  const handleStartNewConversation = (userIds: string[], groupName?: string) => {
+    const allParticipantIds = [...userIds, currentUserId];
+    const uniqueParticipantIds = [...new Set(allParticipantIds)].sort();
+    
+    let conversationId: string;
+    if (uniqueParticipantIds.length > 2) {
+        // For group chats, generate a new random ID
+        conversationId = `group_${Date.now()}`;
+    } else {
+        // For 1-on-1 chats, use the deterministic ID
+        conversationId = uniqueParticipantIds.join('_');
+    }
+    
+    // We optimistically set the conversation ID. The conversation document
+    // will be created on the first message send.
     setSelectedConversationId(conversationId);
   };
 
@@ -219,10 +306,10 @@ export default function MessagingPage() {
               onClick={() => handleSelectConversation(convo.id)}
             >
               <Avatar>
-                 <AvatarFallback>{getOtherParticipant(convo).charAt(0)}</AvatarFallback>
+                 <AvatarFallback>{getAvatarFallback(convo)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 overflow-hidden">
-                <p className="font-semibold truncate">{getOtherParticipant(convo)}</p>
+                <p className="font-semibold truncate">{getConversationName(convo)}</p>
                 <p className="text-sm text-muted-foreground truncate">{convo.lastMessage?.text || 'Belum ada pesan'}</p>
               </div>
               {convo.lastMessage?.timestamp && (
@@ -236,13 +323,13 @@ export default function MessagingPage() {
       </aside>
 
       <main className="flex-1 flex flex-col">
-        {selectedConversation ? (
+        {selectedConversationId ? (
           <>
             <header className="p-4 border-b flex items-center gap-3">
               <Avatar>
-                <AvatarFallback>{getOtherParticipant(selectedConversation).charAt(0)}</AvatarFallback>
+                 <AvatarFallback>{selectedConversation ? getAvatarFallback(selectedConversation) : '?'}</AvatarFallback>
               </Avatar>
-              <h2 className="text-xl font-bold">{getOtherParticipant(selectedConversation)}</h2>
+              <h2 className="text-xl font-bold">{selectedConversation ? getConversationName(selectedConversation) : 'Percakapan Baru'}</h2>
             </header>
             <ScrollArea className="flex-1 p-4 bg-muted/20">
               <div className="space-y-4">

@@ -1,35 +1,61 @@
+
 'use server';
 
 import { firestore } from '@/lib/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { Conversation, Message } from '@/lib/types';
+import type { Conversation, Message, User } from '@/lib/types';
+import { getAllUsersWithSalary } from './user';
 
 const conversationsCollection = firestore.collection('conversations');
 
+interface ParticipantDetails {
+    [key: string]: string; // userId: userName
+}
+
+/**
+ * Fetches the names for a list of participant IDs.
+ * @param {string[]} participantIds - Array of user IDs.
+ * @returns {Promise<ParticipantDetails>} An object mapping user IDs to names.
+ */
+export async function getParticipantDetails(participantIds: string[]): Promise<ParticipantDetails> {
+    const users = await getAllUsersWithSalary(); // This is our simulated user fetch
+    const details: ParticipantDetails = {};
+    participantIds.forEach(id => {
+        const user = users.find(u => u.id === id);
+        details[id] = user ? user.name : 'Pengguna Tidak Dikenal';
+    });
+    return details;
+}
+
+
 /**
  * Sends a message to a conversation, creating the conversation if it doesn't exist.
+ * @param {string} conversationId - The ID of the conversation.
  * @param {string[]} participantIds - Array of user IDs in the conversation.
+ * @param {ParticipantDetails} participantDetails - Object mapping participant IDs to their names.
  * @param {string} senderId - The ID of the message sender.
  * @param {string} senderName - The name of the message sender.
  * @param {string} text - The message content.
  * @returns {Promise<{success: boolean; conversationId?: string; error?: string}>}
  */
 export async function sendMessage({
+    conversationId,
     participantIds,
+    participantDetails,
     senderId,
     senderName,
-    text
+    text,
+    groupName
 }: {
-    participantIds: string[],
-    senderId: string,
-    senderName: string,
-    text: string
+    conversationId: string;
+    participantIds: string[];
+    participantDetails: ParticipantDetails;
+    senderId: string;
+    senderName: string;
+    text: string;
+    groupName?: string;
 }): Promise<{success: boolean; conversationId?: string; error?: string}> {
     
-    // Sort participant IDs to create a consistent conversation ID
-    const sortedParticipantIds = [...participantIds].sort();
-    const conversationId = sortedParticipantIds.join('_');
-
     const conversationRef = conversationsCollection.doc(conversationId);
     const messageRef = conversationRef.collection('messages').doc();
 
@@ -53,26 +79,20 @@ export async function sendMessage({
 
             if (!convDoc.exists) {
                 // If conversation doesn't exist, create it
-                 const participantNames = {
-                    // This is a placeholder. In a real app, you'd fetch names from a users collection.
-                    [senderId]: senderName,
-                 };
-                 // Assume other participant names need to be fetched or are passed in.
-                 // For now, we'll just use IDs.
-                 participantIds.forEach(id => {
-                    if (!participantNames[id]) {
-                        participantNames[id] = id; // Fallback to ID
-                    }
-                 });
-
-
-                transaction.set(conversationRef, {
-                    participants: sortedParticipantIds,
-                    participantNames,
+                const conversationData: Partial<Conversation> = {
+                    participants: participantIds,
+                    participantNames: participantDetails,
                     lastMessage,
                     createdAt: FieldValue.serverTimestamp(),
-                    unreadCounts: {} // Initialize unread counts
-                });
+                    unreadCounts: {}, // Initialize unread counts
+                };
+
+                if (participantIds.length > 2) {
+                    conversationData.name = groupName || `Grup dari ${senderName}`;
+                    conversationData.isGroup = true;
+                }
+
+                transaction.set(conversationRef, conversationData);
             } else {
                 // If it exists, just update the last message
                 transaction.update(conversationRef, { lastMessage });
@@ -89,6 +109,9 @@ export async function sendMessage({
 
     } catch (error) {
         console.error("Error sending message:", error);
-        return { success: false, error: "Failed to send message." };
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
+        return { success: false, error: "Gagal mengirim pesan." };
     }
 }

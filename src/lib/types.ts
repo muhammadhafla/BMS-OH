@@ -155,6 +155,8 @@ export interface PayrollEntry {
 // Messaging Types
 export interface Conversation {
     id: string;
+    name?: string; // For group chats
+    isGroup?: boolean;
     participants: string[]; // Array of user IDs
     participantNames: { [key: string]: string };
     lastMessage: {
@@ -163,6 +165,7 @@ export interface Conversation {
         senderId: string;
     } | null;
     unreadCounts: { [key: string]: number };
+    createdAt: Timestamp | FieldValue;
 }
 
 export interface Message {
