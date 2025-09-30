@@ -35,6 +35,7 @@ import {
   LogOut,
   Receipt,
   AlertTriangle,
+  MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -45,6 +46,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -66,6 +68,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { InternalChat } from '@/components/shared/internal-chat';
+
 
 type TransactionItem = {
   sku: string;
@@ -769,6 +773,21 @@ export default function POSPage() {
                 <Button variant="secondary" className="h-16 text-base" onClick={lockScreen}>
                     <Lock/> Kunci <span className="ml-auto text-xs opacity-70">({keybinds.lock})</span>
                 </Button>
+                <Sheet>
+                    <SheetTrigger asChild>
+                         <Button variant="secondary" className="h-16 text-base">
+                            <MessageSquare/> Pesan
+                         </Button>
+                    </SheetTrigger>
+                    <SheetContent className="p-0 sm:max-w-md">
+                        <SheetHeader className="p-4 border-b">
+                            <SheetTitle>Pesan Internal</SheetTitle>
+                        </SheetHeader>
+                        <div className="h-[calc(100vh-80px)]">
+                          <InternalChat />
+                        </div>
+                    </SheetContent>
+                </Sheet>
             </div>
             
             <Button className="h-24 w-full mt-auto text-2xl font-bold bg-accent hover:bg-accent/90" onClick={() => items.length > 0 && setIsPaymentDialogOpen(true)} disabled={items.length === 0}>
