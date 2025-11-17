@@ -13,10 +13,9 @@ export const LoadingStateDemo: React.FC = () => {
   const [overlayLoading, setOverlayLoading] = useState(false)
   const [skeletonMode, setSkeletonMode] = useState<'text' | 'card' | 'button' | 'table'>('text')
 
-  // Example using SWR hook
+  // Example using API hook
   const { data: products, error, isLoading: apiLoading } = useApi<any[]>('/api/products', {
     showErrorToast: true,
-    revalidateOnFocus: false,
   })
 
   // Example using mutation hook
@@ -204,14 +203,14 @@ export const LoadingStateDemo: React.FC = () => {
           </div>
           
           <div>
-            <h4 className="font-semibold mb-2">Products (using SWR):</h4>
+            <h4 className="font-semibold mb-2">Products (using API hook):</h4>
             {apiLoading ? (
               <SkeletonText lines={3} />
             ) : error ? (
               <p className="text-red-600">Error loading products</p>
             ) : products ? (
               <div className="space-y-2">
-                {products.slice(0, 3).map((product, index) => (
+                {products.slice(0, 3).map((product: any, index: number) => (
                   <div key={index} className="p-2 border rounded text-sm">
                     {product.name || `Product ${index + 1}`}
                   </div>

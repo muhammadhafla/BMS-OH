@@ -37,6 +37,7 @@
     "build:status": "echo 'Build Status:' && echo '- Web Frontend: Vite Build (Medium Memory ~2GB)' && echo '- Electron Frontend: Electron Forge Build (Medium Memory ~2GB)' && echo '- Total Estimated Memory: ~4GB if built together, ~1GB if separated'"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.3.4",
     "@radix-ui/react-dialog": "^1.1.7",
     "@radix-ui/react-dropdown-menu": "^2.1.7",
     "@radix-ui/react-select": "^2.1.7",
@@ -52,6 +53,8 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.48.2",
     "sonner": "^1.4.0",
+    "sqlite3": "^5.1.7",
+    "swr": "^2.2.4",
     "tailwind-merge": "^2.5.0",
     "tailwindcss": "^3.4.0",
     "zod": "^3.22.4",
@@ -75,6 +78,8 @@
     "concurrently": "^9.0.1",
     "cross-env": "^10.1.0",
     "electron": "^38.0.0",
+    "electron-serve": "^2.0.0",
+    "electron-store": "^10.0.0",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-react": "^7.37.3",
@@ -121,9 +126,9 @@
             "options": {
               "name": "bms-pos",
               "productName": "BMS POS",
-              "genericName": "Bagus Management Suite POS",
+              "genericName": "Business Management Suite POS",
               "description": "BMS POS - Point of Sale Desktop Application",
-              "maintainer": "Your Name <muhammadhafla@gmail.com>",
+              "maintainer": "Your Name <your.email@example.com>",
               "category": "Office"
             }
           }
