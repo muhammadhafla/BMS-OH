@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* BMS Color Scheme - Hex to HSL conversion */
+    --primary-orange: 14.1 89.4% 43.5%;   /* #e04c19 - Orange from logo */
+    --primary-dark: 240 2.4% 25.5%;        /* #3b3b3f - Dark Charcoal */
+    --background-light: 210 40% 98%;       /* #F8F9FA - Ivory White */
+    --surface-white: 0 0% 100%;            /* #FFFFFF - Bright White for Card/Modal */
+    --text-dark: 210 11% 15%;              /* #212529 - Main text (soft black) */
+    --text-light: 0 0% 92%;                /* #EAEAEA - Light text (on dark background) */
+    --border-color: 210 13% 82%;           /* #dee2e6 - Border color */
+    
+    /* Missing CSS variable for border radius */
+    --radius: 0.5rem;
+    
+    /* Updated CSS Variables using BMS colors */
+    --background: 210 40% 98%;
+    --foreground: 210 11% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 11% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 11% 15%;
+    --primary: 14.1 89.4% 43.5%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 2.4% 25.5%;
+    --secondary-foreground: 0 0% 92%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 210 11% 15%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 13% 82%;
+    --input: 210 13% 82%;
+    --ring: 14.1 89.4% 43.5%;
+    --chart-1: 14.1 89.4% 43.5%;    /* Using primary orange for charts */
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --sidebar-background: 240 2.4% 25.5%;    /* Using primary dark */
+    --sidebar-foreground: 0 0% 92%;           /* Using text light */
+    --sidebar-primary: 14.1 89.4% 43.5%;     /* Using primary orange */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 40% 98%;
+    --sidebar-accent-foreground: 210 11% 15%;
+    --sidebar-border: 210 13% 82%;
+    --sidebar-ring: 14.1 89.4% 43.5%;
+  }
+
+  .dark {
+    --background: 240 2.4% 25.5%;
+    --foreground: 0 0% 92%;
+    --card: 240 2.4% 25.5%;
+    --card-foreground: 0 0% 92%;
+    --popover: 240 2.4% 25.5%;
+    --popover-foreground: 0 0% 92%;
+    --primary: 14.1 89.4% 43.5%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 11% 15%;
+    --secondary-foreground: 0 0% 92%;
+    --muted: 210 11% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 210 11% 15%;
+    --accent-foreground: 0 0% 92%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 92%;
+    --border: 210 11% 15%;
+    --input: 210 11% 15%;
+    --ring: 14.1 89.4% 43.5%;
+    --chart-1: 14.1 89.4% 43.5%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --sidebar-background: 240 2.4% 25.5%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 14.1 89.4% 43.5%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 11% 15%;
+    --sidebar-accent-foreground: 0 0% 92%;
+    --sidebar-border: 210 11% 15%;
+    --sidebar-ring: 14.1 89.4% 43.5%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
