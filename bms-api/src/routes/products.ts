@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { z } from 'zod';
+import { websocketEventEmitter } from '../websocket/events';
+import { createProductUpdatedEvent } from '../websocket/events';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -232,10 +234,19 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res): Promise<a
       });
     }
 
-    res.status(201).json({ 
-      success: true, 
+    // Emit real-time product created event
+    try {
+      const event = createProductUpdatedEvent(product, 'created', product.branchId, req.user!.id);
+      websocketEventEmitter.emit(event);
+      console.log(`📡 Emitted product:created event for product ${product.sku}`);
+    } catch (error) {
+      console.error('Failed to emit product created event:', error);
+    }
+
+    res.status(201).json({
+      success: true,
       data: { product },
-      message: 'Product created successfully' 
+      message: 'Product created successfully'
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -313,10 +324,27 @@ router.put('/:id', authenticate, async (req: AuthenticatedRequest, res): Promise
       });
     }
 
-    res.json({ 
-      success: true, 
+    // Emit real-time product updated event
+    try {
+      const changes: any = {};
+      if (data.name !== undefined) changes.name = data.name;
+      if (data.price !== undefined) changes.price = data.price;
+      if (data.cost !== undefined) changes.cost = data.cost;
+      if (data.stock !== undefined) changes.stock = data.stock;
+      if (data.categoryId !== undefined) changes.categoryId = data.categoryId;
+      if (data.isActive !== undefined) changes.isActive = data.isActive;
+
+      const event = createProductUpdatedEvent(product, 'updated', product.branchId, req.user!.id, Object.keys(changes).length > 0 ? changes : undefined);
+      websocketEventEmitter.emit(event);
+      console.log(`📡 Emitted product:updated event for product ${product.sku}`);
+    } catch (error) {
+      console.error('Failed to emit product updated event:', error);
+    }
+
+    res.json({
+      success: true,
       data: { product },
-      message: 'Product updated successfully' 
+      message: 'Product updated successfully'
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -364,23 +392,55 @@ router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res): Prom
       // Soft delete by setting isActive to false
       const product = await prisma.product.update({
         where: { id },
-        data: { isActive: false }
+        data: { isActive: false },
+        include: {
+          category: { select: { id: true, name: true } },
+          branch: { select: { id: true, name: true } }
+        }
       });
 
-      res.json({ 
-        success: true, 
+      // Emit real-time product deleted event
+      try {
+        const event = createProductUpdatedEvent(product, 'deleted', product.branchId, req.user!.id);
+        websocketEventEmitter.emit(event);
+        console.log(`📡 Emitted product:deleted event for product ${product.sku}`);
+      } catch (error) {
+        console.error('Failed to emit product deleted event:', error);
+      }
+
+      res.json({
+        success: true,
         data: { product },
-        message: 'Product deactivated (has transaction history)' 
+        message: 'Product deactivated (has transaction history)'
       });
     } else {
       // Hard delete if no transactions
+      const productToDelete = await prisma.product.findUnique({
+        where: { id },
+        include: {
+          category: { select: { id: true, name: true } },
+          branch: { select: { id: true, name: true } }
+        }
+      });
+
       await prisma.product.delete({
         where: { id }
       });
 
-      res.json({ 
-        success: true, 
-        message: 'Product deleted successfully' 
+      // Emit real-time product deleted event
+      if (productToDelete) {
+        try {
+          const event = createProductUpdatedEvent(productToDelete, 'deleted', productToDelete.branchId, req.user!.id);
+          websocketEventEmitter.emit(event);
+          console.log(`📡 Emitted product:deleted event for product ${productToDelete.sku}`);
+        } catch (error) {
+          console.error('Failed to emit product deleted event:', error);
+        }
+      }
+
+      res.json({
+        success: true,
+        message: 'Product deleted successfully'
       });
     }
   } catch (error) {
@@ -425,7 +485,11 @@ router.patch('/:id/stock', authenticate, async (req: AuthenticatedRequest, res):
 
     const product = await prisma.product.update({
       where: { id },
-      data: { stock }
+      data: { stock },
+      include: {
+        category: { select: { id: true, name: true } },
+        branch: { select: { id: true, name: true } }
+      }
     });
 
     // Create inventory log
@@ -439,10 +503,29 @@ router.patch('/:id/stock', authenticate, async (req: AuthenticatedRequest, res):
       }
     });
 
-    res.json({ 
-      success: true, 
+    // Emit real-time inventory updated event
+    try {
+      const { createInventoryUpdatedEvent } = require('../websocket/events');
+      const event = createInventoryUpdatedEvent(
+        product,
+        existingProduct.stock,
+        difference,
+        difference > 0 ? 'IN' : difference < 0 ? 'OUT' : 'ADJUSTMENT',
+        notes || 'Stock update',
+        product.branchId,
+        req.user!.id,
+        req.user!.name
+      );
+      websocketEventEmitter.emit(event);
+      console.log(`📡 Emitted inventory:updated event for product ${product.sku}`);
+    } catch (error) {
+      console.error('Failed to emit inventory updated event:', error);
+    }
+
+    res.json({
+      success: true,
       data: { product },
-      message: 'Stock updated successfully' 
+      message: 'Stock updated successfully'
     });
   } catch (error) {
     console.error('Error updating stock:', error);

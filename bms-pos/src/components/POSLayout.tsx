@@ -3,7 +3,7 @@ import { formatCurrency, generateTransactionCode } from '../lib/utils';
 import { inventoryService } from '../services/InventoryService';
 import { authService } from '../services/AuthService';
 import { useToast } from '../hooks/useToast';
-import { syncService } from '../services/SyncService';
+import { syncService, SyncStatus } from '../services/SyncService';
 
 // Components
 import SearchPanel from './SearchPanel';
@@ -13,6 +13,9 @@ import Receipt from './Receipt';
 import StockAlerts from './inventory/StockAlerts';
 import InventoryOverview from './inventory/InventoryOverview';
 import StockAdjustment from './inventory/StockAdjustment';
+import SyncStatusHeader from './SyncStatusHeader';
+import SyncNotifications from './SyncNotifications';
+import SyncStatusModal from './SyncStatusModal';
 
 import { Button } from './ui/button';
 import {
@@ -487,7 +490,8 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
   const [connectionStatus, setConnectionStatus] = useState<'online' | 'offline'>('online');
   const [isInventoryDropdownOpen, setIsInventoryDropdownOpen] = useState(false);
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<any>({
+  const [isSyncStatusModalOpen, setIsSyncStatusModalOpen] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     lastSync: null,
     isOnline: false,
     isSyncing: false,
@@ -878,6 +882,14 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
         onSync={handleSync}
       />
 
+      {/* Sync Status Header */}
+      <SyncStatusHeader
+        syncStatus={syncStatus}
+        onSync={handleSync}
+        onViewDetails={() => setIsSyncStatusModalOpen(true)}
+        compact={true}
+      />
+
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Main Panel - Search + Transaction Table */}
@@ -964,6 +976,20 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
       <div className="fixed bottom-4 right-4 text-xs text-gray-500 bg-white p-2 rounded shadow opacity-60 hover:opacity-100 transition-opacity">
         F2: Pay | F3: Clear | F4: Switch View | F5: Refresh | F11: Logout
       </div>
+
+      {/* Sync Notifications */}
+      <SyncNotifications
+        syncStatus={syncStatus}
+        onSync={handleSync}
+      />
+
+      {/* Sync Status Modal */}
+      <SyncStatusModal
+        isOpen={isSyncStatusModalOpen}
+        onClose={() => setIsSyncStatusModalOpen(false)}
+        syncStatus={syncStatus}
+        onSync={handleSync}
+      />
     </div>
   );
 };

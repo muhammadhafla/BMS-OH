@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { z } from 'zod';
+import { websocketEventEmitter, createTransactionCreatedEvent } from '../websocket/events';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -300,10 +301,19 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res): Promise<a
       return transaction;
     });
 
-    res.status(201).json({ 
-      success: true, 
+    // Emit real-time transaction created event
+    try {
+      const event = createTransactionCreatedEvent(result, branchId, req.user!.id);
+      websocketEventEmitter.emit(event);
+      console.log(`📡 Emitted transaction:created event for transaction ${result.transactionCode}`);
+    } catch (error) {
+      console.error('Failed to emit transaction created event:', error);
+    }
+
+    res.status(201).json({
+      success: true,
       data: { transaction: result },
-      message: 'Transaction created successfully' 
+      message: 'Transaction created successfully'
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { z } from 'zod';
+import { websocketEventEmitter, createInventoryUpdatedEvent, createLowStockAlertEvent } from '../websocket/events';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -261,7 +262,7 @@ router.post('/adjust', authenticate, async (req: AuthenticatedRequest, res): Pro
       // Update product stock
       const updatedProduct = await tx.product.update({
         where: { id: data.productId },
-        data: { 
+        data: {
           stock: newStock,
           updatedAt: new Date()
         },
@@ -285,10 +286,35 @@ router.post('/adjust', authenticate, async (req: AuthenticatedRequest, res): Pro
       return { product: updatedProduct, log };
     });
 
-    res.json({ 
-      success: true, 
+    // Emit real-time inventory updated event
+    try {
+      const event = createInventoryUpdatedEvent(
+        result.product,
+        existingProduct.stock,
+        data.type === 'IN' ? data.quantity : data.type === 'OUT' ? -data.quantity : newStock - existingProduct.stock,
+        data.type,
+        data.reference || 'Stock adjustment',
+        result.product.branchId,
+        req.user!.id,
+        req.user!.name
+      );
+      websocketEventEmitter.emit(event);
+      console.log(`📡 Emitted inventory:updated event for product ${result.product.sku}`);
+
+      // Check for low stock alert
+      if (result.product.minStock > 0 && result.product.stock <= result.product.minStock) {
+        const lowStockEvent = createLowStockAlertEvent(result.product, result.product.branchId);
+        websocketEventEmitter.emit(lowStockEvent);
+        console.log(`📡 Emitted low-stock:alert event for product ${result.product.sku}`);
+      }
+    } catch (error) {
+      console.error('Failed to emit inventory events:', error);
+    }
+
+    res.json({
+      success: true,
       data: result,
-      message: `Stock ${data.type.toLowerCase()} adjustment completed` 
+      message: `Stock ${data.type.toLowerCase()} adjustment completed`
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

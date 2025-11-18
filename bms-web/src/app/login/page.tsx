@@ -1,154 +1,80 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
-import { apiService } from '@/services/api';
-import { AuthResponse } from '@/types/api-responses';
-import Cookies from 'js-cookie';
+import React, { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import { LoginForm } from '@/components/auth/LoginForm';
+import { Loader2 } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response: AuthResponse = await apiService.login(email, password);
-
-      if (response.success) {
-        // Store auth token
-        Cookies.set('auth_token', response.data.token, { expires: 7 }); // 7 days
-
-        // Redirect to dashboard
-        router.push('/dashboard');
-      } else {
-        setError(response.message || 'Login failed');
+  useEffect(() => {
+    // If user is already authenticated, redirect to dashboard or the intended page
+    if (session?.user) {
+      const callbackUrl = searchParams.get('callbackUrl');
+      const authRedirect = typeof window !== 'undefined' ? localStorage.getItem('auth_redirect') : null;
+      
+      // Clean up stored redirect URL
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth_redirect');
       }
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: string; message?: string } } };
-      setError(error.response?.data?.error || error.response?.data?.message || 'Login failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+
+      // Redirect to the intended page, or callbackUrl, or dashboard
+      const redirectTo = callbackUrl || authRedirect || '/dashboard';
+      router.push(redirectTo);
     }
-  };
+  }, [session, router, searchParams]);
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is already authenticated, show loading while redirecting
+  if (session?.user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-md bg-primary">
-            <span className="text-primary-foreground font-bold text-xl">BMS</span>
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl bg-primary shadow-lg">
+            <span className="text-primary-foreground font-bold text-2xl">BMS</span>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <h1 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Welcome Back
+          </h1>
+          <p className="mt-2 text-sm text-gray-600">
             Business Management System
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            Sign in to access your account
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Login</CardTitle>
-            <CardDescription>
-              Enter your credentials to access the system
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Email address
-                </label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-1"
-                  placeholder="Enter your email"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  Password
-                </label>
-                <div className="relative mt-1">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pr-10"
-                    placeholder="Enter your password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-gray-400" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-gray-400" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Signing in...
-                  </>
-                ) : (
-                  'Sign in'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
+        <LoginForm />
+        
         <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <button
-              type="button"
-              className="font-medium text-primary hover:text-primary/80"
-              onClick={() => router.push('/register')}
-            >
-              Contact administrator
-            </button>
+          <p className="text-xs text-gray-500">
+            Need help? Contact your system administrator
           </p>
         </div>
       </div>

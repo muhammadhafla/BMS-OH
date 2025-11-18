@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import { createServer } from 'http';
 
 import { errorHandler, notFound } from './middleware/error';
 import { authRouter } from './routes/auth';
@@ -20,6 +21,7 @@ import { attendanceRouter } from './routes/attendance';
 import { accountingRouter } from './routes/accounting';
 import { messagesRouter } from './routes/messages';
 import { exportRouter } from './routes/export';
+import { createWebSocketServer } from './websocket/server';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -140,10 +142,84 @@ app.use('/api/export', exportRouter);
 app.use(notFound);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
+// Create HTTP server
+const httpServer = createServer(app);
+
+// WebSocket server configuration
+const wsConfig = {
+  port: PORT,
+  cors: {
+    origin: corsOptions.origin,
+    credentials: corsOptions.credentials
+  },
+  namespaces: {
+    main: '/ws',
+    admin: '/ws-admin',
+    pos: '/ws-pos'
+  }
+};
+
+// Initialize WebSocket server
+const wsServer = createWebSocketServer(httpServer, wsConfig);
+
+// WebSocket status endpoint
+app.get('/ws-status', (_req, res) => {
+  const stats = wsServer.getStats();
+  res.json({
+    websocket: {
+      enabled: true,
+      uptime: process.uptime(),
+      connections: stats.connections.total,
+      rooms: stats.rooms.totalRooms,
+      namespaces: stats.namespaces
+    },
+    server: {
+      port: PORT,
+      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
+// Graceful shutdown handling
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n🛑 Received ${signal}. Starting graceful shutdown...`);
+  
+  try {
+    // Shutdown WebSocket server first
+    await wsServer.shutdown();
+    
+    // Close HTTP server
+    httpServer.close(() => {
+      console.log('✅ HTTP server closed');
+    });
+    
+    // Force close after timeout
+    setTimeout(() => {
+      console.log('⚠️ Forced shutdown after timeout');
+      process.exit(0);
+    }, 10000);
+    
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error);
+    process.exit(1);
+  }
+};
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Start HTTP server
+httpServer.listen(PORT, () => {
   console.log(`🚀 BMS API Server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 API Documentation: http://localhost:${PORT}/api-docs`);
+  console.log(`🔌 WebSocket Server: ws://localhost:${PORT}/ws`);
+  console.log(`🔌 Admin WebSocket: ws://localhost:${PORT}/ws-admin`);
+  console.log(`🔌 POS WebSocket: ws://localhost:${PORT}/ws-pos`);
+  console.log(`📡 WebSocket Status: http://localhost:${PORT}/ws-status`);
 });
 
 export default app;
+export { wsServer };

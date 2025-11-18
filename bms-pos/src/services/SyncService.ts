@@ -1,7 +1,7 @@
 import { apiService } from './ApiService';
 
 // PRODUCTION OFFLINE-FIRST MODE (Uncomment these lines for Electron/offline mode)
-// import DatabaseService from '../database/DatabaseService';
+import DatabaseService from '../database/DatabaseService';
 
 export interface SyncStatus {
   lastSync: Date | null;
@@ -22,7 +22,7 @@ export interface SyncResult {
 
 class SyncService {
   // PRODUCTION OFFLINE-FIRST MODE: Uncomment for Electron
-  // private dbService: DatabaseService;
+  private dbService: DatabaseService;
   
   private syncStatus: SyncStatus = {
     lastSync: null,
@@ -38,7 +38,7 @@ class SyncService {
 
   constructor() {
     // PRODUCTION OFFLINE-FIRST MODE: Uncomment for Electron
-    // this.dbService = new DatabaseService();
+    this.dbService = new DatabaseService();
     this.initializeDatabase();
     this.setupOnlineListener();
   }
@@ -46,8 +46,8 @@ class SyncService {
   private async initializeDatabase(): Promise<void> {
     try {
       // PRODUCTION OFFLINE-FIRST MODE: Uncomment for Electron
-      // await this.dbService.init();
-      console.log('✅ SyncService initialized - API mode');
+      await this.dbService.init();
+      console.log('✅ SyncService initialized - Offline-first mode with SQLite');
     } catch (error) {
       console.error('❌ Failed to initialize sync service:', error);
     }
@@ -177,14 +177,14 @@ class SyncService {
       const products = response.data.products;
       
       // PRODUCTION OFFLINE-FIRST MODE: For local storage, uncomment and replace below
-      // const syncResult = await this.dbService.syncProductsFromServer(products);
+      const syncResult = await this.dbService.syncProductsFromServer(products);
       
-      // if (syncResult.success) {
-        console.log(`✅ Retrieved ${products.length} products from server (API mode)`);
+      if (syncResult.success) {
+        console.log(`✅ Retrieved ${products.length} products from server and synced to local database`);
         return products.length;
-      // } else {
-      //   throw new Error(syncResult.error || 'Failed to sync products to local database');
-      // }
+      } else {
+        throw new Error(syncResult.error || 'Failed to sync products to local database');
+      }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Product sync failed';
@@ -203,60 +203,57 @@ class SyncService {
       
       // PRODUCTION OFFLINE-FIRST MODE: For local storage, uncomment and replace below
       // Get unsynced transactions from local database
-      // const unsyncedResult = await this.dbService.getUnsyncedTransactions();
+      const unsyncedResult = await this.dbService.getUnsyncedTransactions();
       
-      // if (!unsyncedResult.success || !unsyncedResult.data) {
-      //   throw new Error('Failed to get unsynced transactions');
-      // }
+      if (!unsyncedResult.success || !unsyncedResult.data) {
+        throw new Error('Failed to get unsynced transactions');
+      }
 
-      // const unsyncedTransactions = unsyncedResult.data;
-      
-      // API mode - no local transactions to sync
-      const unsyncedTransactions: any[] = [];
+      const unsyncedTransactions = unsyncedResult.data;
       let syncedCount = 0;
 
       for (const transaction of unsyncedTransactions) {
         try {
           // PRODUCTION OFFLINE-FIRST MODE: Uncomment for local storage
           // Get transaction items
-          // const transactionResult = await this.dbService.getTransaction(transaction.id);
+          const transactionResult = await this.dbService.getTransaction(transaction.id);
           
-          // if (!transactionResult.success || !transactionResult.data) {
-          //   console.warn(`⚠️ Failed to get transaction ${transaction.id} items`);
-          //   continue;
-          // }
+          if (!transactionResult.success || !transactionResult.data) {
+            console.warn(`⚠️ Failed to get transaction ${transaction.id} items`);
+            continue;
+          }
 
-          // const transactionData = transactionResult.data;
+          const transactionData = transactionResult.data;
 
-          // // Prepare transaction data for server
-          // const serverTransactionData = {
-          //   items: transactionData.items.map((item: any) => ({
-          //     productId: item.product_id,
-          //     quantity: item.quantity,
-          //     unitPrice: item.unit_price,
-          //     discount: item.discount,
-          //     total: item.total
-          //   })),
-          //   totalAmount: transaction.total_amount,
-          //   discount: transaction.discount,
-          //   finalAmount: transaction.final_amount,
-          //   paymentMethod: transaction.payment_method,
-          //   amountPaid: transaction.amount_paid,
-          //   change: transaction.change,
-          //   notes: `Synced from POS - ${transaction.transaction_code}`
-          // };
+          // Prepare transaction data for server
+          const serverTransactionData = {
+            items: transactionData.items.map((item: any) => ({
+              productId: item.product_id,
+              quantity: item.quantity,
+              unitPrice: item.unit_price,
+              discount: item.discount,
+              total: item.total
+            })),
+            totalAmount: transaction.total_amount,
+            discount: transaction.discount,
+            finalAmount: transaction.final_amount,
+            paymentMethod: transaction.payment_method,
+            amountPaid: transaction.amount_paid,
+            change: transaction.change,
+            notes: `Synced from POS - ${transaction.transaction_code}`
+          };
 
-          // // Send to server
-          // const serverResponse = await apiService.createTransaction(serverTransactionData);
+          // Send to server
+          const serverResponse = await apiService.createTransaction(serverTransactionData);
           
-          // if (serverResponse.success) {
-          //   // Mark as synced in local database
-          //   await this.dbService.markTransactionAsSynced(transaction.id);
-          //   syncedCount++;
-          //   console.log(`✅ Synced transaction ${transaction.transaction_code}`);
-          // } else {
-          //   console.error(`❌ Failed to sync transaction ${transaction.transaction_code}:`, serverResponse.error);
-          // }
+          if (serverResponse.success) {
+            // Mark as synced in local database
+            await this.dbService.markTransactionAsSynced(transaction.id);
+            syncedCount++;
+            console.log(`✅ Synced transaction ${transaction.transaction_code}`);
+          } else {
+            console.error(`❌ Failed to sync transaction ${transaction.transaction_code}:`, serverResponse.error);
+          }
 
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown transaction sync error';
@@ -283,11 +280,8 @@ class SyncService {
     try {
       // PRODUCTION OFFLINE-FIRST MODE: For local storage, uncomment below
       // Get pending transactions count
-      // const unsyncedResult = await this.dbService.getUnsyncedTransactions();
-      // this.syncStatus.pendingTransactions = unsyncedResult.success ? unsyncedResult.data?.length || 0 : 0;
-
-      // API mode - no local pending transactions
-      this.syncStatus.pendingTransactions = 0;
+      const unsyncedResult = await this.dbService.getUnsyncedTransactions();
+      this.syncStatus.pendingTransactions = unsyncedResult.success ? unsyncedResult.data?.length || 0 : 0;
 
       // Get pending products count (products that need to be synced from server)
       // This is a simplified approach - in reality, you might want to track this more precisely
@@ -349,12 +343,8 @@ class SyncService {
   async exportData(): Promise<string> {
     try {
       // PRODUCTION OFFLINE-FIRST MODE: For local storage, uncomment below
-      // const productsResult = await this.dbService.getProducts();
-      // const transactionsResult = await this.dbService.getUnsyncedTransactions();
-
-      // API mode - export minimal data
-      const productsResult = { success: true, data: [] };
-      const transactionsResult = { success: true, data: [] };
+      const productsResult = await this.dbService.getProducts();
+      const transactionsResult = await this.dbService.getUnsyncedTransactions();
 
       const exportData = {
         products: productsResult.success ? productsResult.data : [],
@@ -379,8 +369,8 @@ class SyncService {
       
       if (data.products && Array.isArray(data.products)) {
         // PRODUCTION OFFLINE-FIRST MODE: For local storage, uncomment below
-        // await this.dbService.syncProductsFromServer(data.products);
-        console.log('✅ Products imported (API mode - not stored locally)');
+        await this.dbService.syncProductsFromServer(data.products);
+        console.log('✅ Products imported and stored in local database');
       }
 
       // Note: Importing transactions would require more complex logic
@@ -406,9 +396,9 @@ class SyncService {
   cleanup(): void {
     this.stopAutoSync();
     // PRODUCTION OFFLINE-FIRST MODE: Uncomment for Electron
-    // if (this.dbService) {
-    //   this.dbService.close();
-    // }
+    if (this.dbService) {
+      this.dbService.close();
+    }
   }
 }
 

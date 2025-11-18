@@ -2,7 +2,9 @@
 
 import * as React from "react"
 import { SWRConfig } from 'swr'
+import { SessionProvider } from 'next-auth/react'
 import { AuthStoreProvider } from '@/stores/authStore'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 const swrConfig = {
   revalidateOnFocus: false,
@@ -26,10 +28,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SWRConfig value={swrConfig}>
-      <AuthStoreProvider>
-        {children}
-      </AuthStoreProvider>
-    </SWRConfig>
+    <SessionProvider>
+      <SWRConfig value={swrConfig}>
+        <AuthProvider>
+          <AuthStoreProvider>
+            {children}
+          </AuthStoreProvider>
+        </AuthProvider>
+      </SWRConfig>
+    </SessionProvider>
   )
 }

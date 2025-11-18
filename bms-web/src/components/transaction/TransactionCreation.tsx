@@ -12,17 +12,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { 
-  Form, 
-  FormControl, 
-  FormDescription, 
-  FormField, 
-  FormItem, 
-  FormLabel, 
-  FormMessage 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage
 } from '@/components/ui/form';
 import { CreateTransactionInput } from '@/lib/validations/transaction';
 import { createTransactionSchema } from '@/lib/validations/transaction';
-import { Plus, Minus, X, ShoppingCart } from 'lucide-react';
+import { Plus, X, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TransactionCreationProps {
@@ -95,12 +94,18 @@ export function TransactionCreation({ onSuccess, onCancel }: TransactionCreation
   // Update item
   const updateItem = (index: number, field: keyof TransactionItem, value: any) => {
     const updatedItems = [...items];
-    updatedItems[index] = { ...updatedItems[index], [field]: value };
+    const existingItem = updatedItems[index];
+    
+    if (!existingItem) return;
+    
+    updatedItems[index] = { ...existingItem, [field]: value };
     
     // Recalculate item total
     if (['quantity', 'unitPrice', 'discount'].includes(field)) {
       const item = updatedItems[index];
-      updatedItems[index].total = (item.quantity * item.unitPrice) - item.discount;
+      if (item) {
+        updatedItems[index].total = (item.quantity * item.unitPrice) - item.discount;
+      }
     }
     
     setItems(updatedItems);

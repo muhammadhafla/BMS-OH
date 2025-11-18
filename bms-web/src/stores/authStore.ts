@@ -169,3 +169,11 @@ export const useAuth = () => {
   }
   return context;
 };
+
+// NextAuth integration hook
+export const useNextAuth = () => {
+  return {
+    ...useAuth(),
+    // Additional NextAuth-specific methods can be added here
+  };
+};

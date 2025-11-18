@@ -19,8 +19,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
   SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
 import {
   BarChart3,
@@ -47,10 +45,12 @@ import {
   Search,
 } from 'lucide-react';
 
+import { LucideIcon } from 'lucide-react';
+
 interface NavigationItem {
   title: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: LucideIcon;
   roles?: string[];
   children?: NavigationItem[];
 }
@@ -162,15 +162,14 @@ interface AppSidebarProps {
   className?: string;
 }
 
-// Mock user role - in real app, get from auth context
-const getUserRole = (): string => {
-  return 'admin'; // Could be 'admin', 'manager', or 'staff'
-};
+import { useSession } from 'next-auth/react';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { LogoutButton } from '@/components/auth/LogoutButton';
 
 // Filter navigation based on user role
 const filterNavigationByRole = (navItems: NavigationItem[], userRole: string): NavigationItem[] => {
   return navItems.filter(item => {
-    if (item.roles && !item.roles.includes(userRole)) {
+    if (item.roles && !item.roles.includes(userRole.toLowerCase())) {
       return false;
     }
     
@@ -249,9 +248,17 @@ const SidebarNavigationItem = ({ item, level = 0 }: { item: NavigationItem; leve
 };
 
 export function AppSidebar({ className }: AppSidebarProps) {
-  const pathname = usePathname();
-  const userRole = getUserRole();
+  const { data: session } = useSession();
+  const { user } = useAuthContext();
+  const currentUser = user || session?.user;
+  
+  const userRole = currentUser?.role?.toLowerCase() || 'staff';
   const filteredNavigation = filterNavigationByRole(navigation, userRole);
+  
+  // Get user initials for avatar
+  const userInitials = currentUser?.name
+    ? currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()
+    : 'U';
 
   return (
     <Sidebar className={cn('border-r', className)}>
@@ -341,19 +348,24 @@ export function AppSidebar({ className }: AppSidebarProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
-              AD
+              {userInitials}
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-medium">Admin User</span>
+              <span className="text-sm font-medium">{currentUser?.name || 'User'}</span>
               <div className="flex items-center space-x-1">
                 <Shield className="h-3 w-3 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Administrator</span>
+                <span className="text-xs text-muted-foreground">
+                  {currentUser?.role ? currentUser.role.charAt(0) + currentUser.role.slice(1).toLowerCase() : 'User'}
+                </span>
               </div>
+              {currentUser?.branch && (
+                <div className="flex items-center space-x-1">
+                  <span className="text-xs text-muted-foreground">{currentUser.branch.name}</span>
+                </div>
+              )}
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <LogoutButton variant="dropdown" />
         </div>
       </SidebarFooter>
     </Sidebar>

@@ -63,7 +63,11 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   private handleReset = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    this.setState({
+      hasError: false,
+      error: undefined as Error | undefined,
+      errorInfo: undefined as ErrorInfo | undefined
+    });
   };
 
   public render() {
@@ -166,7 +170,7 @@ const DefaultErrorBoundary: React.FC<DefaultErrorBoundaryProps> = ({ error, onRe
 export const PageErrorBoundary: React.FC<Props> = ({ children, onError }) => {
   return (
     <ErrorBoundary
-      onError={onError}
+      onError={onError || undefined}
       fallback={
         <div className="flex-1 p-8">
           <Card>
@@ -202,7 +206,7 @@ export const PageErrorBoundary: React.FC<Props> = ({ children, onError }) => {
 export const ComponentErrorBoundary: React.FC<Props> = ({ children, onError }) => {
   return (
     <ErrorBoundary
-      onError={onError}
+      onError={onError || undefined}
       fallback={
         <Card>
           <CardContent className="p-4">
@@ -223,7 +227,7 @@ export const ComponentErrorBoundary: React.FC<Props> = ({ children, onError }) =
 export const AsyncErrorBoundary: React.FC<Props> = ({ children, onError }) => {
   return (
     <ErrorBoundary
-      onError={onError}
+      onError={onError || undefined}
       fallback={
         <Card>
           <CardContent className="p-6 text-center">
@@ -249,7 +253,7 @@ export const AsyncErrorBoundary: React.FC<Props> = ({ children, onError }) => {
 export const FormErrorBoundary: React.FC<Props> = ({ children, onError }) => {
   return (
     <ErrorBoundary
-      onError={onError}
+      onError={onError || undefined}
       fallback={
         <div className="p-4 border border-red-200 rounded-lg bg-red-50">
           <div className="flex items-center space-x-2 text-red-800">

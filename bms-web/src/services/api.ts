@@ -51,8 +51,23 @@ class ApiService {
 
     // Request interceptor to add auth token
     this.api.interceptors.request.use(
-      (config) => {
-        const token = Cookies.get('auth_token');
+      async (config) => {
+        // Try to get token from NextAuth session if available
+        let token = Cookies.get('auth_token');
+        
+        // If we have NextAuth session, we can also get the access token
+        if (typeof window !== 'undefined') {
+          try {
+            const { getSession } = await import('next-auth/react');
+            const session = await getSession();
+            if (session?.accessToken) {
+              token = session.accessToken as string;
+            }
+          } catch (error) {
+            // Fallback to cookie token
+          }
+        }
+        
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -68,11 +83,19 @@ class ApiService {
       (response: AxiosResponse) => {
         return response;
       },
-      (error) => {
+      async (error) => {
         if (error.response?.status === 401) {
           // Token is invalid or expired
           Cookies.remove('auth_token');
+          
+          // Sign out from NextAuth as well
           if (typeof window !== 'undefined') {
+            try {
+              const { signOut } = await import('next-auth/react');
+              await signOut({ redirect: false });
+            } catch (signOutError) {
+              // Ignore signOut errors
+            }
             window.location.href = '/login';
           }
         }
