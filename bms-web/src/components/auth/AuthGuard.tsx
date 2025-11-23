@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSession, signIn } from 'next-auth/react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 
@@ -10,18 +10,15 @@ interface AuthGuardProps {
   children: React.ReactNode;
   requiredRole?: 'ADMIN' | 'MANAGER' | 'STAFF';
   fallback?: React.ReactNode;
-  redirectTo?: string;
 }
 
 export const AuthGuard: React.FC<AuthGuardProps> = ({
   children,
   requiredRole,
   fallback,
-  redirectTo = '/login',
 }) => {
   const { data: session, status } = useSession();
   const { user, isLoading } = useAuthContext();
-  const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
 

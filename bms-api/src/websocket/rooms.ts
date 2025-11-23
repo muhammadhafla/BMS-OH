@@ -135,7 +135,7 @@ export class RoomManager {
 
     const sockets: AuthenticatedSocket[] = [];
     room.connections.forEach(socketId => {
-      const socket = connectionManager.connections.get(socketId);
+      const socket = connectionManager.getAllConnections().get(socketId);
       if (socket) {
         sockets.push(socket);
       }
@@ -276,6 +276,11 @@ export class RoomManager {
     
     console.log(`🧹 Force cleanup: removed ${before - after} rooms, ${after} remaining`);
   }
+
+  // Public method to get socket rooms
+  getSocketRooms(socketId: string): Set<string> {
+    return this.socketToRoom.get(socketId) || new Set();
+  }
 }
 
 // Room name generators
@@ -347,7 +352,7 @@ export class RoomUtils {
 
   // Leave all user rooms
   static leaveUserRooms(socket: AuthenticatedSocket, roomManager: RoomManager): void {
-    const socketRooms = roomManager.socketToRoom.get(socket.id);
+    const socketRooms = roomManager.getSocketRooms(socket.id);
     if (socketRooms) {
       socketRooms.forEach(roomId => {
         roomManager.leaveRoom(socket.id, roomId);

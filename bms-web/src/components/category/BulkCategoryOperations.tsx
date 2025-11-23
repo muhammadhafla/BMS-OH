@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
-import { Category, Product, BulkUpdateProductsData } from '@/types/category';
+import { Category, BulkUpdateProductsData } from '@/types/category';
 import { apiService } from '@/services/api';
 import { CategoryForm } from './CategoryForm';
 import { ProductListResponse } from '@/types/api-responses';
@@ -15,19 +15,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { 
-  Settings, 
-  Package, 
-  Folder, 
-  ArrowRight, 
-  CheckCircle, 
+import {
+  Settings,
+  Package,
+  Folder,
+  ArrowRight,
   AlertCircle,
   Loader2,
   Search
@@ -46,7 +38,6 @@ export function BulkCategoryOperations({ categories, onSuccess }: BulkCategoryOp
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [targetCategoryId, setTargetCategoryId] = useState<string>('');
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [updating, setUpdating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -367,7 +358,7 @@ export function BulkCategoryOperations({ categories, onSuccess }: BulkCategoryOp
       <CategoryForm
         open={bulkEditOpen}
         onOpenChange={setBulkEditOpen}
-        onSuccess={onSuccess}
+        onSuccess={onSuccess || (() => {})}
         mode="create"
       />
     </div>

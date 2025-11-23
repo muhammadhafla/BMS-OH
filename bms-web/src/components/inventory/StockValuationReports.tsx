@@ -4,10 +4,8 @@ import React, { useState } from 'react';
 import useSWR from 'swr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Table,
   TableBody,
@@ -29,7 +27,6 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DollarSign,
@@ -46,8 +43,6 @@ import {
   Target,
   Filter,
   Search,
-  Plus,
-  Minus,
   ArrowUpDown,
 } from 'lucide-react';
 import { apiService } from '@/services/api';

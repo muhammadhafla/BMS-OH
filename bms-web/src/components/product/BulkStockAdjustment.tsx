@@ -5,15 +5,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { apiService } from '@/services/api';
-import { 
-  bulkStockAdjustmentSchema, 
+import {
+  bulkStockAdjustmentSchema,
   type BulkStockAdjustmentFormData,
   ADJUSTMENT_REASONS,
   csvStockAdjustmentSchema,
-  type CsvStockAdjustmentData,
 } from '@/lib/validations/stock-adjustment';
-import { useAuthStore } from '@/stores/authStore';
-import { parseCsvFile, downloadCsvTemplate } from '@/lib/utils/csv';
+import { downloadCsvTemplate } from '@/lib/utils/csv';
 
 import {
   Dialog,
@@ -32,7 +30,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -45,15 +42,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { 
-  Loader2, 
-  Upload, 
-  AlertCircle, 
+import {
+  Loader2,
+  Upload,
+  AlertCircle,
   Download,
   FileSpreadsheet,
   CheckCircle2,
   XCircle,
-  Info,
   Trash2,
 } from 'lucide-react';
 
@@ -79,7 +75,6 @@ export function BulkStockAdjustment({ open, onOpenChange, onSuccess }: BulkStock
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [parsedAdjustments, setParsedAdjustments] = useState<ParsedAdjustment[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const { user } = useAuthStore();
 
   // Initialize form
   const form = useForm<BulkStockAdjustmentFormData>({
@@ -92,8 +87,7 @@ export function BulkStockAdjustment({ open, onOpenChange, onSuccess }: BulkStock
     mode: 'onChange',
   });
 
-  const { handleSubmit, setValue, watch } = form;
-  const watchedValues = watch();
+  const { handleSubmit } = form;
 
   // Reset form when modal opens
   React.useEffect(() => {
@@ -131,13 +125,13 @@ export function BulkStockAdjustment({ open, onOpenChange, onSuccess }: BulkStock
       const adjustments: ParsedAdjustment[] = [];
 
       for (let i = 0; i < rows.length; i++) {
-        const row = rows[i].trim();
+        const row = rows[i]?.trim();
         if (!row) continue;
 
-        const [sku, adjustmentType, quantity, reason, notes, reference] = row.split(',').map(s => s.trim());
+        const [sku, adjustmentType, quantity, reason, notes, reference] = row.split(',').map(s => s?.trim() || '');
 
         const adjustment: ParsedAdjustment = {
-          sku,
+          sku: sku || '',
           adjustmentType: adjustmentType as any,
           quantity: parseInt(quantity) || 0,
           reason: reason || '',
@@ -148,7 +142,7 @@ export function BulkStockAdjustment({ open, onOpenChange, onSuccess }: BulkStock
         // Validate each row
         const validation = csvStockAdjustmentSchema.safeParse(adjustment);
         if (!validation.success) {
-          adjustment.error = validation.error.errors[0].message;
+          adjustment.error = validation.error?.errors?.[0]?.message || 'Validation error';
         }
 
         adjustments.push(adjustment);

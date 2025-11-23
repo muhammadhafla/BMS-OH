@@ -10,14 +10,10 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  AlertCircle,
-  Database,
-  Upload
+  AlertCircle
 } from 'lucide-react';
 import { CsvImportRow, ImportError, ImportResult } from '@/lib/validations/csv-import';
 import { createBatches, calculateProgress } from '@/lib/utils/csv';
-
-import { csvImportAPI } from '@/lib/services/csv-import';
 
 interface CsvImportProgressProps {
   data: CsvImportRow[];
@@ -72,6 +68,7 @@ export function CsvImportProgress({
       
       for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
+        if (!batch) continue;
         setCurrentBatch(batch);
         await processBatch(batch, i, batches.length);
         
@@ -79,7 +76,7 @@ export function CsvImportProgress({
         const progress = calculateProgress((i + 1) * batchSize, data.length);
         onProgressUpdate?.(progress, (i + 1) * batchSize, data.length);
         
-        setImportStatus(prev => ({
+        setImportStatus((prev: any) => ({
           ...prev,
           currentBatch: i + 1,
           totalBatches: batches.length
@@ -115,9 +112,10 @@ export function CsvImportProgress({
       // Process batch with progress updates
       for (let i = 0; i < batch.length; i++) {
         const item = batch[i];
+        if (!item) continue;
         try {
           await processSingleItem(item);
-          setImportStatus(prev => ({
+          setImportStatus((prev: any) => ({
             ...prev,
             processed: prev.processed + 1,
             successful: prev.successful + 1
@@ -131,7 +129,7 @@ export function CsvImportProgress({
             value: ''
           };
           
-          setImportStatus(prev => ({
+          setImportStatus((prev: any) => ({
             ...prev,
             processed: prev.processed + 1,
             failed: prev.failed + 1,
@@ -307,7 +305,7 @@ export function CsvImportProgress({
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-32 overflow-y-auto">
-              {importStatus.errors.slice(-5).reverse().map((error, index) => (
+              {importStatus.errors.slice(-5).reverse().map((error: ImportError, index: number) => (
                 <div key={index} className="text-sm p-2 bg-red-50 rounded border border-red-200">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Row {error.rowIndex + 1}: {error.sku}</span>

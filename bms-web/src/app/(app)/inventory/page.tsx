@@ -14,17 +14,13 @@ import {
   FileText,
   Settings,
   Bell,
-  Search,
   Download,
   RefreshCw,
   Activity,
   DollarSign,
   History,
-  CheckCircle2,
   Eye,
-  Edit,
   Plus,
-  Filter,
 } from 'lucide-react';
 
 import { InventoryOverview } from '@/components/inventory/InventoryOverview';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,7 +64,6 @@ export function TransactionHistory({
   error, 
   productName 
 }: TransactionHistoryProps) {
-  const [currentPage, setCurrentPage] = useState(1);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -120,14 +119,6 @@ export function TransactionHistory({
     // In a real implementation, you would trigger a fetch for the specific page
   };
 
-  // Calculate summary stats
-  const totalTransactions = transactions.length;
-  const totalSales = transactions.filter(t => t.type === 'SALE').length;
-  const totalPurchases = transactions.filter(t => t.type === 'PURCHASE').length;
-  const totalAdjustments = transactions.filter(t => t.type === 'ADJUSTMENT').length;
-  const totalRevenue = transactions
-    .filter(t => t.type === 'SALE' && t.status === 'COMPLETED')
-    .reduce((sum, t) => sum + t.totalAmount, 0);
 
   // Error state
   if (error) {

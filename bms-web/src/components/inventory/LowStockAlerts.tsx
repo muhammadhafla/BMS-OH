@@ -19,28 +19,23 @@ import {
   AlertCircle,
   CheckCircle2,
   XCircle,
-  TrendingDown,
-  Package,
   Bell,
-  BellOff,
   Eye,
   EyeOff,
   RefreshCw,
-  Search,
-  Filter,
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 
 export function LowStockAlerts() {
   const [showResolved, setShowResolved] = useState(false);
-  const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [showActionDialog, setShowActionDialog] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [actionType, setActionType] = useState<'resolve' | 'dismiss'>('resolve');
 
   // Fetch low stock alerts
   const { data, error, isLoading, mutate } = useSWR(
     ['/api/inventory/low-stock-alerts', showResolved],
-    () => apiService.getLowStockAlerts({ 
+    () => apiService.getLowStockAlerts({
       includeResolved: showResolved,
     }),
     {
@@ -49,7 +44,6 @@ export function LowStockAlerts() {
   );
 
   const alerts = (data as any)?.data?.alerts || [];
-  const products = (data as any)?.data?.products || [];
 
   // Format date
   const formatDate = (dateString: string) => {

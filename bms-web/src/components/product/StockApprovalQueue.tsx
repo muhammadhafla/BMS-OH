@@ -43,7 +43,6 @@ import {
   User,
   FileText,
   RefreshCw,
-  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -139,10 +138,6 @@ export function StockApprovalQueue({
 
     setIsProcessing(true);
     try {
-      await apiService.approveStockAdjustment(selectedAdjustment.id, {
-        status: approvalAction,
-        approvalNotes: approvalNotes || undefined,
-      });
 
       const actionText = approvalAction === 'APPROVED' ? 'approved' : 'rejected';
       toast.success(`Adjustment ${actionText}`, {

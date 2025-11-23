@@ -7,7 +7,7 @@ import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import { CategoryFormData, CategoryUpdateData, categorySchema, defaultCategoryValues } from '@/lib/validations/category';
 import { apiService } from '@/services/api';
-import { Category, CategoryTreeNode } from '@/types/category';
+import { Category } from '@/types/category';
 import { CategoryListResponse } from '@/types/api-responses';
 
 import {
@@ -38,7 +38,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Folder, AlertCircle, Code, FileText, Tag } from 'lucide-react';
+import { Loader2, Folder, AlertCircle, Tag } from 'lucide-react';
 
 const fetcher = (url: string) => apiService.get(url);
 
@@ -99,13 +99,13 @@ export function CategoryForm({ open, onOpenChange, onSuccess, category, parentId
   const {
     control,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { isValid },
     reset,
     setValue,
     watch,
   } = form;
 
-  const watchedFields = watch();
+  watch();
 
   // Reset form when modal opens/closes or category changes
   useEffect(() => {
@@ -302,28 +302,28 @@ export function CategoryForm({ open, onOpenChange, onSuccess, category, parentId
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Parent Category</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select parent category (optional)" />
                           </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="">No parent (Root category)</SelectItem>
-                          {availableParents.map((parent) => (
-                            <SelectItem key={parent.id} value={parent.id}>
-                              <div className="flex items-center gap-2">
-                                <span>{parent.name}</span>
-                                {parent.code && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {parent.code}
-                                  </Badge>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        </Select>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">No parent (Root category)</SelectItem>
+                        {availableParents.map((parent) => (
+                          <SelectItem key={parent.id} value={parent.id}>
+                            <div className="flex items-center gap-2">
+                              <span>{parent.name}</span>
+                              {parent.code && (
+                                <Badge variant="outline" className="text-xs">
+                                  {parent.code}
+                                </Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                       <FormDescription>
                         {field.value ? `Current parent: ${getParentCategoryName(field.value)}` : 'This will be a root category'}
                       </FormDescription>
@@ -339,17 +339,17 @@ export function CategoryForm({ open, onOpenChange, onSuccess, category, parentId
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Status *</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(value === 'true')} defaultValue={field.value?.toString()}>
-                        <FormControl>
+                      <FormControl>
+                        <Select onValueChange={(value) => field.onChange(value === 'true')} defaultValue={field.value?.toString() || 'true'}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="true">Active</SelectItem>
-                          <SelectItem value="false">Inactive</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        </Select>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="true">Active</SelectItem>
+                        <SelectItem value="false">Inactive</SelectItem>
+                      </SelectContent>
                       <FormDescription>
                         Inactive categories won't appear in product selection
                       </FormDescription>

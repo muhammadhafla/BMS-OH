@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import { 
@@ -26,12 +26,7 @@ import {
   XCircle,
   AlertTriangle,
   CheckCircle,
-  DollarSign,
-  Hash,
-  Tag,
-  User,
-  Calendar,
-  Building2
+  Calendar
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { ProductDetails } from './ProductDetails';
@@ -40,12 +35,9 @@ import { InventoryLogs } from './InventoryLogs';
 import { EditProductForm } from './EditProductForm';
 import { StockAdjustmentForm } from './StockAdjustmentForm';
 import type {
-  ProductListResponse,
   TransactionListResponse,
   InventoryLogListResponse,
-  ApiResponse,
-  Transaction,
-  InventoryLog
+  ApiResponse
 } from '@/types/api-responses';
 
 interface ProductDetailsViewProps {
@@ -93,7 +85,7 @@ const mapTransaction = (transaction: import('@/types/api-responses').Transaction
   type: transaction.type as 'SALE' | 'PURCHASE' | 'ADJUSTMENT',
   quantity: transaction.items?.reduce((sum, item) => sum + item.quantity, 0) || 0,
   totalAmount: transaction.total,
-  customer: transaction.customer ? { ...transaction.customer, email: '' } : undefined,
+  customer: transaction.customer ? { ...transaction.customer } : undefined,
   staff: { name: '', email: '' },
   status: transaction.status.replace('REFUNDED', 'CANCELLED') as 'PENDING' | 'COMPLETED' | 'CANCELLED',
   notes: transaction.notes
@@ -118,7 +110,6 @@ export function ProductDetailsView({
   const [activeTab, setActiveTab] = useState('details');
   const [isEditing, setIsEditing] = useState(false);
   const [isAdjustingStock, setIsAdjustingStock] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Fetch product details
   const { 
@@ -205,7 +196,6 @@ export function ProductDetailsView({
   // Handle product update
   const handleProductUpdate = () => {
     setIsEditing(false);
-    setRefreshTrigger(prev => prev + 1);
     mutate(`/api/products/${productId}`);
     mutate('/api/products');
     onProductUpdate?.();
@@ -217,7 +207,6 @@ export function ProductDetailsView({
   // Handle stock adjustment
   const handleStockAdjustment = () => {
     setIsAdjustingStock(false);
-    setRefreshTrigger(prev => prev + 1);
     mutate(`/api/products/${productId}`);
     mutate('/api/products');
     onProductUpdate?.();
@@ -379,7 +368,7 @@ export function ProductDetailsView({
               <TabsContent value="inventory" className="mt-6">
                 <InventoryLogs 
                   logs={inventoryLogs}
-                  pagination={inventoryLogsPagination}
+                  pagination={inventoryLogsPagination || undefined}
                   loading={inventoryLogsLoading}
                   error={inventoryLogsError}
                   productName={product.name}

@@ -32,14 +32,12 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Calendar,
   User,
   BarChart3,
   Filter,
   Download,
   Loader2,
 } from 'lucide-react';
-import { apiService } from '@/services/api';
 
 interface AttendanceRecord {
   id: number;
@@ -290,12 +288,12 @@ const Attendance: React.FC = () => {
             <CardHeader>
               <CardTitle>Presensi Hari Ini</CardTitle>
               <CardDescription>
-                {new Date(selectedDate).toLocaleDateString('id-ID', {
+                {selectedDate ? new Date(selectedDate).toLocaleDateString('id-ID', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
-                })}
+                }) : 'Tanggal tidak valid'}
               </CardDescription>
             </CardHeader>
             <CardContent>

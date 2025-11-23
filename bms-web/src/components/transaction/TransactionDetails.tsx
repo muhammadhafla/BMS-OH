@@ -15,51 +15,21 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Transaction } from '@/lib/types/transaction';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
   Receipt,
-  Download,
-  Edit,
-  RefreshCw,
-  AlertTriangle,
-  Package,
-  DollarSign,
   Calendar,
   User,
   Building2,
-  CreditCard,
-  FileText,
-  MoreHorizontal
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
 
 interface TransactionDetailsProps {
   transaction: Transaction;
   onClose: () => void;
   onUpdateStatus: (transactionId: string, status: string, notes?: string) => Promise<void>;
   onGenerateReceipt?: (transactionId: string) => Promise<void>;
-  onProcessRefund?: (transactionId: string, refundData: any) => Promise<void>;
 }
 
 export function TransactionDetails({
@@ -67,13 +37,8 @@ export function TransactionDetails({
   onClose,
   onUpdateStatus,
   onGenerateReceipt,
-  onProcessRefund,
 }: TransactionDetailsProps) {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [showRefundDialog, setShowRefundDialog] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [refundNotes, setRefundNotes] = useState('');
-  const [cancelNotes, setCancelNotes] = useState('');
 
   // Format currency
   const formatCurrency = (amount: number) => {

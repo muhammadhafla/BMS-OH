@@ -14,7 +14,7 @@ import { TransactionDetails } from '@/components/transaction/TransactionDetails'
 import { useTransactions } from '@/lib/hooks/useTransactions';
 import { TransactionFilters, Transaction } from '@/lib/types/transaction';
 import { Button } from '@/components/ui/button';
-import { Plus, Search, Download, Filter } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
 
 export default function TransactionsPage() {
   const [activeTab, setActiveTab] = useState('history');
@@ -31,7 +31,6 @@ export default function TransactionsPage() {
     analytics,
     loading,
     pagination,
-    searchTransactions,
     getTransactionDetails,
     updateTransactionStatus,
     exportTransactions,
@@ -41,7 +40,7 @@ export default function TransactionsPage() {
     setFilters(prev => ({ ...prev, ...newFilters, page: 1 }));
   };
 
-  const handleSearch = (query: string, searchType: 'code' | 'customer' | 'product' | 'all') => {
+  const handleSearch = (query: string) => {
     setFilters(prev => ({ ...prev, search: query, page: 1 }));
   };
 
@@ -170,7 +169,7 @@ export default function TransactionsPage() {
                 onFilterChange={handleFilterChange}
                 onSearch={handleSearch}
                 onViewDetails={handleViewDetails}
-                onUpdateStatus={updateTransactionStatus}
+                onUpdateStatus={(id, status, notes) => updateTransactionStatus(id, status as "PENDING" | "COMPLETED" | "CANCELLED" | "REFUNDED", notes)}
               />
             </CardContent>
           </Card>
@@ -235,7 +234,7 @@ export default function TransactionsPage() {
         <TransactionDetails
           transaction={selectedTransaction}
           onClose={() => setSelectedTransaction(null)}
-          onUpdateStatus={updateTransactionStatus}
+          onUpdateStatus={(id, status, notes) => updateTransactionStatus(id, status as "PENDING" | "COMPLETED" | "CANCELLED" | "REFUNDED", notes)}
         />
       )}
 

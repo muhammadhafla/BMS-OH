@@ -147,9 +147,9 @@ const httpServer = createServer(app);
 
 // WebSocket server configuration
 const wsConfig = {
-  port: PORT,
+  port: typeof PORT === 'string' ? parseInt(PORT) : PORT,
   cors: {
-    origin: corsOptions.origin,
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:4173'], // Simplified for WebSocket
     credentials: corsOptions.credentials
   },
   namespaces: {

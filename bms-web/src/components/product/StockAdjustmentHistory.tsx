@@ -40,7 +40,6 @@ import {
   X,
   Download,
   Search,
-  Calendar,
   CheckCircle2,
   XCircle,
   Clock,
@@ -57,11 +56,10 @@ export function StockAdjustmentHistory({
   branchId,
   showFilters = true 
 }: StockAdjustmentHistoryProps) {
-  const { user } = useAuthStore();
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<StockAdjustmentFilters>({
-    productId,
-    branchId,
+    productId: productId || '',
+    branchId: branchId || '',
     adjustmentType: 'ALL',
     status: 'ALL',
   });
@@ -183,8 +181,8 @@ export function StockAdjustmentHistory({
   // Clear filters
   const handleClearFilters = () => {
     setFilters({
-      productId,
-      branchId,
+      productId: productId || '',
+      branchId: branchId || '',
       adjustmentType: 'ALL',
       status: 'ALL',
     });

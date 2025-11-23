@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import useSWR, { mutate } from 'swr';
+import { mutate } from 'swr';
 import { toast } from 'sonner';
-import { CategoryImportResult, CategoryFormData } from '@/lib/validations/category';
+import { CategoryImportResult } from '@/lib/validations/category';
 import { apiService } from '@/services/api';
 
 import {
@@ -17,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { 
   Upload, 
   Download, 

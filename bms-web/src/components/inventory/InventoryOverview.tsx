@@ -23,7 +23,6 @@ import {
   DollarSign,
   Activity,
   RefreshCw,
-  Eye,
   Target,
   Layers,
   Clock,

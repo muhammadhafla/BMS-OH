@@ -39,7 +39,6 @@ import {
   TrendingUp,
   Eye,
   Phone,
-  Mail,
   Loader2,
 } from 'lucide-react';
 import { apiService } from '@/services/api';

@@ -97,8 +97,13 @@ export interface CategoryFormData {
   branchId?: string;
 }
 
-export interface CategoryUpdateData extends Partial<CategoryFormData> {
-  parentId?: string | null;
+export interface CategoryUpdateData {
+  name?: string;
+  code?: string;
+  description?: string;
+  parentId?: string | undefined | null;
+  isActive?: boolean;
+  branchId?: string;
 }
 
 export interface BulkUpdateProductsData {

@@ -37,7 +37,6 @@ import {
   Send,
   Inbox,
   Users,
-  Clock,
   CheckCircle,
   Circle,
   Star,
@@ -46,7 +45,6 @@ import {
   Reply,
   Loader2,
 } from 'lucide-react';
-import { apiService } from '@/services/api';
 
 interface Message {
   id: number;

@@ -2,7 +2,6 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
-import { AuthenticatedRequest } from '../middleware/auth';
 import { EventEmitter, BMSWebSocketEvent } from './events';
 
 const prisma = new PrismaClient();
@@ -20,7 +19,7 @@ export interface WebSocketUser {
 export interface AuthenticatedSocket extends Socket {
   user?: WebSocketUser;
   branchId?: string;
-  connectedAt: Date;
+  connectedAt?: Date;
 }
 
 // WebSocket event emitter instance
@@ -28,11 +27,13 @@ export const websocketEventEmitter = new EventEmitter();
 
 // Authentication middleware for WebSocket connections
 export const authenticateSocket = async (
-  socket: AuthenticatedSocket,
+  socket: Socket,
   next: (err?: Error) => void
 ): Promise<void> => {
+  const authSocket = socket as AuthenticatedSocket;
+  
   try {
-    const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.replace('Bearer ', '');
+    const token = authSocket.handshake.auth?.token || authSocket.handshake.headers?.authorization?.replace('Bearer ', '');
 
     if (!token) {
       return next(new Error('Authentication error: No token provided'));
@@ -64,7 +65,7 @@ export const authenticateSocket = async (
     }
 
     // Attach user info to socket
-    socket.user = {
+    authSocket.user = {
       id: user.id,
       email: user.email,
       name: user.name,
@@ -72,8 +73,8 @@ export const authenticateSocket = async (
       branchId: user.branchId || undefined
     };
 
-    socket.branchId = user.branchId || undefined;
-    socket.connectedAt = new Date();
+    authSocket.branchId = user.branchId || undefined;
+    authSocket.connectedAt = new Date();
 
     console.log(`✅ WebSocket authenticated: ${user.name} (${user.role}) from branch ${user.branchId || 'N/A'}`);
 
@@ -94,7 +95,7 @@ export const authenticateSocket = async (
 };
 
 // Authorization middleware for specific events
-export const authorizeEvent = (eventTypes: string[]) => {
+export const authorizeEvent = (_eventTypes: string[]) => {
   return (socket: AuthenticatedSocket, event: BMSWebSocketEvent, next: (err?: Error) => void): void => {
     try {
       if (!socket.user) {
@@ -230,6 +231,11 @@ export class ConnectionManager {
     });
     console.log(`👋 Disconnected ${userConnections.length} connections for user ${userId}`);
   }
+
+  // Public method to access connections for health check
+  getAllConnections(): Map<string, AuthenticatedSocket> {
+    return this.connections;
+  }
 }
 
 export const connectionManager = new ConnectionManager();
@@ -263,7 +269,7 @@ export const checkConnectionHealth = (): { healthy: number; total: number; issue
   let healthy = 0;
   const issues: string[] = [];
 
-  connectionManager.connections.forEach((socket, socketId) => {
+  connectionManager.getAllConnections().forEach((socket, socketId) => {
     if (socket.connected) {
       healthy++;
     } else {
@@ -276,7 +282,7 @@ export const checkConnectionHealth = (): { healthy: number; total: number; issue
 };
 
 // Periodic cleanup
-export const startPeriodicCleanup = (io: SocketIOServer): void => {
+export const startPeriodicCleanup = (_io: SocketIOServer): void => {
   setInterval(() => {
     rateLimiter.cleanup();
     

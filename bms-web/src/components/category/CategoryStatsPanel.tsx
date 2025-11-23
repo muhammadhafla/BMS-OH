@@ -2,7 +2,6 @@
 
 import React from 'react';
 import useSWR from 'swr';
-import { CategoryStats } from '@/types/category';
 import { apiService } from '@/services/api';
 import { CategoryStatsResponse } from '@/types/api-responses';
 

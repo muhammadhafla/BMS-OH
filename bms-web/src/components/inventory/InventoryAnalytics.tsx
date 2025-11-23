@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import useSWR from 'swr';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
@@ -17,7 +16,6 @@ import {
   BarChart3,
   TrendingUp,
   TrendingDown,
-  PieChart,
   Activity,
   Calendar,
   Download,
@@ -26,7 +24,6 @@ import {
   Package,
   DollarSign,
   Target,
-  Layers,
   RefreshCw,
   CheckCircle2,
   XCircle,
@@ -35,7 +32,6 @@ import { apiService } from '@/services/api';
 
 export function InventoryAnalytics() {
   const [dateRange, setDateRange] = useState('30'); // days
-  const [chartType, setChartType] = useState('movements');
   const [branchFilter, setBranchFilter] = useState('ALL');
 
   // Fetch analytics data
@@ -83,14 +79,6 @@ export function InventoryAnalytics() {
       style: 'currency',
       currency: 'IDR',
     }).format(amount);
-  };
-
-  // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      month: 'short',
-      day: 'numeric',
-    });
   };
 
   // Export analytics

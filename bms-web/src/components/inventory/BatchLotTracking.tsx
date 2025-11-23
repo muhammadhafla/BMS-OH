@@ -29,30 +29,20 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Search,
   Package,
-  Calendar,
   AlertTriangle,
   CheckCircle2,
-  Clock,
-  Filter,
   RefreshCw,
   Download,
   Eye,
   Edit,
-  Trash2,
-  Plus,
-  Minus,
   Barcode,
   Hash,
   AlertCircle,
-  TrendingUp,
-  TrendingDown,
   Activity,
-  FileText,
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 
@@ -60,7 +50,7 @@ export function BatchLotTracking() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterExpiry, setFilterExpiry] = useState('ALL');
-  const [branchFilter, setBranchFilter] = useState('ALL');
+  const [branchFilter] = useState('ALL');
   const [showDetails, setShowDetails] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,14 +87,6 @@ export function BatchLotTracking() {
       totalPages: 1,
       totalItems: 0,
     },
-  };
-
-  // Format currency and dates
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-    }).format(amount);
   };
 
   const formatDate = (dateString: string) => {

@@ -22,11 +22,11 @@ interface CategoryTreeViewProps {
 interface TreeNodeProps {
   category: CategoryTreeNode;
   level: number;
-  selectedCategoryId?: string;
+  selectedCategoryId?: string | undefined;
   onSelect: (category: CategoryTreeNode) => void;
   onEdit: (category: CategoryTreeNode) => void;
   onDelete: (category: CategoryTreeNode) => void;
-  onAdd: (parentId?: string) => void;
+  onAdd: (parentId?: string | undefined) => void;
   showActions: boolean;
 }
 
@@ -304,7 +304,7 @@ export function CategoryTreeView({
                 key={category.id}
                 category={category}
                 level={0}
-                selectedCategoryId={selectedCategoryId}
+                selectedCategoryId={selectedCategoryId || undefined}
                 onSelect={onCategorySelect || (() => {})}
                 onEdit={onCategoryEdit || (() => {})}
                 onDelete={onCategoryDelete || (() => {})}

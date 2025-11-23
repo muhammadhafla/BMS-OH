@@ -32,13 +32,12 @@ interface LoginFormProps {
 export const LoginForm: React.FC<LoginFormProps> = ({ className }) => {
   const { login } = useAuthContext();
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState<string>('');
+  const [formError, setFormError] = useState<string>('');
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError,
     clearErrors,
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -46,17 +45,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ className }) => {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      setError('');
+      setFormError('');
       clearErrors();
       
       const result = await login(data.email, data.password);
       
       if (!result.success) {
-        setError(result.error || 'Login failed');
+        setFormError(result.error || 'Login failed');
       }
       // If successful, the auth context will handle the redirect
     } catch (error) {
-      setError('An unexpected error occurred. Please try again.');
+      setFormError('An unexpected error occurred. Please try again.');
     }
   };
 
@@ -74,9 +73,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ className }) => {
       </CardHeader>
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
-          {error && (
+          {formError && (
             <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{formError}</AlertDescription>
             </Alert>
           )}
           

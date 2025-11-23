@@ -13,8 +13,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -23,7 +21,6 @@ import {
   Download,
   AlertCircle,
   CheckCircle,
-  XCircle,
   Loader2,
   FileSpreadsheet
 } from 'lucide-react';
@@ -53,7 +50,7 @@ export function CsvImportModal({ open, onOpenChange, onImportComplete }: CsvImpo
   const [importResult, setImportResult] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ImportFormData>({
+  const { setValue } = useForm<ImportFormData>({
     resolver: zodResolver(
       z.object({
         file: z.any().refine((files) => files && files.length > 0, 'Please select a CSV file')
@@ -61,13 +58,12 @@ export function CsvImportModal({ open, onOpenChange, onImportComplete }: CsvImpo
     ),
   });
 
-  const watchedFile = watch('file');
-
   // Handle file selection
   const handleFileSelect = (files: FileList | null) => {
     if (!files || files.length === 0) return;
     
     const file = files[0];
+    if (!file) return;
     
     // Validate file type
     if (!file.name.toLowerCase().endsWith('.csv')) {

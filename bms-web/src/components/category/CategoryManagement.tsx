@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import { toast } from 'sonner';
 import { CategoryTreeView } from './CategoryTreeView';
 import { CategoryForm } from './CategoryForm';
-import { Category, CategoryTreeNode, CategoryStats, BulkUpdateProductsData } from '@/types/category';
+import { Category, CategoryTreeNode } from '@/types/category';
 import { apiService } from '@/services/api';
 import { CategoryImportModal } from './CategoryImportModal';
 import { CategoryStatsPanel } from './CategoryStatsPanel';
@@ -18,16 +18,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Folder, 
-  Plus, 
-  Upload, 
-  Download, 
-  BarChart3, 
-  Settings, 
+  Folder,
+  Plus,
+  Upload,
+  Download,
+  BarChart3,
+  Settings,
   Package,
   RefreshCw,
-  AlertCircle,
-  ChevronRight
+  AlertCircle
 } from 'lucide-react';
 
 // SWR fetcher
@@ -44,8 +43,6 @@ export function CategoryManagement({ className }: CategoryManagementProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [parentId, setParentId] = useState<string | undefined>(undefined);
   const [importOpen, setImportOpen] = useState(false);
-  const [statsCategoryId, setStatsCategoryId] = useState<string | null>(null);
-  const [bulkOperationsOpen, setBulkOperationsOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   // Fetch category tree data
@@ -88,16 +85,15 @@ export function CategoryManagement({ className }: CategoryManagementProps) {
     const fullCategory: Category = {
       id: category.id,
       name: category.name,
-      code: category.code,
-      description: category.description,
-      parentId: category.parentId,
+      code: category.code || '',
+      description: category.description || '',
+      parentId: category.parentId || '',
       isActive: category.isActive,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
-      branchId: category.branchId,
+      branchId: category.branchId || '',
     };
     setSelectedCategory(fullCategory);
-    setStatsCategoryId(category.id);
   };
 
   // Handle category edit
@@ -105,13 +101,13 @@ export function CategoryManagement({ className }: CategoryManagementProps) {
     const fullCategory: Category = {
       id: category.id,
       name: category.name,
-      code: category.code,
-      description: category.description,
-      parentId: category.parentId,
+      code: category.code || '',
+      description: category.description || '',
+      parentId: category.parentId || '',
       isActive: category.isActive,
       createdAt: category.createdAt,
       updatedAt: category.updatedAt,
-      branchId: category.branchId,
+      branchId: category.branchId || '',
     };
     setSelectedCategory(fullCategory);
     setFormMode('edit');
@@ -138,7 +134,6 @@ export function CategoryManagement({ className }: CategoryManagementProps) {
         // Clear selection if this category was selected
         if (selectedCategory?.id === category.id) {
           setSelectedCategory(null);
-          setStatsCategoryId(null);
         }
       } else {
         throw new Error(response.message || 'Failed to delete category');
@@ -351,7 +346,7 @@ export function CategoryManagement({ className }: CategoryManagementProps) {
             <div className="lg:col-span-2">
               <CategoryTreeView
                 categories={categoryTree}
-                selectedCategoryId={selectedCategory?.id}
+                {...(selectedCategory?.id && { selectedCategoryId: selectedCategory.id })}
                 onCategorySelect={handleCategorySelect}
                 onCategoryEdit={handleCategoryEdit}
                 onCategoryDelete={handleCategoryDelete}
@@ -446,7 +441,7 @@ export function CategoryManagement({ className }: CategoryManagementProps) {
                     size="sm"
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => setBulkOperationsOpen(true)}
+                    onClick={() => {/* Navigate to bulk operations tab */}}
                   >
                     <Settings className="h-4 w-4 mr-2" />
                     Bulk Operations

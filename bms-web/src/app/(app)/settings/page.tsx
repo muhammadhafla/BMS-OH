@@ -14,13 +14,10 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import {
-  Settings as SettingsIcon,
   User,
   Bell,
   Shield,
-  Database,
   Globe,
-  Palette
 } from 'lucide-react';
 
 const Settings: React.FC = () => {

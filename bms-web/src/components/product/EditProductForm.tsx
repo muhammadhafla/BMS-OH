@@ -108,10 +108,8 @@ export function EditProductForm({ product, open, onOpenChange, onSuccess }: Edit
   const {
     control,
     handleSubmit,
-    formState: { errors, isValid },
-    reset,
+    formState: { isValid },
     setValue,
-    watch,
   } = form;
 
   // Populate form with product data when modal opens

@@ -332,7 +332,7 @@ router.put('/:id', authenticate, async (req: AuthenticatedRequest, res): Promise
       if (data.cost !== undefined) changes.cost = data.cost;
       if (data.stock !== undefined) changes.stock = data.stock;
       if (data.categoryId !== undefined) changes.categoryId = data.categoryId;
-      if (data.isActive !== undefined) changes.isActive = data.isActive;
+      // Note: isActive changes are handled separately
 
       const event = createProductUpdatedEvent(product, 'updated', product.branchId, req.user!.id, Object.keys(changes).length > 0 ? changes : undefined);
       websocketEventEmitter.emit(event);
@@ -514,7 +514,7 @@ router.patch('/:id/stock', authenticate, async (req: AuthenticatedRequest, res):
         notes || 'Stock update',
         product.branchId,
         req.user!.id,
-        req.user!.name
+        req.user!.email || 'Unknown User'
       );
       websocketEventEmitter.emit(event);
       console.log(`📡 Emitted inventory:updated event for product ${product.sku}`);

@@ -3,7 +3,6 @@ import { Server as SocketIOServer } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { 
   authenticateSocket, 
-  authorizeEvent, 
   connectionManager, 
   rateLimiter,
   WebSocketLogger,
@@ -12,7 +11,6 @@ import {
 } from './middleware';
 import { 
   roomManager, 
-  RoomNames, 
   RoomUtils 
 } from './rooms';
 import { 
@@ -74,8 +72,8 @@ export class WebSocketServer {
 
     // Setup connection handlers
     [mainNamespace, adminNamespace, posNamespace].forEach(namespace => {
-      namespace.on('connection', (socket: AuthenticatedSocket) => {
-        this.handleConnection(socket, namespace.name);
+      namespace.on('connection', (socket) => {
+        this.handleConnection(socket as AuthenticatedSocket, namespace.name);
       });
     });
 
@@ -88,31 +86,31 @@ export class WebSocketServer {
   // Setup global event handlers
   private setupEventHandlers(): void {
     // Subscribe to our event emitter
-    websocketEventEmitter.on('inventory:updated', (event) => {
+    websocketEventEmitter.on('inventory:updated', (event: BMSWebSocketEvent) => {
       this.broadcastEvent(event);
     });
 
-    websocketEventEmitter.on('product:updated', (event) => {
+    websocketEventEmitter.on('product:updated', (event: BMSWebSocketEvent) => {
       this.broadcastEvent(event);
     });
 
-    websocketEventEmitter.on('transaction:created', (event) => {
+    websocketEventEmitter.on('transaction:created', (event: BMSWebSocketEvent) => {
       this.broadcastEvent(event);
     });
 
-    websocketEventEmitter.on('system:notification', (event) => {
+    websocketEventEmitter.on('system:notification', (event: BMSWebSocketEvent) => {
       this.broadcastEvent(event);
     });
 
-    websocketEventEmitter.on('user:updated', (event) => {
+    websocketEventEmitter.on('user:updated', (event: BMSWebSocketEvent) => {
       this.broadcastEvent(event);
     });
 
-    websocketEventEmitter.on('low-stock:alert', (event) => {
+    websocketEventEmitter.on('low-stock:alert', (event: BMSWebSocketEvent) => {
       this.broadcastEvent(event);
     });
 
-    websocketEventEmitter.on('sync:status', (event) => {
+    websocketEventEmitter.on('sync:status', (event: BMSWebSocketEvent) => {
       this.broadcastEvent(event);
     });
   }
@@ -142,7 +140,7 @@ export class WebSocketServer {
       timestamp: new Date(),
       namespace,
       user: socket.user,
-      rooms: Array.from(roomManager.socketToRoom.get(socket.id) || [])
+      rooms: Array.from(roomManager.getSocketRooms(socket.id))
     });
 
     // Setup event listeners
@@ -181,14 +179,26 @@ export class WebSocketServer {
         roomManager.joinRoom(socket, data.roomId);
         socket.emit('room-joined', { roomId: data.roomId });
         
+        // Log the event with proper type
         WebSocketLogger.logEvent(socket, {
           id: `join-room-${Date.now()}`,
-          type: 'user:updated',
+          type: 'user:updated' as const,
           timestamp: new Date(),
           branchId: socket.branchId || '',
           userId: socket.user?.id,
-          data: { action: 'joined-room', roomId: data.roomId }
-        } as BMSWebSocketEvent);
+          data: { 
+            userId: socket.user?.id,
+            user: socket.user ? {
+              id: socket.user.id,
+              name: socket.user.name,
+              email: socket.user.email,
+              role: socket.user.role,
+              branchId: socket.user.branchId,
+              isActive: true
+            } : undefined,
+            action: 'joined-room' as const
+          }
+        } as unknown as BMSWebSocketEvent);
 
       } catch (error) {
         socket.emit('error', { message: 'Failed to join room' });
@@ -214,7 +224,7 @@ export class WebSocketServer {
 
     // Get current rooms
     socket.on('get-rooms', () => {
-      const socketRooms = roomManager.socketToRoom.get(socket.id) || new Set();
+      const socketRooms = roomManager.getSocketRooms(socket.id);
       socket.emit('rooms-list', {
         rooms: Array.from(socketRooms),
         count: socketRooms.size

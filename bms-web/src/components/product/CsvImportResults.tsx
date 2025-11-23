@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -31,23 +31,21 @@ import {
   FileText,
   Filter
 } from 'lucide-react';
-import { ImportResult, ImportError } from '@/lib/validations/csv-import';
-import { formatErrorMessage, calculateImportStats } from '@/lib/utils/csv';
+import { ImportResult } from '@/lib/validations/csv-import';
+import { calculateImportStats } from '@/lib/utils/csv';
 
 interface CsvImportResultsProps {
   result: ImportResult;
   onRetry: () => void;
   onClose: () => void;
-  onDownloadErrors?: () => void;
   showRetryButton?: boolean;
 }
 
-export function CsvImportResults({ 
-  result, 
-  onRetry, 
-  onClose, 
-  onDownloadErrors,
-  showRetryButton = true 
+export function CsvImportResults({
+  result,
+  onRetry,
+  onClose,
+  showRetryButton = true
 }: CsvImportResultsProps) {
   const [activeTab, setActiveTab] = useState('summary');
   const [errorFilter, setErrorFilter] = useState<string>('all');
@@ -101,9 +99,13 @@ export function CsvImportResults({
       'Value': error.value || ''
     }));
 
+    if (errorData.length === 0) {
+      return;
+    }
+
     const csvContent = [
       Object.keys(errorData[0]).join(','),
-      ...errorData.map(row => 
+      ...errorData.map(row =>
         Object.values(row).map(val => `"${val}"`).join(',')
       )
     ].join('\n');

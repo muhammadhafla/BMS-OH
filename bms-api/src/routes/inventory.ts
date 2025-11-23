@@ -290,13 +290,13 @@ router.post('/adjust', authenticate, async (req: AuthenticatedRequest, res): Pro
     try {
       const event = createInventoryUpdatedEvent(
         result.product,
-        existingProduct.stock,
-        data.type === 'IN' ? data.quantity : data.type === 'OUT' ? -data.quantity : newStock - existingProduct.stock,
+        product.stock,
+        data.type === 'IN' ? data.quantity : data.type === 'OUT' ? -data.quantity : newStock - product.stock,
         data.type,
         data.reference || 'Stock adjustment',
         result.product.branchId,
         req.user!.id,
-        req.user!.name
+        req.user!.email || 'Unknown User'
       );
       websocketEventEmitter.emit(event);
       console.log(`📡 Emitted inventory:updated event for product ${result.product.sku}`);

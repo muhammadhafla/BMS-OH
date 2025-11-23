@@ -397,3 +397,6 @@ export const validateEvent = (event: any): event is BMSWebSocketEvent => {
     typeof event.data === 'object'
   );
 };
+
+// Export a singleton instance
+export const websocketEventEmitter = new EventEmitter();
