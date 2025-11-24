@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +64,17 @@ export function TransactionHistory({
   error, 
   productName 
 }: TransactionHistoryProps) {
+  
+  // State for pagination
+  const [_currentPage, setCurrentPage] = useState(pagination?.page || 1);
+
+  // Calculate summary statistics
+  const totalTransactions = transactions.length;
+  const totalSales = transactions.filter(t => t.type === 'SALE').length;
+  const totalPurchases = transactions.filter(t => t.type === 'PURCHASE').length;
+  const totalRevenue = transactions
+    .filter(t => t.type === 'SALE' && t.status === 'COMPLETED')
+    .reduce((sum, t) => sum + t.totalAmount, 0);
 
   // Format currency
   const formatCurrency = (amount: number) => {

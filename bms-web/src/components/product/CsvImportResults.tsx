@@ -77,19 +77,6 @@ export function CsvImportResults({
     return error.field === errorFilter;
   });
 
-  const getStatusIcon = (count: number, type: 'success' | 'error' | 'warning') => {
-    if (count === 0) return null;
-    
-    switch (type) {
-      case 'success':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
-      case 'error':
-        return <XCircle className="w-5 h-5 text-red-600" />;
-      case 'warning':
-        return <AlertCircle className="w-5 h-5 text-yellow-600" />;
-    }
-  };
-
   const exportErrors = () => {
     const errorData = result.errors.map(error => ({
       'Row': error.rowIndex + 1,
@@ -104,7 +91,7 @@ export function CsvImportResults({
     }
 
     const csvContent = [
-      Object.keys(errorData[0]).join(','),
+      Object.keys(errorData[0] || {}).join(','),
       ...errorData.map(row =>
         Object.values(row).map(val => `"${val}"`).join(',')
       )

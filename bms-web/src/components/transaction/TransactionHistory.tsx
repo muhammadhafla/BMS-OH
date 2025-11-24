@@ -40,24 +40,18 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Transaction, TransactionFilters, PaginatedTransactions } from '@/lib/types/transaction';
+import { UnifiedTransaction as Transaction, TransactionFilters, PaginatedTransactions } from '@/types/unified';
 import { 
   Search, 
-  Filter, 
   MoreHorizontal, 
   Eye, 
   Edit, 
-  Trash2, 
   FileText, 
   Receipt, 
   RefreshCw,
-  AlertTriangle,
-  Calendar,
-  DollarSign,
-  Building2
+  AlertTriangle
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { toast } from 'sonner';
 
 interface TransactionHistoryProps {
   transactions: Transaction[];
@@ -165,15 +159,7 @@ export function TransactionHistory({
 
   // Clear filters
   const clearFilters = () => {
-    onFilterChange({
-      startDate: undefined,
-      endDate: undefined,
-      status: undefined,
-      branchId: undefined,
-      search: undefined,
-      minAmount: undefined,
-      maxAmount: undefined,
-    });
+    onFilterChange({} as Partial<TransactionFilters>);
     setSearchQuery('');
   };
 
@@ -270,13 +256,13 @@ export function TransactionHistory({
               type="number"
               placeholder="Min Amount"
               value={filters.minAmount || ''}
-              onChange={(e) => onFilterChange({ minAmount: e.target.value ? Number(e.target.value) : undefined })}
+              onChange={(e) => onFilterChange({ minAmount: e.target.value ? Number(e.target.value) : undefined } as any)}
             />
             <Input
               type="number"
               placeholder="Max Amount"
               value={filters.maxAmount || ''}
-              onChange={(e) => onFilterChange({ maxAmount: e.target.value ? Number(e.target.value) : undefined })}
+              onChange={(e) => onFilterChange({ maxAmount: e.target.value ? Number(e.target.value) : undefined } as any)}
             />
             <Button variant="outline" onClick={clearFilters} className="w-full">
               <RefreshCw className="w-4 h-4 mr-2" />

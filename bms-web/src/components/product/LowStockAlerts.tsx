@@ -3,8 +3,7 @@
 import React, { useState } from 'react';
 import useSWR from 'swr';
 import { apiService } from '@/services/api';
-import { useAuthStore } from '@/stores/authStore';
-import type { LowStockAlert, Product } from '@/types/stock-adjustment';
+import type { LowStockAlert } from '@/types/stock-adjustment';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,12 +29,7 @@ import {
   AlertTriangle,
   AlertCircle,
   CheckCircle2,
-  XCircle,
-  TrendingDown,
-  Package,
   Bell,
-  BellOff,
-  Eye,
   EyeOff,
   RefreshCw,
 } from 'lucide-react';
@@ -52,7 +46,6 @@ export function LowStockAlerts({
   autoRefresh = true,
   refreshInterval = 30000 // 30 seconds
 }: LowStockAlertsProps) {
-  const { user } = useAuthStore();
   const [selectedAlert, setSelectedAlert] = useState<LowStockAlert | null>(null);
   const [showResolveDialog, setShowResolveDialog] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -70,7 +63,6 @@ export function LowStockAlerts({
   );
 
   const alerts = (data as any)?.data?.alerts || [];
-  const products = (data as any)?.data?.products || [];
 
   // Format date
   const formatDate = (dateString: string) => {

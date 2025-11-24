@@ -33,7 +33,7 @@ export function LowStockAlerts() {
   const [actionType, setActionType] = useState<'resolve' | 'dismiss'>('resolve');
 
   // Fetch low stock alerts
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, isLoading, mutate } = useSWR(
     ['/api/inventory/low-stock-alerts', showResolved],
     () => apiService.getLowStockAlerts({
       includeResolved: showResolved,

@@ -493,7 +493,7 @@ export function CategoryManagement({ className }: CategoryManagementProps) {
         onOpenChange={setFormOpen}
         onSuccess={handleFormSuccess}
         category={selectedCategory}
-        parentId={parentId}
+        {...(parentId && { parentId })}
         mode={formMode}
       />
 

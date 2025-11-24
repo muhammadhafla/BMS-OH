@@ -35,7 +35,6 @@ interface StockAdjustmentReportsProps {
 
 export function StockAdjustmentReports({ branchId }: StockAdjustmentReportsProps) {
   const [dateRange, setDateRange] = useState('30'); // days
-  const [reportType, setReportType] = useState('summary');
 
   // Calculate date range
   const getDateRange = () => {

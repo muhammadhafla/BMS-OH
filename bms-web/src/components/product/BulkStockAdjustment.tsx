@@ -133,7 +133,7 @@ export function BulkStockAdjustment({ open, onOpenChange, onSuccess }: BulkStock
         const adjustment: ParsedAdjustment = {
           sku: sku || '',
           adjustmentType: adjustmentType as any,
-          quantity: parseInt(quantity) || 0,
+          quantity: parseInt(quantity || '0') || 0,
           reason: reason || '',
           notes: notes || '',
           reference: reference || '',

@@ -9,7 +9,7 @@ import Link from 'next/link';
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;
-  onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  onError?: ((error: Error, errorInfo: ErrorInfo) => void) | undefined;
 }
 
 interface State {
@@ -76,7 +76,7 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       // Default error UI
-      return <DefaultErrorBoundary error={this.state.error} onReset={this.handleReset} />;
+      return <DefaultErrorBoundary error={this.state.error || undefined} onReset={this.handleReset} />;
     }
 
     return this.props.children;
@@ -85,7 +85,7 @@ class ErrorBoundary extends Component<Props, State> {
 
 // Default error boundary component
 interface DefaultErrorBoundaryProps {
-  error?: Error;
+  error?: Error | undefined;
   onReset: () => void;
 }
 

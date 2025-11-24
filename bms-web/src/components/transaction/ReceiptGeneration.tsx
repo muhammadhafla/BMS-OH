@@ -15,22 +15,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 
-import { Transaction, ReceiptData } from '@/lib/types/transaction';
+import { Transaction } from '@/lib/types/transaction';
 import { 
   Printer, 
   Download, 
-  Eye, 
-  Settings, 
   FileText, 
   Share, 
   Mail,
-  QrCode,
-  Image as ImageIcon,
   Zap,
   AlertTriangle
 } from 'lucide-react';
@@ -64,7 +59,7 @@ export function ReceiptGeneration({
   transaction, 
   isOpen, 
   onClose, 
-  onGenerate 
+  onGenerate: _onGenerate 
 }: ReceiptGenerationProps) {
   const [template, setTemplate] = useState<ReceiptTemplate>({
     headerText: 'Thank you for your purchase!',

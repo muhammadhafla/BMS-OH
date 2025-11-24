@@ -5,16 +5,12 @@ import type {
   ApiResponse,
   PaginatedResponse,
   BranchListResponse,
-  BranchStats,
   SupplierListResponse,
-  SupplierStats,
   ProductListResponse,
   TransactionListResponse,
-  TransactionStats,
   TransactionStatsResponse,
   TransactionAnalyticsResponse,
   PurchaseOrderListResponse,
-  PurchaseOrderStats,
   InventoryLogListResponse,
   UserListResponse,
   UserStatsResponse,
@@ -22,10 +18,8 @@ import type {
   LowStockProductsResponse,
   BulkStockAdjustmentResponse,
   CsvImportResponse,
-  StatusUpdateResponse,
   StockAdjustmentListResponse,
   StockAdjustmentResponse,
-  BulkOperationResult,
   CategoryListResponse,
   CategoryTreeResponse,
   CategoryDetailResponse,
@@ -33,9 +27,12 @@ import type {
   BulkUpdateResponse,
   CategoryImportResponse,
   StockValuationResponse,
-  LowStockAlertResponse,
-  PurchaseOrder
+  LowStockAlertResponse
 } from '@/types/api-responses';
+import type {
+  UnifiedTransaction,
+  TransactionCreate
+} from '@/types/unified';
 
 class ApiService {
   private api: AxiosInstance;
@@ -60,8 +57,10 @@ class ApiService {
           try {
             const { getSession } = await import('next-auth/react');
             const session = await getSession();
-            if (session?.accessToken) {
-              token = session.accessToken as string;
+            // Try to access token through any property (generic approach)
+            const sessionToken = (session as any)?.accessToken || (session as any)?.user?.accessToken;
+            if (sessionToken) {
+              token = sessionToken;
             }
           } catch (error) {
             // Fallback to cookie token
@@ -104,31 +103,85 @@ class ApiService {
     );
   }
 
-  // Generic methods
-  async get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  // Generic methods with proper constraints
+  async get<T = ApiResponse<unknown>>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.api.get(url, config);
-    return response.data;
+    return response.data as T;
   }
 
-  async post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+  async post<T = ApiResponse<unknown>>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.api.post(url, data, config);
-    return response.data;
+    return response.data as T;
   }
 
-  async put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+  async put<T = ApiResponse<unknown>>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.api.put(url, data, config);
-    return response.data;
+    return response.data as T;
   }
 
-  async patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
+  async patch<T = ApiResponse<unknown>>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.api.patch(url, data, config);
-    return response.data;
+    return response.data as T;
   }
 
-  async delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  async delete<T = ApiResponse<unknown>>(url: string, config?: AxiosRequestConfig): Promise<T> {
     const response = await this.api.delete(url, config);
-    return response.data;
+    return response.data as T;
   }
+
+  // Specific method overloads for better type safety
+  async getSingle<T>(url: string): Promise<ApiResponse<T>> {
+    return this.get(`${url}`);
+  }
+
+  async getPaginated<T>(url: string, params?: Record<string, unknown>): Promise<PaginatedResponse<T>> {
+    return this.get(`${url}`, { params });
+  }
+
+  async postWithValidation<T, D>(url: string, data: D): Promise<ApiResponse<T>> {
+    return this.post(`${url}`, data);
+  }
+
+  async putWithValidation<T, D>(url: string, data: D): Promise<ApiResponse<T>> {
+    return this.put(`${url}`, data);
+  }
+
+  async patchWithValidation<T, D>(url: string, data: D): Promise<ApiResponse<T>> {
+    return this.patch(`${url}`, data);
+  }
+
+  // Specific methods for binary responses (Blob, File, etc.)
+  async getBlob(url: string, config?: AxiosRequestConfig): Promise<Blob> {
+    const response = await this.api.get(url, { ...config, responseType: 'blob' });
+    return response.data as Blob;
+  }
+
+  async postBlob(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<Blob> {
+    const response = await this.api.post(url, data, { ...config, responseType: 'blob' });
+    return response.data as Blob;
+  }
+
+  // Error handling methods
+  /*
+  // Note: handleApiError method reserved for future implementation
+  private _handleApiError(error: unknown): never {
+    if (axios.isAxiosError(error)) {
+      const errorResponse = error.response?.data as ApiErrorResponse | undefined;
+      const apiError: ApiError = {
+        code: error.response?.status?.toString() || 'UNKNOWN',
+        message: error.message || 'An error occurred',
+        details: (errorResponse?.error as unknown) as Record<string, unknown> || {}
+      };
+      throw apiError;
+    }
+    const genericError: ApiError = {
+      code: 'UNKNOWN',
+      message: 'An unexpected error occurred',
+      details: {}
+    };
+    throw genericError;
+  }
+  */
 
   // Auth specific methods
   async login(email: string, password: string): Promise<AuthResponse> {
@@ -184,7 +237,7 @@ class ApiService {
   }
 
   async downloadSampleCSV(): Promise<Blob> {
-    return this.get('/products/sample-csv', { responseType: 'blob' });
+    return this.getBlob('/products/sample-csv');
   }
 
   // Category methods
@@ -234,28 +287,24 @@ class ApiService {
   }
 
   async exportCategories(params?: Record<string, unknown>): Promise<Blob> {
-    const response = await this.get('/categories/export-csv', {
-      params,
-      responseType: 'blob'
-    });
-    return response as Blob;
+    return this.getBlob('/categories/export-csv', { params });
   }
 
-  // Transaction methods
+  // Transaction methods with unified types
   async getTransactions(params?: Record<string, unknown>): Promise<TransactionListResponse> {
     return this.get('/transactions', { params });
   }
 
-  async getTransaction(id: string): Promise<ApiResponse> {
-    return this.get(`/transactions/${id}`);
+  async getTransaction(id: string): Promise<ApiResponse<UnifiedTransaction>> {
+    return this.getSingle<UnifiedTransaction>(`/transactions/${id}`);
   }
 
-  async createTransaction(data: Record<string, unknown>): Promise<ApiResponse> {
-    return this.post('/transactions', data);
+  async createTransaction(data: TransactionCreate): Promise<ApiResponse<UnifiedTransaction>> {
+    return this.postWithValidation<UnifiedTransaction, TransactionCreate>('/transactions', data);
   }
 
-  async updateTransaction(id: string, data: Record<string, unknown>): Promise<ApiResponse> {
-    return this.put(`/transactions/${id}`, data);
+  async updateTransaction(id: string, data: Partial<TransactionCreate>): Promise<ApiResponse<UnifiedTransaction>> {
+    return this.putWithValidation<UnifiedTransaction, Partial<TransactionCreate>>(`/transactions/${id}`, data);
   }
 
   async updateTransactionStatus(id: string, status: string): Promise<ApiResponse> {
@@ -355,11 +404,7 @@ class ApiService {
   }
 
   async exportStockMovements(params?: Record<string, unknown>): Promise<Blob> {
-    const response = await this.get('/inventory/logs/export', {
-      params,
-      responseType: 'blob'
-    });
-    return response as Blob;
+    return this.getBlob('/inventory/logs/export', { params });
   }
 
   async getStockValuationReport(params?: Record<string, unknown>): Promise<StockValuationResponse> {
@@ -413,11 +458,7 @@ class ApiService {
   }
 
   async exportStockValuation(params?: Record<string, unknown>): Promise<Blob> {
-    const response = await this.get('/inventory/valuation/export', {
-      params,
-      responseType: 'blob'
-    });
-    return response as Blob;
+    return this.getBlob('/inventory/valuation/export', { params });
   }
 
   async calculateStockValuation(data: Record<string, unknown>): Promise<ApiResponse> {
@@ -426,11 +467,7 @@ class ApiService {
 
   // Batch and Lot Tracking methods
   async exportBatchTracking(params?: Record<string, unknown>): Promise<Blob> {
-    const response = await this.get('/inventory/batch-lot/export', {
-      params,
-      responseType: 'blob'
-    });
-    return response as Blob;
+    return this.getBlob('/inventory/batch-lot/export', { params });
   }
 
   // User methods

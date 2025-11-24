@@ -105,7 +105,7 @@ export function CsvImportProgress({
     }
   };
 
-  const processBatch = async (batch: CsvImportRow[], batchIndex: number, totalBatches: number) => {
+  const processBatch = async (batch: CsvImportRow[], batchIndex: number, _totalBatches: number) => {
     try {
       setBatchProgress(0);
       
@@ -147,7 +147,7 @@ export function CsvImportProgress({
     }
   };
 
-  const processSingleItem = async (item: CsvImportRow): Promise<void> => {
+  const processSingleItem = async (_item: CsvImportRow): Promise<void> => {
     // Simulate API call for now - replace with actual API
     return new Promise((resolve, reject) => {
       setTimeout(() => {
@@ -181,19 +181,6 @@ export function CsvImportProgress({
         return <XCircle className="w-5 h-5 text-red-600" />;
       default:
         return <Clock className="w-5 h-5" />;
-    }
-  };
-
-  const getStatusColor = () => {
-    switch (importStatus.status) {
-      case 'processing':
-        return 'default';
-      case 'completed':
-        return 'default';
-      case 'failed':
-        return 'destructive';
-      default:
-        return 'secondary';
     }
   };
 

@@ -53,7 +53,7 @@ export function InventoryAudit() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   // Fetch audit data
-  const { data, error, isLoading, mutate } = useSWR(
+  const { data, isLoading, mutate } = useSWR(
     ['/api/inventory/audit', auditType, dateRange],
     () => apiService.getInventoryAudit({
       type: auditType === 'ALL' ? undefined : auditType,

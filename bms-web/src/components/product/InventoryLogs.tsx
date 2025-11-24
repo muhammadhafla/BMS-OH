@@ -57,7 +57,7 @@ export function InventoryLogs({
   error, 
   productName 
 }: InventoryLogsProps) {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [_currentPage, setCurrentPage] = useState(1);
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -122,9 +122,7 @@ export function InventoryLogs({
   const totalStockOut = logs
     .filter(log => log.type === 'OUT')
     .reduce((sum, log) => sum + log.quantity, 0);
-  const totalAdjustments = logs
-    .filter(log => log.type === 'ADJUSTMENT')
-    .reduce((sum, log) => sum + Math.abs(log.quantity), 0);
+  // Note: _totalAdjustments calculation reserved for future implementation
 
   // Net movement (Stock In - Stock Out)
   const netMovement = totalStockIn - totalStockOut;

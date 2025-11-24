@@ -201,7 +201,7 @@ export function CategoryTreeView({
   className,
   showActions = true
 }: CategoryTreeViewProps) {
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [, setExpandedNodes] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
 
   // Auto-expand root level categories

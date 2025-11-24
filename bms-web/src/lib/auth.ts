@@ -1,6 +1,5 @@
 import NextAuth, { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import type { JWT } from 'next-auth/jwt';
 import type { User as NextAuthUser } from 'next-auth';
 
 // User type that matches our backend
@@ -138,18 +137,28 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token?.user) {
-        session.user = {
-          ...session.user,
-          id: (token.user as ExtendedUser).id,
-          role: (token.user as ExtendedUser).role,
-          branchId: (token.user as ExtendedUser).branchId,
-          branch: (token.user as ExtendedUser).branch,
-        };
+        const { user } = token as { user: ExtendedUser };
+        const sessionUser = {
+          id: user.id,
+          email: user.email || '',
+          name: user.name || '',
+          role: user.role,
+        } as any;
+        
+        // Only add optional properties if they exist
+        if (user.branchId) {
+          sessionUser.branchId = user.branchId;
+        }
+        if (user.branch) {
+          sessionUser.branch = user.branch;
+        }
+        
+        session.user = sessionUser;
       }
       
       return session;
     },
-    async signIn({ user, account, profile }) {
+    async signIn() {
       // Additional sign-in validation if needed
       return true;
     },

@@ -2,12 +2,10 @@
 // Provides real-time sales performance and key metrics visualization
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { apiService } from '@/services/api';
-import { TransactionStats, TransactionStatsResponse, TransactionListResponse } from '@/types/api-responses';
+import { TransactionStats } from '@/types/api-responses';
 import {
-  BarChart,
   Bar,
   XAxis,
   YAxis,
@@ -27,10 +25,8 @@ import {
   TrendingDown,
   DollarSign,
   ShoppingCart,
-  Users,
   Package,
   CreditCard,
-  Calendar,
   Loader2
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -134,12 +130,12 @@ export function SalesDashboard() {
       );
 
       return {
-        date,
+        date: date || '', // Ensure date is always a string
         revenue,
         transactions: dayTransactions.length,
         items
       };
-    });
+    }).filter(item => item.date); // Filter out any items with empty dates
   };
 
   // Process payment methods from transactions
@@ -347,7 +343,7 @@ export function SalesDashboard() {
                   fill="#8884d8"
                   dataKey="count"
                 >
-                  {paymentMethods.map((entry, index) => (
+                  {paymentMethods.map((_, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>

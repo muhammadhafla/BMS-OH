@@ -33,7 +33,6 @@ import {
   TrendingUp,
   TrendingDown,
   Download,
-  FileText,
   BarChart3,
   PieChart,
   Calendar,
@@ -51,7 +50,7 @@ export function StockValuationReports() {
   const [dateRange, setDateRange] = useState('30'); // days
   const [valuationMethod, setValuationMethod] = useState('AVERAGE');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
-  const [branchFilter, setBranchFilter] = useState('ALL');
+  const [branchFilter] = useState('ALL');
   const [showDetails, setShowDetails] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<'value' | 'quantity' | 'name'>('value');
@@ -98,14 +97,6 @@ export function StockValuationReports() {
       style: 'currency',
       currency: 'IDR',
     }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   };
 
   // Export functionality

@@ -41,15 +41,7 @@ import { Loader2, Package, AlertCircle, DollarSign, Hash, Tag } from 'lucide-rea
 // SWR fetcher for categories and branches
 const fetcher = <T,>(url: string): Promise<T> => apiService.get<T>(url);
 
-interface Category {
-  id: string;
-  name: string;
-}
 
-interface Branch {
-  id: string;
-  name: string;
-}
 
 interface ProductFormProps {
   open: boolean;
@@ -84,13 +76,10 @@ export function ProductForm({ open, onOpenChange, onSuccess }: ProductFormProps)
   const {
     control,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { isValid },
     reset,
     setValue,
-    watch,
   } = form;
-
-  const watchedFields = watch();
 
   // Reset form when modal opens/closes
   useEffect(() => {

@@ -12,6 +12,58 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Connection state configuration
+const getStatusConfig = (state: string) => {
+  switch (state) {
+    case 'connected':
+      return {
+        variant: 'default' as const,
+        color: 'text-green-600',
+        bgColor: 'bg-green-100',
+        icon: Wifi,
+        text: 'Connected',
+        description: 'Real-time updates active'
+      };
+    case 'connecting':
+      return {
+        variant: 'secondary' as const,
+        color: 'text-yellow-600',
+        bgColor: 'bg-yellow-100',
+        icon: Activity,
+        text: 'Connecting...',
+        description: 'Establishing connection'
+      };
+    case 'reconnecting':
+      return {
+        variant: 'secondary' as const,
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-100',
+        icon: RotateCcw,
+        text: 'Reconnecting...',
+        description: 'Attempting to reconnect'
+      };
+    case 'error':
+      return {
+        variant: 'destructive' as const,
+        color: 'text-red-600',
+        bgColor: 'bg-red-100',
+        icon: AlertCircle,
+        text: 'Connection Error',
+        description: 'Unable to establish connection'
+      };
+    case 'disconnected':
+    default:
+      return {
+        variant: 'outline' as const,
+        color: 'text-gray-600',
+        bgColor: 'bg-gray-100',
+        icon: WifiOff,
+        text: 'Disconnected',
+        description: 'Real-time updates disabled'
+      };
+  }
+};
+
 interface WebSocketStatusProps {
   className?: string;
   showDetails?: boolean;
@@ -29,59 +81,7 @@ export const WebSocketStatus: React.FC<WebSocketStatusProps> = ({
   showReconnectButton = true,
   onReconnect
 }) => {
-  const { connectionState, isConnected, connectionDuration, onConnectionStateChange } = useWebSocketConnection();
-
-  // Connection state configuration
-  const getStatusConfig = (state: typeof connectionState) => {
-    switch (state) {
-      case 'connected':
-        return {
-          variant: 'default' as const,
-          color: 'text-green-600',
-          bgColor: 'bg-green-100',
-          icon: Wifi,
-          text: 'Connected',
-          description: 'Real-time updates active'
-        };
-      case 'connecting':
-        return {
-          variant: 'secondary' as const,
-          color: 'text-yellow-600',
-          bgColor: 'bg-yellow-100',
-          icon: Activity,
-          text: 'Connecting...',
-          description: 'Establishing connection'
-        };
-      case 'reconnecting':
-        return {
-          variant: 'secondary' as const,
-          color: 'text-blue-600',
-          bgColor: 'bg-blue-100',
-          icon: RotateCcw,
-          text: 'Reconnecting...',
-          description: 'Attempting to reconnect'
-        };
-      case 'error':
-        return {
-          variant: 'destructive' as const,
-          color: 'text-red-600',
-          bgColor: 'bg-red-100',
-          icon: AlertCircle,
-          text: 'Connection Error',
-          description: 'Unable to establish connection'
-        };
-      case 'disconnected':
-      default:
-        return {
-          variant: 'outline' as const,
-          color: 'text-gray-600',
-          bgColor: 'bg-gray-100',
-          icon: WifiOff,
-          text: 'Disconnected',
-          description: 'Real-time updates disabled'
-        };
-    }
-  };
+  const { connectionState, isConnected, connectionDuration } = useWebSocketConnection();
 
   const statusConfig = getStatusConfig(connectionState);
   const StatusIcon = statusConfig.icon;
@@ -191,7 +191,7 @@ export const WebSocketStatusModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
 }> = ({ isOpen, onClose }) => {
-  const { connectionState, isConnected, connectionDuration, onConnectionStateChange } = useWebSocketConnection();
+  const { connectionState, isConnected, connectionDuration } = useWebSocketConnection();
 
   if (!isOpen) return null;
 
@@ -261,54 +261,3 @@ export const WebSocketStatusModal: React.FC<{
   );
 };
 
-// Helper function (duplicated to avoid import issues)
-const getStatusConfig = (state: typeof connectionState) => {
-  switch (state) {
-    case 'connected':
-      return {
-        variant: 'default' as const,
-        color: 'text-green-600',
-        bgColor: 'bg-green-100',
-        icon: Wifi,
-        text: 'Connected',
-        description: 'Real-time updates active'
-      };
-    case 'connecting':
-      return {
-        variant: 'secondary' as const,
-        color: 'text-yellow-600',
-        bgColor: 'bg-yellow-100',
-        icon: Activity,
-        text: 'Connecting...',
-        description: 'Establishing connection'
-      };
-    case 'reconnecting':
-      return {
-        variant: 'secondary' as const,
-        color: 'text-blue-600',
-        bgColor: 'bg-blue-100',
-        icon: RotateCcw,
-        text: 'Reconnecting...',
-        description: 'Attempting to reconnect'
-      };
-    case 'error':
-      return {
-        variant: 'destructive' as const,
-        color: 'text-red-600',
-        bgColor: 'bg-red-100',
-        icon: AlertCircle,
-        text: 'Connection Error',
-        description: 'Unable to establish connection'
-      };
-    case 'disconnected':
-    default:
-      return {
-        variant: 'outline' as const,
-        color: 'text-gray-600',
-        bgColor: 'bg-gray-100',
-        icon: WifiOff,
-        text: 'Disconnected',
-        description: 'Real-time updates disabled'
-      };
-  }
-};

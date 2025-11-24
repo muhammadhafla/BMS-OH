@@ -1,19 +1,18 @@
 // Custom hook for transaction management
 // Provides data fetching, caching, and state management for transactions
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import useSWR from 'swr';
 import { toast } from 'sonner';
 import {
-  Transaction,
+  UnifiedTransaction,
   TransactionFilters,
   PaginatedTransactions,
-  TransactionStats,
-  TransactionAnalytics,
+  TransactionStatsUnified,
+  UnifiedTransactionAnalytics,
   RefundRequest,
-} from '@/lib/types/transaction';
+} from '@/types/unified';
 import {
-  transactionFiltersSchema,
   updateTransactionStatusSchema,
   refundRequestSchema,
 } from '@/lib/validations/transaction';
@@ -51,9 +50,9 @@ export function useTransactions(initialFilters: TransactionFilters = {}) {
     data: statsResponse,
     error: statsError,
     isLoading: statsLoading,
-  } = useSWR<ApiResponse<TransactionStats>>(
+  } = useSWR<ApiResponse<TransactionStatsUnified>>(
     `/transactions/stats/summary?${new URLSearchParams(Object.entries(filters).map(([key, value]) => [key, String(value)]))}`,
-    (url) => fetcher<TransactionStats>(url),
+    (url) => fetcher<TransactionStatsUnified>(url),
     {
       refreshInterval: 60000, // Refresh every minute
     }
@@ -64,9 +63,9 @@ export function useTransactions(initialFilters: TransactionFilters = {}) {
     data: analyticsResponse,
     error: analyticsError,
     isLoading: analyticsLoading,
-  } = useSWR<ApiResponse<TransactionAnalytics>>(
+  } = useSWR<ApiResponse<UnifiedTransactionAnalytics>>(
     `/transactions/analytics?${new URLSearchParams(Object.entries(filters).map(([key, value]) => [key, String(value)]))}`,
-    (url) => fetcher<TransactionAnalytics>(url),
+    (url) => fetcher<UnifiedTransactionAnalytics>(url),
     {
       refreshInterval: 300000, // Refresh every 5 minutes
     }
@@ -80,7 +79,7 @@ export function useTransactions(initialFilters: TransactionFilters = {}) {
   // Search transactions
   const searchTransactions = useCallback(async (
     query: string,
-    type: 'code' | 'customer' | 'product' | 'all' = 'all'
+    _type: 'code' | 'customer' | 'product' | 'all' = 'all'
   ) => {
     try {
       setSearchQuery(query);
@@ -100,9 +99,9 @@ export function useTransactions(initialFilters: TransactionFilters = {}) {
   }, [filters, refreshTransactions]);
 
   // Get transaction details
-  const getTransactionDetails = useCallback(async (transactionId: string): Promise<Transaction> => {
+  const getTransactionDetails = useCallback(async (transactionId: string): Promise<UnifiedTransaction> => {
     try {
-      const response = await apiService.get<ApiResponse<{ transaction: Transaction }>>(`/transactions/${transactionId}`);
+      const response = await apiService.get<ApiResponse<{ transaction: UnifiedTransaction }>>(`/transactions/${transactionId}`);
       if (response.success) {
         return response.data.transaction;
       } else {
@@ -117,7 +116,7 @@ export function useTransactions(initialFilters: TransactionFilters = {}) {
   // Create new transaction
   const createTransaction = useCallback(async (transactionData: any) => {
     try {
-      const response = await apiService.post<ApiResponse<{ transaction: Transaction }>>('/transactions', transactionData);
+      const response = await apiService.post<ApiResponse<{ transaction: UnifiedTransaction }>>('/transactions', transactionData);
       if (response.success) {
         toast.success('Transaction created successfully');
         await refreshTransactions();
@@ -142,7 +141,7 @@ export function useTransactions(initialFilters: TransactionFilters = {}) {
       // Validate input
       const validatedData = updateTransactionStatusSchema.parse({ status, notes });
       
-      const response = await apiService.patch<ApiResponse<{ transaction: Transaction }>>(`/transactions/${transactionId}/status`, validatedData);
+      const response = await apiService.patch<ApiResponse<{ transaction: UnifiedTransaction }>>(`/transactions/${transactionId}/status`, validatedData);
       if (response.success) {
         toast.success('Transaction status updated successfully');
         await refreshTransactions();

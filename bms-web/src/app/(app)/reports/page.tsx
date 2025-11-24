@@ -55,10 +55,7 @@ const Reports: React.FC = () => {
     }
   };
 
-  const exportReport = (type: string) => {
-    console.log(`Exporting ${type} report...`);
-    // Implement export logic
-  };
+
 
   return (
     <div className="flex-1 space-y-6 p-8">

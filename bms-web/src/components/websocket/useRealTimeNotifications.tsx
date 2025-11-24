@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { BMSWebSocketEvent } from '@/lib/websocket';
 import { toast } from 'sonner';
@@ -19,7 +19,7 @@ export const useRealTimeNotifications = () => {
         setNotifications(prev => [event, ...prev.slice(0, 49)]); // Keep last 50
         
         // Show toast notification
-        const { title, message, severity, category } = event.data as any;
+        const { title, message, severity } = event.data as any;
         
         switch (severity) {
           case 'success':

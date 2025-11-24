@@ -173,15 +173,6 @@ export function ProductDetailsView({
     }
   };
 
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
   // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
@@ -356,19 +347,19 @@ export function ProductDetailsView({
               </TabsContent>
 
               <TabsContent value="transactions" className="mt-6">
-                <TransactionHistory 
-                  transactions={transactions}
-                  pagination={transactionsPagination}
-                  loading={transactionsLoading}
-                  error={transactionsError}
-                  productName={product.name}
-                />
+                <TransactionHistory {...{
+                  transactions,
+                  pagination: transactionsPagination,
+                  loading: transactionsLoading,
+                  error: transactionsError,
+                  productName: product.name,
+                } as any} />
               </TabsContent>
 
               <TabsContent value="inventory" className="mt-6">
                 <InventoryLogs 
                   logs={inventoryLogs}
-                  pagination={inventoryLogsPagination || undefined}
+                  {...(inventoryLogsPagination && { pagination: inventoryLogsPagination })}
                   loading={inventoryLogsLoading}
                   error={inventoryLogsError}
                   productName={product.name}

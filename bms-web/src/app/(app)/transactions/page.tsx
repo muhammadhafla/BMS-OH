@@ -12,13 +12,13 @@ import { TransactionAnalytics } from '@/components/transaction/TransactionAnalyt
 import { TransactionCreation } from '@/components/transaction/TransactionCreation';
 import { TransactionDetails } from '@/components/transaction/TransactionDetails';
 import { useTransactions } from '@/lib/hooks/useTransactions';
-import { TransactionFilters, Transaction } from '@/lib/types/transaction';
+import { TransactionFilters, UnifiedTransaction } from '@/types/unified';
 import { Button } from '@/components/ui/button';
 import { Plus, Download } from 'lucide-react';
 
 export default function TransactionsPage() {
   const [activeTab, setActiveTab] = useState('history');
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<UnifiedTransaction | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [filters, setFilters] = useState<TransactionFilters>({
     page: 1,

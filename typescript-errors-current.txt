@@ -1,0 +1,236 @@
+
+> bms-web@1.0.0 type
+> tsc --noEmit
+
+src/app/(app)/reports/page.tsx(58,9): error TS6133: 'exportReport' is declared but its value is never read.
+src/components/category/CategoryManagement.tsx(491,8): error TS2375: Type '{ open: boolean; onOpenChange: Dispatch<SetStateAction<boolean>>; onSuccess: () => void; category: Category | null; parentId: string | undefined; mode: "create" | "edit"; }' is not assignable to type 'CategoryFormProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'parentId' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/category/CategoryTreeView.tsx(204,10): error TS6133: 'expandedNodes' is declared but its value is never read.
+src/components/inventory/InventoryAudit.tsx(56,17): error TS6133: 'error' is declared but its value is never read.
+src/components/inventory/LowStockAlerts.tsx(36,17): error TS6133: 'error' is declared but its value is never read.
+src/components/inventory/StockAdjustmentForm.tsx(12,3): error TS6133: 'ADJUSTMENT_REASONS' is declared but its value is never read.
+src/components/inventory/StockAdjustmentForm.tsx(54,3): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/components/inventory/StockAdjustmentForm.tsx(111,18): error TS6133: 'errors' is declared but its value is never read.
+src/components/inventory/StockAdjustmentForm.tsx(113,5): error TS6133: 'setValue' is declared but its value is never read.
+src/components/inventory/StockAdjustmentForm.tsx(213,78): error TS2379: Argument of type '{ adjustmentType: "INCREMENT" | "DECREMENT" | "SET_TO"; quantity: number; reason: string; notes: string | undefined; reference: string | undefined; requiresApproval: boolean; }' is not assignable to parameter of type '{ adjustmentType: string; quantity: number; reason: string; reference?: string; notes?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'reference' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/inventory/StockMovementLogs.tsx(46,3): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/inventory/StockMovementLogs.tsx(47,3): error TS6133: 'Package' is declared but its value is never read.
+src/components/inventory/StockMovementLogs.tsx(187,9): error TS6133: 'totalAdjustments' is declared but its value is never read.
+src/components/inventory/StockValuationReports.tsx(36,3): error TS6133: 'FileText' is declared but its value is never read.
+src/components/inventory/StockValuationReports.tsx(54,24): error TS6133: 'setBranchFilter' is declared but its value is never read.
+src/components/inventory/StockValuationReports.tsx(103,9): error TS6133: 'formatDate' is declared but its value is never read.
+src/components/product/BulkStockAdjustment.tsx(136,30): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/product/CsvImportHistory.tsx(4,29): error TS6133: 'CardDescription' is declared but its value is never read.
+src/components/product/CsvImportHistory.tsx(30,3): error TS6133: 'Clock' is declared but its value is never read.
+src/components/product/CsvImportHistory.tsx(32,3): error TS6133: 'Download' is declared but its value is never read.
+src/components/product/CsvImportHistory.tsx(34,3): error TS6133: 'FileSpreadsheet' is declared but its value is never read.
+src/components/product/CsvImportProgress.tsx(108,74): error TS6133: 'totalBatches' is declared but its value is never read.
+src/components/product/CsvImportProgress.tsx(150,36): error TS6133: 'item' is declared but its value is never read.
+src/components/product/CsvImportProgress.tsx(187,9): error TS6133: 'getStatusColor' is declared but its value is never read.
+src/components/product/CsvImportResults.tsx(80,9): error TS6133: 'getStatusIcon' is declared but its value is never read.
+src/components/product/CsvImportResults.tsx(107,19): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(o: {}): string[]', gave the following error.
+    Argument of type '{ Row: number; SKU: string; Field: string; 'Error Message': string; Value: string; } | undefined' is not assignable to parameter of type '{}'.
+      Type 'undefined' is not assignable to type '{}'.
+  Overload 2 of 2, '(o: object): string[]', gave the following error.
+    Argument of type '{ Row: number; SKU: string; Field: string; 'Error Message': string; Value: string; } | undefined' is not assignable to parameter of type 'object'.
+      Type 'undefined' is not assignable to type 'object'.
+src/components/product/EditProductForm.tsx(43,11): error TS6196: 'Category' is declared but never used.
+src/components/product/EditProductForm.tsx(48,11): error TS6196: 'Branch' is declared but never used.
+src/components/product/InventoryLogs.tsx(60,10): error TS6133: 'currentPage' is declared but its value is never read.
+src/components/product/InventoryLogs.tsx(125,9): error TS6133: 'totalAdjustments' is declared but its value is never read.
+src/components/product/LowStockAlerts.tsx(7,30): error TS6196: 'Product' is declared but never used.
+src/components/product/LowStockAlerts.tsx(33,3): error TS6133: 'XCircle' is declared but its value is never read.
+src/components/product/LowStockAlerts.tsx(34,3): error TS6133: 'TrendingDown' is declared but its value is never read.
+src/components/product/LowStockAlerts.tsx(35,3): error TS6133: 'Package' is declared but its value is never read.
+src/components/product/LowStockAlerts.tsx(37,3): error TS6133: 'BellOff' is declared but its value is never read.
+src/components/product/LowStockAlerts.tsx(38,3): error TS6133: 'Eye' is declared but its value is never read.
+src/components/product/LowStockAlerts.tsx(55,9): error TS6133: 'user' is declared but its value is never read.
+src/components/product/LowStockAlerts.tsx(73,9): error TS6133: 'products' is declared but its value is never read.
+src/components/product/ProductDetails.tsx(4,29): error TS6133: 'CardDescription' is declared but its value is never read.
+src/components/product/ProductDetails.tsx(13,3): error TS6133: 'User' is declared but its value is never read.
+src/components/product/ProductDetailsView.tsx(177,9): error TS6133: 'formatCurrency' is declared but its value is never read.
+src/components/product/ProductDetailsView.tsx(360,19): error TS2322: Type '{ id: string; code: string; date: string; type: "SALE" | "PURCHASE" | "ADJUSTMENT"; quantity: number; totalAmount: number; customer: { id: string; name: string; phone?: string; } | undefined; staff: { ...; }; status: "PENDING" | ... 1 more ... | "CANCELLED"; notes: string | undefined; }[]' is not assignable to type 'Transaction[]'.
+  Type '{ id: string; code: string; date: string; type: "SALE" | "PURCHASE" | "ADJUSTMENT"; quantity: number; totalAmount: number; customer: { id: string; name: string; phone?: string; } | undefined; staff: { ...; }; status: "PENDING" | "COMPLETED" | "CANCELLED"; notes: string | undefined; }' is not assignable to type 'Transaction' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+    Types of property 'customer' are incompatible.
+      Type '{ id: string; name: string; phone?: string; } | undefined' is not assignable to type '{ name: string; email: string; }'.
+        Type 'undefined' is not assignable to type '{ name: string; email: string; }'.
+src/components/product/ProductDetailsView.tsx(369,18): error TS2375: Type '{ logs: { id: string; type: "ADJUSTMENT" | "IN" | "OUT"; quantity: number; date: string; reference: string; notes: string; performedBy: { name: string; email: string; }; }[]; pagination: { page: number; limit: number; total: number; pages: number; } | undefined; loading: boolean; error: any; productName: string; }' is not assignable to type 'InventoryLogsProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'pagination' are incompatible.
+    Type '{ page: number; limit: number; total: number; pages: number; } | undefined' is not assignable to type '{ page: number; limit: number; total: number; pages: number; }'.
+      Type 'undefined' is not assignable to type '{ page: number; limit: number; total: number; pages: number; }'.
+src/components/product/ProductForm.tsx(44,11): error TS6196: 'Category' is declared but never used.
+src/components/product/ProductForm.tsx(49,11): error TS6196: 'Branch' is declared but never used.
+src/components/product/ProductForm.tsx(87,18): error TS6133: 'errors' is declared but its value is never read.
+src/components/product/ProductForm.tsx(93,9): error TS6133: 'watchedFields' is declared but its value is never read.
+src/components/product/StockAdjustmentForm.tsx(12,3): error TS6133: 'ADJUSTMENT_REASONS' is declared but its value is never read.
+src/components/product/StockAdjustmentForm.tsx(54,3): error TS6133: 'CheckCircle2' is declared but its value is never read.
+src/components/product/StockAdjustmentForm.tsx(101,18): error TS6133: 'errors' is declared but its value is never read.
+src/components/product/StockAdjustmentForm.tsx(103,5): error TS6133: 'setValue' is declared but its value is never read.
+src/components/product/StockAdjustmentForm.tsx(194,72): error TS2379: Argument of type '{ adjustmentType: "INCREMENT" | "DECREMENT" | "SET_TO"; quantity: number; reason: string; notes: string | undefined; reference: string | undefined; requiresApproval: boolean; }' is not assignable to parameter of type '{ adjustmentType: string; quantity: number; reason: string; reference?: string; notes?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'reference' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/product/StockAdjustmentHistory.tsx(6,1): error TS6133: 'useAuthStore' is declared but its value is never read.
+src/components/product/StockAdjustmentReports.tsx(38,10): error TS6133: 'reportType' is declared but its value is never read.
+src/components/product/StockAdjustmentReports.tsx(38,22): error TS6133: 'setReportType' is declared but its value is never read.
+src/components/product/TransactionHistory.tsx(118,5): error TS2304: Cannot find name 'setCurrentPage'.
+src/components/product/TransactionHistory.tsx(166,50): error TS2552: Cannot find name 'totalTransactions'. Did you mean 'transactions'?
+src/components/product/TransactionHistory.tsx(178,65): error TS2304: Cannot find name 'totalSales'.
+src/components/product/TransactionHistory.tsx(190,64): error TS2304: Cannot find name 'totalPurchases'.
+src/components/product/TransactionHistory.tsx(202,65): error TS2304: Cannot find name 'totalRevenue'.
+src/components/shared/ErrorBoundary.tsx(79,15): error TS2375: Type '{ error: Error | undefined; onReset: () => void; }' is not assignable to type 'DefaultErrorBoundaryProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'error' are incompatible.
+    Type 'Error | undefined' is not assignable to type 'Error'.
+      Type 'undefined' is not assignable to type 'Error'.
+src/components/shared/ErrorBoundary.tsx(170,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: Props): ErrorBoundary', gave the following error.
+    Type '{ children: ReactNode; onError: ((error: Error, errorInfo: ErrorInfo) => void) | undefined; fallback: Element; }' is not assignable to type 'Readonly<Props>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'onError' are incompatible.
+        Type '((error: Error, errorInfo: ErrorInfo) => void) | undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+          Type 'undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+  Overload 2 of 2, '(props: Props, context: any): ErrorBoundary', gave the following error.
+    Type '{ children: ReactNode; onError: ((error: Error, errorInfo: ErrorInfo) => void) | undefined; fallback: Element; }' is not assignable to type 'Readonly<Props>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'onError' are incompatible.
+        Type '((error: Error, errorInfo: ErrorInfo) => void) | undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+          Type 'undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+src/components/shared/ErrorBoundary.tsx(206,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: Props): ErrorBoundary', gave the following error.
+    Type '{ children: ReactNode; onError: ((error: Error, errorInfo: ErrorInfo) => void) | undefined; fallback: Element; }' is not assignable to type 'Readonly<Props>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'onError' are incompatible.
+        Type '((error: Error, errorInfo: ErrorInfo) => void) | undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+          Type 'undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+  Overload 2 of 2, '(props: Props, context: any): ErrorBoundary', gave the following error.
+    Type '{ children: ReactNode; onError: ((error: Error, errorInfo: ErrorInfo) => void) | undefined; fallback: Element; }' is not assignable to type 'Readonly<Props>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'onError' are incompatible.
+        Type '((error: Error, errorInfo: ErrorInfo) => void) | undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+          Type 'undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+src/components/shared/ErrorBoundary.tsx(227,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: Props): ErrorBoundary', gave the following error.
+    Type '{ children: ReactNode; onError: ((error: Error, errorInfo: ErrorInfo) => void) | undefined; fallback: Element; }' is not assignable to type 'Readonly<Props>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'onError' are incompatible.
+        Type '((error: Error, errorInfo: ErrorInfo) => void) | undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+          Type 'undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+  Overload 2 of 2, '(props: Props, context: any): ErrorBoundary', gave the following error.
+    Type '{ children: ReactNode; onError: ((error: Error, errorInfo: ErrorInfo) => void) | undefined; fallback: Element; }' is not assignable to type 'Readonly<Props>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'onError' are incompatible.
+        Type '((error: Error, errorInfo: ErrorInfo) => void) | undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+          Type 'undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+src/components/shared/ErrorBoundary.tsx(253,6): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(props: Props): ErrorBoundary', gave the following error.
+    Type '{ children: ReactNode; onError: ((error: Error, errorInfo: ErrorInfo) => void) | undefined; fallback: Element; }' is not assignable to type 'Readonly<Props>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'onError' are incompatible.
+        Type '((error: Error, errorInfo: ErrorInfo) => void) | undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+          Type 'undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+  Overload 2 of 2, '(props: Props, context: any): ErrorBoundary', gave the following error.
+    Type '{ children: ReactNode; onError: ((error: Error, errorInfo: ErrorInfo) => void) | undefined; fallback: Element; }' is not assignable to type 'Readonly<Props>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+      Types of property 'onError' are incompatible.
+        Type '((error: Error, errorInfo: ErrorInfo) => void) | undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+          Type 'undefined' is not assignable to type '(error: Error, errorInfo: ErrorInfo) => void'.
+src/components/shared/app-sidebar.tsx(34,3): error TS6133: 'LogOut' is declared but its value is never read.
+src/components/transaction/ReceiptGeneration.tsx(18,1): error TS6133: 'Textarea' is declared but its value is never read.
+src/components/transaction/ReceiptGeneration.tsx(23,23): error TS6133: 'ReceiptData' is declared but its value is never read.
+src/components/transaction/ReceiptGeneration.tsx(27,3): error TS6133: 'Eye' is declared but its value is never read.
+src/components/transaction/ReceiptGeneration.tsx(28,3): error TS6133: 'Settings' is declared but its value is never read.
+src/components/transaction/ReceiptGeneration.tsx(32,3): error TS6133: 'QrCode' is declared but its value is never read.
+src/components/transaction/ReceiptGeneration.tsx(33,12): error TS6133: 'ImageIcon' is declared but its value is never read.
+src/components/transaction/ReceiptGeneration.tsx(67,3): error TS6133: 'onGenerate' is declared but its value is never read.
+src/components/transaction/SalesDashboard.tsx(5,1): error TS6133: 'Badge' is declared but its value is never read.
+src/components/transaction/SalesDashboard.tsx(8,28): error TS6133: 'TransactionStatsResponse' is declared but its value is never read.
+src/components/transaction/SalesDashboard.tsx(8,54): error TS6133: 'TransactionListResponse' is declared but its value is never read.
+src/components/transaction/SalesDashboard.tsx(10,3): error TS6133: 'BarChart' is declared but its value is never read.
+src/components/transaction/SalesDashboard.tsx(30,3): error TS6133: 'Users' is declared but its value is never read.
+src/components/transaction/SalesDashboard.tsx(33,3): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/transaction/SalesDashboard.tsx(126,5): error TS2322: Type '{ date: string | undefined; revenue: any; transactions: number; items: any; }[]' is not assignable to type 'DailySalesData[]'.
+  Type '{ date: string | undefined; revenue: any; transactions: number; items: any; }' is not assignable to type 'DailySalesData'.
+    Types of property 'date' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/components/transaction/SalesDashboard.tsx(350,40): error TS6133: 'entry' is declared but its value is never read.
+src/components/transaction/TransactionAnalytics.tsx(10,1): error TS6133: 'Badge' is declared but its value is never read.
+src/components/transaction/TransactionAnalytics.tsx(24,3): error TS6133: 'LineChart' is declared but its value is never read.
+src/components/transaction/TransactionAnalytics.tsx(32,3): error TS6133: 'TrendingDown' is declared but its value is never read.
+src/components/transaction/TransactionAnalytics.tsx(33,3): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/transaction/TransactionAnalytics.tsx(34,3): error TS6133: 'Download' is declared but its value is never read.
+src/components/transaction/TransactionAnalytics.tsx(37,15): error TS6133: 'PieChartIcon' is declared but its value is never read.
+src/components/transaction/TransactionAnalytics.tsx(139,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/transaction/TransactionAnalytics.tsx(140,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/transaction/TransactionAnalytics.tsx(406,49): error TS6133: 'entry' is declared but its value is never read.
+src/components/transaction/TransactionAnalytics.tsx(477,50): error TS6133: 'index' is declared but its value is never read.
+src/components/transaction/TransactionDetails.tsx(46,10): error TS6133: 'showCancelDialog' is declared but its value is never read.
+src/components/transaction/TransactionDetails.tsx(47,10): error TS6133: 'showRefundDialog' is declared but its value is never read.
+src/components/transaction/TransactionHistory.tsx(46,3): error TS6133: 'Filter' is declared but its value is never read.
+src/components/transaction/TransactionHistory.tsx(50,3): error TS6133: 'Trash2' is declared but its value is never read.
+src/components/transaction/TransactionHistory.tsx(55,3): error TS6133: 'Calendar' is declared but its value is never read.
+src/components/transaction/TransactionHistory.tsx(56,3): error TS6133: 'DollarSign' is declared but its value is never read.
+src/components/transaction/TransactionHistory.tsx(57,3): error TS6133: 'Building2' is declared but its value is never read.
+src/components/transaction/TransactionHistory.tsx(60,1): error TS6133: 'toast' is declared but its value is never read.
+src/components/transaction/TransactionHistory.tsx(168,20): error TS2379: Argument of type '{ startDate: undefined; endDate: undefined; status: undefined; branchId: undefined; search: undefined; minAmount: undefined; maxAmount: undefined; }' is not assignable to parameter of type 'Partial<TransactionFilters>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'startDate' are incompatible.
+    Type 'undefined' is not assignable to type 'string'.
+src/components/transaction/TransactionHistory.tsx(273,47): error TS2379: Argument of type '{ minAmount: number | undefined; }' is not assignable to parameter of type 'Partial<TransactionFilters>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'minAmount' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+src/components/transaction/TransactionHistory.tsx(279,47): error TS2379: Argument of type '{ maxAmount: number | undefined; }' is not assignable to parameter of type 'Partial<TransactionFilters>' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'maxAmount' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+src/components/ui/toast.tsx(10,6): error TS2375: Type '{ invert?: boolean; theme: "system" | "light" | "dark" | undefined; position?: Position; hotkey?: string[]; richColors?: boolean; expand?: boolean; duration?: number; gap?: number; visibleToasts?: number; ... 13 more ...; key?: Key | ... 1 more ... | undefined; }' is not assignable to type 'ToasterProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'theme' are incompatible.
+    Type '"system" | "light" | "dark" | undefined' is not assignable to type '"system" | "light" | "dark"'.
+      Type 'undefined' is not assignable to type '"system" | "light" | "dark"'.
+src/components/websocket/WebSocketStatus.tsx(32,61): error TS6133: 'onConnectionStateChange' is declared but its value is never read.
+src/components/websocket/WebSocketStatus.tsx(194,61): error TS6133: 'onConnectionStateChange' is declared but its value is never read.
+src/components/websocket/WebSocketStatus.tsx(265,40): error TS2304: Cannot find name 'connectionState'.
+src/components/websocket/useRealTimeData.tsx(140,29): error TS6133: 'event' is declared but its value is never read.
+src/components/websocket/useRealTimeData.tsx(145,31): error TS6133: 'event' is declared but its value is never read.
+src/components/websocket/useRealTimeData.tsx(150,27): error TS6133: 'event' is declared but its value is never read.
+src/components/websocket/useRealTimeNotifications.tsx(1,20): error TS6133: 'useEffect' is declared but its value is never read.
+src/components/websocket/useRealTimeNotifications.tsx(22,43): error TS6133: 'category' is declared but its value is never read.
+src/lib/auth.ts(3,1): error TS6133: 'JWT' is declared but its value is never read.
+src/lib/auth.ts(141,9): error TS2375: Type '{ id: string; role: "ADMIN" | "MANAGER" | "STAFF"; branchId: string | undefined; branch: { id: string; name: string; } | undefined; email: string; name: string; }' is not assignable to type '{ id: string; email: string; name: string; role: "ADMIN" | "MANAGER" | "STAFF"; branchId?: string; branch?: { id: string; name: string; }; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'branchId' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/auth.ts(152,18): error TS6198: All destructured elements are unused.
+src/lib/hooks/useTransactions.ts(4,20): error TS6133: 'useEffect' is declared but its value is never read.
+src/lib/hooks/useTransactions.ts(16,3): error TS6133: 'transactionFiltersSchema' is declared but its value is never read.
+src/lib/hooks/useTransactions.ts(83,5): error TS6133: 'type' is declared but its value is never read.
+src/lib/services/export.ts(2,56): error TS6133: 'ExportJob' is declared but its value is never read.
+src/lib/services/export.ts(136,46): error TS6133: 'contentType' is declared but its value is never read.
+src/lib/services/export.ts(155,21): error TS2532: Object is possibly 'undefined'.
+src/lib/services/export.ts(177,21): error TS2532: Object is possibly 'undefined'.
+src/lib/services/export.ts(212,27): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/services/export.ts(218,43): error TS6133: 'dataType' is declared but its value is never read.
+src/lib/websocket.ts(57,11): error TS6133: 'reconnectDelay' is declared but its value is never read.
+src/lib/websocket.ts(84,9): error TS2353: Object literal may only specify known properties, and 'transports' does not exist in type 'SocketOptions'.
+src/lib/websocket.ts(92,40): error TS2551: Property 'reconnectDelay' does not exist on type 'WebSocketConfig'. Did you mean 'reconnectionDelay'?
+src/lib/websocket.ts(233,33): error TS2353: Object literal may only specify known properties, and 'message' does not exist in type 'BMSWebSocketEvent'.
+src/lib/websocket.ts(454,3): error TS6133: 'namespace' is declared but its value is never read.
+src/services/api.ts(8,3): error TS6196: 'BranchStats' is declared but never used.
+src/services/api.ts(10,3): error TS6196: 'SupplierStats' is declared but never used.
+src/services/api.ts(13,3): error TS6196: 'TransactionStats' is declared but never used.
+src/services/api.ts(17,3): error TS6196: 'PurchaseOrderStats' is declared but never used.
+src/services/api.ts(25,3): error TS6196: 'StatusUpdateResponse' is declared but never used.
+src/services/api.ts(28,3): error TS6196: 'BulkOperationResult' is declared but never used.
+src/services/api.ts(37,3): error TS6196: 'PurchaseOrder' is declared but never used.
+src/services/api.ts(63,26): error TS2339: Property 'accessToken' does not exist on type 'Session'.
+src/services/api.ts(64,31): error TS2339: Property 'accessToken' does not exist on type 'Session'.
+src/tests/websocket-tests.tsx(289,7): error TS2304: Cannot find name 'unsubscribe'.
+src/tests/websocket-tests.tsx(347,27): error TS2379: Argument of type '{ test: string; passed: boolean; error: string | undefined; }' is not assignable to parameter of type '{ test: string; passed: boolean; error?: string; }' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'error' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/tests/websocket-tests.tsx(412,5): error TS6133: 'subscribe' is declared but its value is never read.
+src/tests/websocket-tests.tsx(442,32): error TS2304: Cannot find name 'connect'.
+src/tests/websocket-tests.tsx(445,32): error TS2304: Cannot find name 'disconnect'.

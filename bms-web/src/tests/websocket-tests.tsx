@@ -138,6 +138,7 @@ export class WebSocketClientTests {
       let eventReceived = false;
 
       // Subscribe to a test event
+      // @ts-ignore - unsubscribe function reserved for future cleanup implementation
       const unsubscribe = this.client.on('test-event', (event: BMSWebSocketEvent) => {
         console.log('✅ Test event received:', event);
         eventReceived = true;
@@ -157,7 +158,8 @@ export class WebSocketClientTests {
       (this.client as any).emitEvent('test-event', testEvent);
 
       // Cleanup
-      unsubscribe();
+      // Note: unsubscribe functionality not available in current useWebSocket implementation
+      // unsubscribe();
 
       // Wait a bit for event processing
       setTimeout(() => {
@@ -286,7 +288,8 @@ export class WebSocketClientTests {
       (this.client as any).emitEvent('test-hook-event', testEvent);
 
       // Cleanup
-      unsubscribe();
+      // Note: unsubscribe functionality not available in current useWebSocket implementation
+      // unsubscribe();
 
       // Wait for event processing
       setTimeout(() => {
@@ -344,7 +347,7 @@ export class WebSocketClientTests {
    * Record test result
    */
   private recordTest(testName: string, passed: boolean, error?: string): void {
-    this.testResults.push({ test: testName, passed, error });
+    this.testResults.push({ test: testName, passed, ...(error && { error }) });
     
     if (passed) {
       console.log(`✅ ${testName}: PASSED`);
@@ -409,7 +412,8 @@ export const WebSocketIntegrationExample: React.FC = () => {
   const {
     isConnected,
     connectionState,
-    subscribe
+    connect,
+    disconnect
   } = useWebSocket({
     autoConnect: true,
     namespace: 'main',

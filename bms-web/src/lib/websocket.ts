@@ -1,4 +1,4 @@
-import { io, Socket, SocketOptions } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -54,7 +54,6 @@ export class WebSocketClient {
   private eventHandlers: Map<string, Set<EventHandler>> = new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 10;
-  private reconnectDelay = 1000;
   private isIntentionallyDisconnected = false;
   private connectionStartTime: Date | null = null;
 
@@ -80,8 +79,8 @@ export class WebSocketClient {
         throw new Error('No authentication token found');
       }
 
-      const socketOptions: SocketOptions = {
-        transports: ['websocket', 'polling'],
+      const socketOptions = {
+        transports: ['websocket', 'polling'] as any,
         auth: {
           token,
         },
@@ -89,8 +88,8 @@ export class WebSocketClient {
         forceNew: true,
         reconnection: this.config.reconnection,
         reconnectionAttempts: this.config.reconnectionAttempts,
-        reconnectionDelay: this.config.reconnectDelay,
-      };
+        reconnectionDelay: this.config.reconnectionDelay,
+      } as any;
 
       // Connect to the specified namespace
       const namespacePath = this.config.namespaces[namespace];
@@ -230,7 +229,13 @@ export class WebSocketClient {
     // Error handling
     this.socket.on('error', (error) => {
       console.error('WebSocket server error:', error);
-      this.emitEvent('error', { message: error.message, error });
+      this.emitEvent('error', { 
+        id: 'error-' + Date.now(),
+        type: 'error',
+        timestamp: new Date(),
+        branchId: '',
+        data: { message: error.message, error }
+      } as BMSWebSocketEvent);
     });
 
     this.socket.on('force-disconnect', (data) => {
@@ -451,7 +456,7 @@ export const createWebSocketClient = (config?: Partial<WebSocketConfig>): WebSoc
 
 // Export specific client for different namespaces
 export const createWebSocketClientForNamespace = (
-  namespace: 'main' | 'admin' | 'pos',
+  _namespace: 'main' | 'admin' | 'pos',
   config?: Partial<WebSocketConfig>
 ): WebSocketClient => {
   const client = new WebSocketClient(config);

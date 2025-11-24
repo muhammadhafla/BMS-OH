@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { BMSWebSocketEvent } from '@/lib/websocket';
 import { useSWRConfig } from 'swr';
@@ -137,17 +137,17 @@ export const useDashboardRealTime = () => {
     autoConnect: true,
     namespace: 'main',
     eventHandlers: {
-      'inventory:updated': (event: BMSWebSocketEvent) => {
+      'inventory:updated': () => {
         console.log('📊 Dashboard: Inventory update');
         // Could update specific dashboard metrics
       },
       
-      'transaction:created': (event: BMSWebSocketEvent) => {
+      'transaction:created': () => {
         console.log('📊 Dashboard: New transaction');
         // Could update sales metrics, transaction counts, etc.
       },
       
-      'product:updated': (event: BMSWebSocketEvent) => {
+      'product:updated': () => {
         console.log('📊 Dashboard: Product update');
         // Could update product metrics
       }
@@ -177,7 +177,12 @@ export const useInventoryRealTime = () => {
     eventHandlers: {
       'inventory:updated': (event: BMSWebSocketEvent) => {
         console.log('📦 Inventory: Stock level changed');
-        const { productId, productName, currentStock, minStock } = event.data;
+        const { productId, productName, currentStock, minStock } = event.data as {
+          productId: string;
+          productName: string;
+          currentStock: number;
+          minStock: number;
+        };
         
         // Update local state if needed
         setInventoryData(prev => 
@@ -214,7 +219,12 @@ export const useInventoryRealTime = () => {
       
       'low-stock:alert': (event: BMSWebSocketEvent) => {
         console.log('⚠️ Inventory: Low stock alert');
-        const { productId, productName, currentStock, minStock } = event.data;
+        const { productId, productName, currentStock, minStock } = event.data as {
+          productId: string;
+          productName: string;
+          currentStock: number;
+          minStock: number;
+        };
         
         setLowStockItems(prev => {
           const existing = prev.find(item => item.id === productId);
@@ -262,7 +272,10 @@ export const useProductRealTime = () => {
     eventHandlers: {
       'product:updated': (event: BMSWebSocketEvent) => {
         console.log('🏷️ Products: Product updated');
-        const { productId, changes } = event.data;
+        const { productId, changes } = event.data as {
+          productId: string;
+          changes: Record<string, any>;
+        };
         
         setProducts(prev => 
           prev.map(product => 
@@ -275,14 +288,14 @@ export const useProductRealTime = () => {
       
       'product:created': (event: BMSWebSocketEvent) => {
         console.log('🏷️ Products: New product created');
-        const { product } = event.data;
+        const { product } = event.data as { product: any };
         
         setProducts(prev => [product, ...prev]);
       },
       
       'product:deleted': (event: BMSWebSocketEvent) => {
         console.log('🏷️ Products: Product deleted');
-        const { productId } = event.data;
+        const { productId } = event.data as { productId: string };
         
         setProducts(prev => prev.filter(product => product.id !== productId));
       }
@@ -313,14 +326,14 @@ export const useTransactionRealTime = () => {
     eventHandlers: {
       'transaction:created': (event: BMSWebSocketEvent) => {
         console.log('💳 Transactions: New transaction');
-        const { transaction } = event.data;
+        const { transaction } = event.data as { transaction: any };
         
         // Add new transaction
         setTransactions(prev => [transaction, ...prev]);
         
         // Update today's stats
         if (todayStats) {
-          setTodayStats(prev => ({
+          setTodayStats((prev: any) => ({
             ...prev,
             totalTransactions: (prev?.totalTransactions || 0) + 1,
             totalRevenue: (prev?.totalRevenue || 0) + transaction.totalAmount
@@ -330,7 +343,10 @@ export const useTransactionRealTime = () => {
       
       'transaction:updated': (event: BMSWebSocketEvent) => {
         console.log('💳 Transactions: Transaction updated');
-        const { transactionId, changes } = event.data;
+        const { transactionId, changes } = event.data as {
+          transactionId: string;
+          changes: Record<string, any>;
+        };
         
         setTransactions(prev => 
           prev.map(transaction => 

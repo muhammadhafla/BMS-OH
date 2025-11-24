@@ -7,9 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TransactionAnalytics as TransactionAnalyticsType } from '@/lib/types/transaction';
+import { UnifiedTransactionAnalytics } from '@/types/unified';
 import {
   BarChart,
   Bar,
@@ -21,7 +20,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
   Line,
   Area,
   AreaChart,
@@ -29,18 +27,14 @@ import {
 } from 'recharts';
 import {
   TrendingUp,
-  TrendingDown,
-  Calendar,
-  Download,
   Filter,
   BarChart3,
-  PieChart as PieChartIcon,
   LineChart as LineChartIcon,
   DollarSign
 } from 'lucide-react';
 
 interface TransactionAnalyticsProps {
-  analytics: TransactionAnalyticsType | undefined;
+  analytics: UnifiedTransactionAnalytics | undefined;
   loading: boolean;
   onDateRangeChange: (filters: any) => void;
 }
@@ -61,7 +55,7 @@ export function TransactionAnalytics({ analytics, loading, onDateRangeChange }: 
   };
 
   // Sample analytics data (replace with real data)
-  const sampleAnalytics: TransactionAnalyticsType = {
+  const sampleAnalytics: UnifiedTransactionAnalytics = {
     dailySales: [
       { date: '2025-11-01', revenue: 1500000, transactions: 45, items: 89 },
       { date: '2025-11-02', revenue: 2300000, transactions: 67, items: 134 },
@@ -90,6 +84,14 @@ export function TransactionAnalytics({ analytics, loading, onDateRangeChange }: 
       { month: '2025-10', revenue: 152000000, transactions: 1080, growth: 4.8 },
       { month: '2025-11', revenue: 225000000, transactions: 1600, growth: 48.0 },
     ],
+    productPerformance: [],
+    categoryPerformance: [],
+    comparisons: {
+      today: { sales: 0, transactions: 0, customers: 0 },
+      yesterday: { sales: 0, transactions: 0, customers: 0 },
+      thisWeek: { sales: 0, transactions: 0, customers: 0 },
+      lastWeek: { sales: 0, transactions: 0, customers: 0 },
+    }
   };
 
   const data = analytics || sampleAnalytics;
@@ -136,8 +138,8 @@ export function TransactionAnalytics({ analytics, loading, onDateRangeChange }: 
     }
     
     setDateRange({
-      startDate: startDate.toISOString().split('T')[0],
-      endDate: endDate.toISOString().split('T')[0],
+      startDate: startDate.toISOString().split('T')[0] || '',
+      endDate: endDate.toISOString().split('T')[0] || '',
     });
   };
 
@@ -403,7 +405,7 @@ export function TransactionAnalytics({ analytics, loading, onDateRangeChange }: 
                       fill="#8884d8"
                       dataKey="count"
                     >
-                      {data.paymentMethods.map((entry, index) => (
+                      {data.paymentMethods.map((_entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -474,7 +476,7 @@ export function TransactionAnalytics({ analytics, loading, onDateRangeChange }: 
           </Card>
 
           <div className="grid gap-4 md:grid-cols-3">
-            {data.branchPerformance.map((branch, index) => (
+            {data.branchPerformance.map((branch, _index) => (
               <Card key={branch.branchId}>
                 <CardHeader>
                   <CardTitle className="text-lg">{branch.branchName}</CardTitle>

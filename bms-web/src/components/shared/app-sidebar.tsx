@@ -31,7 +31,6 @@ import {
   MessageSquare,
   Clock,
   Settings,
-  LogOut,
   Home,
   DollarSign,
   Folder,

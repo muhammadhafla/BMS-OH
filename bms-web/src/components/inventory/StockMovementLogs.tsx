@@ -43,8 +43,8 @@ import {
   X,
   Download,
   Search,
-  Calendar,
-  Package,
+  // Calendar,
+  // Package,
   Eye,
   RefreshCw,
   Activity,
@@ -184,9 +184,9 @@ export function StockMovementLogs() {
   const totalStockOut = movements
     .filter((m: any) => m.type === 'OUT')
     .reduce((sum: number, m: any) => sum + m.quantity, 0);
-  const totalAdjustments = movements
-    .filter((m: any) => m.type === 'ADJUSTMENT')
-    .reduce((sum: number, m: any) => sum + Math.abs(m.quantity), 0);
+  // const totalAdjustments = movements
+  //   .filter((m: any) => m.type === 'ADJUSTMENT')
+  //   .reduce((sum: number, m: any) => sum + Math.abs(m.quantity), 0);
 
   // Error state
   if (error) {

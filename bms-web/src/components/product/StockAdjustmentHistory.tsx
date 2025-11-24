@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import useSWR from 'swr';
 import { apiService } from '@/services/api';
-import { useAuthStore } from '@/stores/authStore';
 import type { StockAdjustment, StockAdjustmentFilters } from '@/types/stock-adjustment';
 import { ADJUSTMENT_REASONS } from '@/lib/validations/stock-adjustment';
 

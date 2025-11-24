@@ -9,7 +9,6 @@ import { apiService } from '@/services/api';
 import {
   stockAdjustmentSchema,
   type StockAdjustmentFormData,
-  ADJUSTMENT_REASONS,
   getReasonsByType,
   requiresApproval,
 } from '@/lib/validations/stock-adjustment';
@@ -51,7 +50,6 @@ import {
   TrendingDown,
   Hash,
   Info,
-  CheckCircle2,
   Clock
 } from 'lucide-react';
 
@@ -108,9 +106,8 @@ export function StockAdjustmentForm({
   const {
     control,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { isValid },
     watch,
-    setValue,
     reset,
   } = form;
 
@@ -201,14 +198,16 @@ export function StockAdjustmentForm({
     setSubmitError(null);
 
     try {
-      const adjustmentData = {
+      const adjustmentData: any = {
         adjustmentType: data.adjustmentType,
         quantity: data.quantity,
         reason: data.reason,
-        notes: data.notes,
-        reference: data.reference,
         requiresApproval: needsApproval,
       };
+      
+      // Only include optional fields if they have values
+      if (data.notes) adjustmentData.notes = data.notes;
+      if (data.reference) adjustmentData.reference = data.reference;
 
       const response = await apiService.updateProductStock(targetProduct.id, adjustmentData);
       

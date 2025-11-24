@@ -22,8 +22,12 @@ import {
   Calendar,
   User,
   Building2,
+  Edit,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface TransactionDetailsProps {
   transaction: Transaction;
@@ -39,6 +43,8 @@ export function TransactionDetails({
   onGenerateReceipt,
 }: TransactionDetailsProps) {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [_showCancelDialog, setShowCancelDialog] = useState(false);
+  const [_showRefundDialog, setShowRefundDialog] = useState(false);
 
   // Format currency
   const formatCurrency = (amount: number) => {

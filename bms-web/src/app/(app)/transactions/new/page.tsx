@@ -23,7 +23,7 @@ const NewTransaction: React.FC = () => {
   const [items, setItems] = useState<TransactionItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'DEBIT_CARD' | 'CREDIT_CARD' | 'QRIS'>('CASH');
   const [amountPaid, setAmountPaid] = useState(0);
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -200,7 +200,7 @@ const NewTransaction: React.FC = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="paymentMethod">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as 'CASH' | 'DEBIT_CARD' | 'CREDIT_CARD' | 'QRIS')}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

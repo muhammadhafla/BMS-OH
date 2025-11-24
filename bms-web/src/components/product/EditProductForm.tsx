@@ -40,16 +40,6 @@ import { Loader2, Edit3, AlertCircle, DollarSign, Hash, Tag } from 'lucide-react
 
 const fetcher = <T,>(url: string): Promise<T> => apiService.get<T>(url);
 
-interface Category {
-  id: string;
-  name: string;
-}
-
-interface Branch {
-  id: string;
-  name: string;
-}
-
 interface Product {
   id: string;
   sku: string;

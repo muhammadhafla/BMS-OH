@@ -9,7 +9,6 @@ import { apiService } from '@/services/api';
 import {
   stockAdjustmentSchema,
   type StockAdjustmentFormData,
-  ADJUSTMENT_REASONS,
   getReasonsByType,
   requiresApproval,
 } from '@/lib/validations/stock-adjustment';
@@ -51,7 +50,6 @@ import {
   TrendingDown,
   Hash,
   Info,
-  CheckCircle2,
   Clock
 } from 'lucide-react';
 
@@ -98,9 +96,8 @@ export function StockAdjustmentForm({ product, open, onOpenChange, onSuccess }: 
   const {
     control,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { isValid },
     watch,
-    setValue,
     reset,
   } = form;
 
@@ -186,8 +183,8 @@ export function StockAdjustmentForm({ product, open, onOpenChange, onSuccess }: 
         adjustmentType: data.adjustmentType,
         quantity: data.quantity,
         reason: data.reason,
-        notes: data.notes,
-        reference: data.reference,
+        ...(data.notes && { notes: data.notes }),
+        ...(data.reference && { reference: data.reference }),
         requiresApproval: needsApproval,
       };
 

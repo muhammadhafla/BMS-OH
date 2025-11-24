@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ExportOptions, ExportTemplate, ExportPreview, ExportJob, ExportHistory } from '../types/export';
+import { ExportOptions, ExportTemplate, ExportPreview, ExportHistory } from '../types/export';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -133,7 +133,7 @@ class ExportService {
   }
 
   // Utility function to download blob as file
-  downloadBlob(blob: Blob, filename: string, contentType: string): void {
+  downloadBlob(blob: Blob, filename: string, _contentType: string): void {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -152,7 +152,7 @@ class ExportService {
   generateFilename(template: string, format: string, timestamp: boolean = true): string {
     const date = new Date();
     const dateStr = date.toISOString().split('T')[0];
-    const timeStr = date.toTimeString().split(' ')[0].replace(/:/g, '-');
+    const timeStr = date.toTimeString().split(' ')[0]?.replace(/:/g, '-') || '';
     const suffix = timestamp ? `_${dateStr}_${timeStr}` : '';
     return `${template}_export${suffix}.${format}`;
   }
@@ -174,7 +174,7 @@ class ExportService {
   // Convert CSV to JSON (for client-side processing)
   csvToJson(csvText: string): any[] {
     const lines = csvText.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+    const headers = lines[0]?.split(',').map(h => h.trim().replace(/"/g, '')) || [];
     
     return lines.slice(1)
       .filter(line => line.trim())
@@ -209,13 +209,13 @@ class ExportService {
     if (typeof window !== 'undefined') {
       const cookies = document.cookie.split(';');
       const authCookie = cookies.find(cookie => cookie.trim().startsWith('auth_token='));
-      return authCookie ? authCookie.split('=')[1] : '';
+      return authCookie?.split('=')[1] || '';
     }
     return '';
   }
 
   // Validate export options
-  validateOptions(options: ExportOptions, dataType: 'products' | 'categories' | 'reports'): string[] {
+  validateOptions(options: ExportOptions, _dataType: 'products' | 'categories' | 'reports'): string[] {
     const errors: string[] = [];
 
     if (!options.template) {
