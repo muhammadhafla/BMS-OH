@@ -664,6 +664,11 @@ class ApiService {
   async getTrialBalance(params?: Record<string, unknown>): Promise<ApiResponse> {
     return this.get('/accounting/trial-balance', { params });
   }
+
+  // Reports methods
+  async getReportsAnalytics(params?: Record<string, unknown>): Promise<ApiResponse<unknown>> {
+    return this.get('/reports/analytics', { params });
+  }
 }
 
 export const apiService = new ApiService();

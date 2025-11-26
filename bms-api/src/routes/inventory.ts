@@ -20,6 +20,39 @@ const bulkStockAdjustmentSchema = z.object({
   notes: z.string().optional()
 });
 
+const createBatchSchema = z.object({
+  productId: z.string(),
+  batchNumber: z.string().min(1),
+  lotNumber: z.string().optional(),
+  expiryDate: z.string().datetime().optional(),
+  manufactureDate: z.string().datetime().optional(),
+  quantity: z.number().positive(),
+  cost: z.number().min(0),
+  supplier: z.string().optional(),
+  location: z.string().optional(),
+  notes: z.string().optional()
+});
+
+const updateBatchSchema = z.object({
+  batchNumber: z.string().min(1).optional(),
+  lotNumber: z.string().optional(),
+  expiryDate: z.string().datetime().optional().nullable(),
+  manufactureDate: z.string().datetime().optional().nullable(),
+  quantity: z.number().min(0).optional(),
+  cost: z.number().min(0).optional(),
+  supplier: z.string().optional(),
+  location: z.string().optional(),
+  status: z.enum(['ACTIVE', 'EXPIRED', 'QUARANTINED', 'CONSUMED']).optional(),
+  notes: z.string().optional()
+});
+
+const batchMovementSchema = z.object({
+  type: z.enum(['IN', 'OUT', 'ADJUSTMENT', 'TRANSFER', 'DAMAGE', 'EXPIRED']),
+  quantity: z.number().positive(),
+  reference: z.string().optional(),
+  notes: z.string().optional()
+});
+
 // Get inventory overview with stock levels
 router.get('/overview', authenticate, async (req: AuthenticatedRequest, res) => {
   try {
@@ -581,6 +614,526 @@ router.get('/low-stock', authenticate, async (req: AuthenticatedRequest, res) =>
   } catch (error) {
     console.error('Error fetching low stock products:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch low stock products' });
+  }
+});
+
+// ==================== BATCH & LOT TRACKING ENDPOINTS ====================
+
+// Get product batches
+router.get('/batches', authenticate, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { 
+      productId,
+      branchId,
+      status,
+      expiryDate,
+      page = 1, 
+      limit = 10 
+    } = req.query;
+
+    const skip = (Number(page) - 1) * Number(limit);
+    const where: any = {};
+
+    // Product filter
+    if (productId) {
+      where.productId = String(productId);
+      // Also ensure the product belongs to the user's branch if they're staff
+      if (req.user!.role === 'STAFF') {
+        where.product = { branchId: req.user!.branchId };
+      }
+    } else {
+      // If no specific product, show batches for products in user's branch
+      if (req.user!.role === 'STAFF') {
+        where.product = { branchId: req.user!.branchId };
+      }
+    }
+
+    // Branch filter (for admin/manager)
+    if (branchId && req.user!.role !== 'STAFF') {
+      where.product = { ...where.product, branchId: String(branchId) };
+    }
+
+    // Status filter
+    if (status) {
+      where.status = String(status);
+    }
+
+    // Expiry date filter
+    if (expiryDate) {
+      const expiryDateObj = new Date(String(expiryDate));
+      where.expiryDate = { lte: expiryDateObj };
+    }
+
+    const [batches, total] = await Promise.all([
+      prisma.productBatch.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              sku: true,
+              unit: true,
+              branch: { select: { id: true, name: true } }
+            }
+          },
+          batchMovements: {
+            take: 5,
+            orderBy: { createdAt: 'desc' }
+          }
+        },
+        orderBy: [
+          { expiryDate: 'asc' },
+          { createdAt: 'desc' }
+        ]
+      }),
+      prisma.productBatch.count({ where })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        batches: batches.map(batch => ({
+          ...batch,
+          totalValue: Number(batch.quantity) * Number(batch.cost),
+          daysUntilExpiry: batch.expiryDate ? 
+            Math.ceil((new Date(batch.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null,
+          isExpiringSoon: batch.expiryDate ? 
+            Math.ceil((new Date(batch.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) <= 30 : false
+        })),
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / Number(limit))
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching product batches:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch product batches' });
+  }
+});
+
+// Get batch by ID
+router.get('/batches/:id', authenticate, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    
+    const batch = await prisma.productBatch.findUnique({
+      where: { id },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            unit: true,
+            branch: { select: { id: true, name: true } }
+          }
+        },
+        batchMovements: {
+          include: {
+            transaction: {
+              select: {
+                id: true,
+                transactionCode: true,
+                finalAmount: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!batch) {
+      return res.status(404).json({ success: false, error: 'Batch not found' });
+    }
+
+    // Check permission - staff can only access batches from their branch
+    if (req.user!.role === 'STAFF' && batch.product.branch.id !== req.user!.branchId) {
+      return res.status(403).json({ success: false, error: 'Access denied' });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        batch: {
+          ...batch,
+          totalValue: Number(batch.quantity) * Number(batch.cost),
+          daysUntilExpiry: batch.expiryDate ? 
+            Math.ceil((new Date(batch.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null,
+          isExpiringSoon: batch.expiryDate ? 
+            Math.ceil((new Date(batch.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) <= 30 : false
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching batch:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch batch' });
+  }
+});
+
+// Create new product batch
+router.post('/batches', authenticate, async (req: AuthenticatedRequest, res) => {
+  try {
+    const data = createBatchSchema.parse(req.body);
+
+    // Check if product exists and user has permission
+    const product = await prisma.product.findUnique({
+      where: { id: data.productId }
+    });
+
+    if (!product) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Product not found' 
+      });
+    }
+
+    // Check permission - staff can only create batches for products in their branch
+    if (req.user!.role === 'STAFF' && product.branchId !== req.user!.branchId) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied' 
+      });
+    }
+
+    // Check if batch number already exists for this product
+    const existingBatch = await prisma.productBatch.findUnique({
+      where: {
+        productId_batchNumber: {
+          productId: data.productId,
+          batchNumber: data.batchNumber
+        }
+      }
+    });
+
+    if (existingBatch) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Batch number already exists for this product' 
+      });
+    }
+
+    // Create batch
+    const batch = await prisma.productBatch.create({
+      data: {
+        productId: data.productId,
+        batchNumber: data.batchNumber,
+        lotNumber: data.lotNumber,
+        expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
+        manufactureDate: data.manufactureDate ? new Date(data.manufactureDate) : null,
+        quantity: data.quantity,
+        availableQty: data.quantity,
+        cost: data.cost,
+        supplier: data.supplier,
+        location: data.location,
+        status: 'ACTIVE',
+        notes: data.notes
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            unit: true
+          }
+        }
+      }
+    });
+
+    // Create batch movement for initial stock
+    await prisma.batchMovement.create({
+      data: {
+        productBatchId: batch.id,
+        type: 'IN',
+        quantity: data.quantity,
+        reference: 'Initial batch creation',
+        notes: data.notes
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      data: { batch },
+      message: 'Product batch created successfully'
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid input data',
+        details: error.errors 
+      });
+    }
+    console.error('Error creating product batch:', error);
+    res.status(500).json({ success: false, error: 'Failed to create product batch' });
+  }
+});
+
+// Update product batch
+router.put('/batches/:id', authenticate, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const data = updateBatchSchema.parse(req.body);
+
+    const existingBatch = await prisma.productBatch.findUnique({
+      where: { id },
+      include: { product: true }
+    });
+
+    if (!existingBatch) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Batch not found' 
+      });
+    }
+
+    // Check permission
+    if (req.user!.role === 'STAFF' && existingBatch.product.branchId !== req.user!.branchId) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied' 
+      });
+    }
+
+    // Check batch number uniqueness if being updated
+    if (data.batchNumber && data.batchNumber !== existingBatch.batchNumber) {
+      const duplicateBatch = await prisma.productBatch.findUnique({
+        where: {
+          productId_batchNumber: {
+            productId: existingBatch.productId,
+            batchNumber: data.batchNumber
+          }
+        }
+      });
+      
+      if (duplicateBatch) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Batch number already exists for this product' 
+        });
+      }
+    }
+
+    const batch = await prisma.productBatch.update({
+      where: { id },
+      data: {
+        ...data,
+        expiryDate: data.expiryDate === null ? null : data.expiryDate ? new Date(data.expiryDate) : undefined,
+        manufactureDate: data.manufactureDate === null ? null : data.manufactureDate ? new Date(data.manufactureDate) : undefined
+      },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            unit: true
+          }
+        }
+      }
+    });
+
+    res.json({
+      success: true,
+      data: { batch },
+      message: 'Product batch updated successfully'
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid input data',
+        details: error.errors 
+      });
+    }
+    console.error('Error updating product batch:', error);
+    res.status(500).json({ success: false, error: 'Failed to update product batch' });
+  }
+});
+
+// Record batch movement
+router.post('/batches/:id/movements', authenticate, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const data = batchMovementSchema.parse(req.body);
+
+    const batch = await prisma.productBatch.findUnique({
+      where: { id },
+      include: { 
+        product: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            branchId: true
+          }
+        }
+      }
+    });
+
+    if (!batch) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Batch not found' 
+      });
+    }
+
+    // Check permission
+    if (req.user!.role === 'STAFF' && batch.product.branchId !== req.user!.branchId) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Access denied' 
+      });
+    }
+
+    // Validate quantity based on movement type
+    if (['OUT', 'ADJUSTMENT', 'TRANSFER', 'DAMAGE', 'EXPIRED'].includes(data.type) && data.quantity > batch.availableQty) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Insufficient available quantity. Available: ${batch.availableQty}, Requested: ${data.quantity}` 
+      });
+    }
+
+    // Use transaction for data consistency
+    const result = await prisma.$transaction(async (tx) => {
+      // Create batch movement
+      const movement = await tx.batchMovement.create({
+        data: {
+          productBatchId: id,
+          type: data.type,
+          quantity: data.quantity,
+          reference: data.reference,
+          notes: data.notes
+        }
+      });
+
+      // Update batch quantity
+      let newAvailableQty = batch.availableQty;
+      switch (data.type) {
+        case 'IN':
+          newAvailableQty += data.quantity;
+          break;
+        case 'OUT':
+        case 'TRANSFER':
+        case 'DAMAGE':
+        case 'EXPIRED':
+          newAvailableQty -= data.quantity;
+          break;
+        case 'ADJUSTMENT':
+          newAvailableQty = data.quantity;
+          break;
+      }
+
+      const updatedBatch = await tx.productBatch.update({
+        where: { id },
+        data: { 
+          availableQty: newAvailableQty,
+          updatedAt: new Date()
+        }
+      });
+
+      return { movement, batch: updatedBatch };
+    });
+
+    res.status(201).json({
+      success: true,
+      data: result,
+      message: 'Batch movement recorded successfully'
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Invalid input data',
+        details: error.errors 
+      });
+    }
+    console.error('Error recording batch movement:', error);
+    res.status(500).json({ success: false, error: 'Failed to record batch movement' });
+  }
+});
+
+// Get expiring products
+router.get('/expiring', authenticate, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { days = 30, branchId } = req.query;
+    
+    const expiryThreshold = new Date();
+    expiryThreshold.setDate(expiryThreshold.getDate() + Number(days));
+
+    const where: any = {
+      expiryDate: {
+        lte: expiryThreshold,
+        gte: new Date()
+      },
+      status: 'ACTIVE',
+      availableQty: { gt: 0 }
+    };
+
+    // Branch filter
+    if (branchId && req.user!.role !== 'STAFF') {
+      where.product = { branchId: String(branchId) };
+    } else if (req.user!.role === 'STAFF') {
+      where.product = { branchId: req.user!.branchId };
+    }
+
+    const expiringBatches = await prisma.productBatch.findMany({
+      where,
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            unit: true,
+            branch: { select: { id: true, name: true } }
+          }
+        }
+      },
+      orderBy: { expiryDate: 'asc' }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        expiringProducts: expiringBatches.map(batch => ({
+          ...batch,
+          totalValue: Number(batch.quantity) * Number(batch.cost),
+          daysUntilExpiry: Math.ceil((new Date(batch.expiryDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)),
+          urgency: (() => {
+            const daysLeft = Math.ceil((new Date(batch.expiryDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 7) return 'CRITICAL';
+            if (daysLeft <= 15) return 'WARNING';
+            return 'INFO';
+          })()
+        })),
+        summary: {
+          total: expiringBatches.length,
+          critical: expiringBatches.filter(b => {
+            const daysLeft = Math.ceil((new Date(b.expiryDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+            return daysLeft <= 7;
+          }).length,
+          warning: expiringBatches.filter(b => {
+            const daysLeft = Math.ceil((new Date(b.expiryDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+            return daysLeft > 7 && daysLeft <= 15;
+          }).length,
+          info: expiringBatches.filter(b => {
+            const daysLeft = Math.ceil((new Date(b.expiryDate!).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+            return daysLeft > 15;
+          }).length
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching expiring products:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch expiring products' });
   }
 });
 

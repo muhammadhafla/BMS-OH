@@ -37,11 +37,7 @@ import {
   ChevronDown,
   ChevronRight,
   Plus,
-  TrendingUp,
   Shield,
-  Eye,
-  Activity,
-  Search,
 } from 'lucide-react';
 
 import { LucideIcon } from 'lucide-react';
@@ -79,6 +75,11 @@ const navigation: NavigationItem[] = [
     title: 'Inventory',
     href: '/inventory',
     icon: BarChart3,
+  },
+  {
+    title: 'Customers',
+    href: '/customers',
+    icon: Users,
   },
   {
     title: 'Users',

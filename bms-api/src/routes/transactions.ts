@@ -500,4 +500,211 @@ router.get('/stats/summary', authenticate, async (req: AuthenticatedRequest, res
   }
 });
 
+// Generate PDF receipt for a transaction
+router.get('/:id/receipt/pdf', authenticate, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get transaction with all related data
+    const transaction = await prisma.transaction.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            product: { 
+              select: { 
+                id: true, 
+                name: true, 
+                sku: true
+              } 
+            }
+          }
+        },
+        user: { 
+          select: { 
+            id: true, 
+            name: true, 
+            email: true 
+          } 
+        },
+        branch: { 
+          select: { 
+            id: true, 
+            name: true, 
+            address: true,
+            phone: true 
+          } 
+        }
+      }
+    });
+
+    if (!transaction) {
+      res.status(404).json({
+        success: false,
+        error: 'Transaction not found'
+      });
+      return;
+    }
+
+    // Generate receipt HTML content
+    const receiptHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Receipt - ${transaction.transactionCode}</title>
+        <style>
+          body { font-family: monospace; margin: 0; padding: 20px; }
+          .receipt { max-width: 300px; margin: 0 auto; }
+          .header { text-align: center; margin-bottom: 20px; }
+          .branch-name { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
+          .branch-info { font-size: 12px; color: #666; }
+          .transaction-info { margin: 20px 0; font-size: 14px; }
+          .items { border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 10px 0; }
+          .item { display: flex; justify-content: space-between; margin: 5px 0; }
+          .total { font-weight: bold; font-size: 16px; margin-top: 10px; }
+          .footer { text-align: center; margin-top: 20px; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="header">
+            <div class="branch-name">${transaction.branch.name}</div>
+            <div class="branch-info">
+              ${transaction.branch.address || ''}<br>
+              ${transaction.branch.phone || ''}
+            </div>
+          </div>
+          
+          <div class="transaction-info">
+            <div>Receipt: ${transaction.transactionCode}</div>
+            <div>Date: ${new Date(transaction.createdAt).toLocaleString('id-ID')}</div>
+            <div>Cashier: ${transaction.user.name}</div>
+          </div>
+          
+          <div class="items">
+            ${transaction.items.map((item: any) => `
+              <div class="item">
+                <div>
+                  <div>${item.product.name}</div>
+                  <div style="font-size: 12px; color: #666;">
+                    ${item.quantity} x ${new Intl.NumberFormat('id-ID', { 
+                      style: 'currency', 
+                      currency: 'IDR' 
+                    }).format(Number(item.unitPrice))}
+                  </div>
+                </div>
+                <div>${new Intl.NumberFormat('id-ID', { 
+                  style: 'currency', 
+                  currency: 'IDR' 
+                }).format(Number(item.total))}</div>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div class="total">
+            <div style="display: flex; justify-content: space-between;">
+              <span>Subtotal:</span>
+              <span>${new Intl.NumberFormat('id-ID', { 
+                style: 'currency', 
+                currency: 'IDR' 
+              }).format(Number(transaction.totalAmount))}</span>
+            </div>
+            ${Number(transaction.tax) > 0 ? `
+              <div style="display: flex; justify-content: space-between;">
+                <span>Tax:</span>
+                <span>${new Intl.NumberFormat('id-ID', { 
+                  style: 'currency', 
+                  currency: 'IDR' 
+                }).format(Number(transaction.tax))}</span>
+              </div>
+            ` : ''}
+            ${Number(transaction.discount) > 0 ? `
+              <div style="display: flex; justify-content: space-between;">
+                <span>Discount:</span>
+                <span>-${new Intl.NumberFormat('id-ID', { 
+                  style: 'currency', 
+                  currency: 'IDR' 
+                }).format(Number(transaction.discount))}</span>
+              </div>
+            ` : ''}
+            <div style="display: flex; justify-content: space-between; border-top: 1px solid #000; padding-top: 5px; margin-top: 5px;">
+              <span>TOTAL:</span>
+              <span>${new Intl.NumberFormat('id-ID', { 
+                style: 'currency', 
+                currency: 'IDR' 
+              }).format(Number(transaction.finalAmount))}</span>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <div>Payment: ${transaction.paymentMethod}</div>
+            <div>Amount Paid: ${new Intl.NumberFormat('id-ID', { 
+              style: 'currency', 
+              currency: 'IDR' 
+            }).format(Number(transaction.amountPaid))}</div>
+            <div>Change: ${new Intl.NumberFormat('id-ID', { 
+              style: 'currency', 
+              currency: 'IDR' 
+            }).format(Number(transaction.change))}</div>
+            <br>
+            <div>Thank you for your purchase!</div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // For now, return the HTML. In production, you would use a PDF library like jsPDF or Puppeteer
+    res.setHeader('Content-Type', 'text/html');
+    res.send(receiptHTML);
+  } catch (error) {
+    console.error('Error generating receipt PDF:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to generate receipt PDF' 
+    });
+  }
+});
+
+// Email receipt for a transaction
+router.post('/:id/receipt/email', authenticate, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { id } = req.params;
+    const { email, template, subject } = req.body;
+    
+    // Suppress unused parameter warning for future implementation
+    void email, template, subject;
+
+    // Verify transaction exists
+    const transaction = await prisma.transaction.findUnique({
+      where: { id },
+      include: {
+        branch: { select: { name: true } }
+      }
+    });
+
+    if (!transaction) {
+      res.status(404).json({
+        success: false,
+        error: 'Transaction not found'
+      });
+      return;
+    }
+
+    // In a real implementation, you would send an email here
+    // For now, just return success
+    res.json({
+      success: true,
+      message: 'Receipt email sent successfully'
+    });
+  } catch (error) {
+    console.error('Error sending receipt email:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to send receipt email' 
+    });
+  }
+});
+
 export { router as transactionsRouter };

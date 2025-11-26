@@ -3,13 +3,12 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Shield, Eye, EyeOff, Check, X, AlertCircle } from 'lucide-react';
+import { Shield, Eye, EyeOff, Check, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { 
   changePasswordSchema, 
@@ -44,7 +43,6 @@ const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({ onSuccess, onEr
 
   const watchedNewPassword = watch('newPassword');
   const watchedConfirmPassword = watch('confirmPassword');
-  const watchedCurrentPassword = watch('currentPassword');
 
   // Real-time password strength validation
   const passwordStrength = watchedNewPassword ? checkPasswordStrength(watchedNewPassword) : {

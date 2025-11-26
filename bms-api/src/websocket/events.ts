@@ -16,7 +16,9 @@ export type EventType =
   | 'user:logout'
   | 'stock:adjustment'
   | 'category:updated'
-  | 'dashboard:refresh';
+  | 'dashboard:refresh'
+  | 'customer:updated'
+  | 'transfer:updated';
 
 // Base event interface
 export interface BaseEvent {
@@ -228,6 +230,59 @@ export interface DashboardRefreshEvent extends BaseEvent {
   };
 }
 
+// Customer updated event
+export interface CustomerUpdatedEvent extends BaseEvent {
+  type: 'customer:updated';
+  data: {
+    customerId: string;
+    customer: {
+      id: string;
+      customerCode: string;
+      name: string;
+      email?: string;
+      phone?: string;
+      customerType: string;
+      loyaltyPoints: number;
+      isActive: boolean;
+    };
+    action: 'created' | 'updated' | 'deactivated' | 'activated';
+    changes?: Partial<{
+      name: string;
+      email: string;
+      phone: string;
+      customerType: string;
+      loyaltyPoints: number;
+      isActive: boolean;
+    }>;
+  };
+}
+
+// Transfer updated event
+export interface TransferUpdatedEvent extends BaseEvent {
+  type: 'transfer:updated';
+  data: {
+    transferId: string;
+    transferCode: string;
+    fromBranchId: string;
+    toBranchId: string;
+    status: string;
+    totalAmount: number;
+    items: Array<{
+      id: string;
+      productId: string;
+      productName: string;
+      productSku: string;
+      quantity: number;
+      receivedQuantity: number;
+    }>;
+    action: 'created' | 'status-changed' | 'received' | 'approved' | 'shipped';
+    previousStatus?: string;
+    userId: string;
+    userName: string;
+    notes?: string;
+  };
+}
+
 // Union type of all events
 export type BMSWebSocketEvent = 
   | ProductUpdatedEvent
@@ -241,7 +296,9 @@ export type BMSWebSocketEvent =
   | SyncStatusEvent
   | StockAdjustmentEvent
   | CategoryUpdatedEvent
-  | DashboardRefreshEvent;
+  | DashboardRefreshEvent
+  | CustomerUpdatedEvent
+  | TransferUpdatedEvent;
 
 // Event emitter utility
 export class EventEmitter {
@@ -385,6 +442,48 @@ export const createLowStockAlertEvent = (
     branchId
   }, branchId);
 };
+
+export const createCustomerUpdatedEvent = (
+  customerData: any,
+  action: 'created' | 'updated' | 'deactivated' | 'activated',
+  branchId: string,
+  userId?: string,
+  changes?: any
+) => createEvent('customer:updated', {
+  customerId: customerData.id,
+  customer: customerData,
+  action,
+  changes
+}, branchId, userId);
+
+export const createTransferUpdatedEvent = (
+  transferData: any,
+  action: 'created' | 'status-changed' | 'received' | 'approved' | 'shipped',
+  branchId: string,
+  userId?: string,
+  previousStatus?: string,
+  userName?: string
+) => createEvent('transfer:updated', {
+  transferId: transferData.id,
+  transferCode: transferData.transferCode,
+  fromBranchId: transferData.fromBranchId,
+  toBranchId: transferData.toBranchId,
+  status: transferData.status,
+  totalAmount: Number(transferData.totalAmount),
+  items: transferData.items?.map((item: any) => ({
+    id: item.id,
+    productId: item.productId,
+    productName: item.product?.name || 'Unknown Product',
+    productSku: item.product?.sku || 'Unknown SKU',
+    quantity: item.quantity,
+    receivedQuantity: item.receivedQuantity
+  })) || [],
+  action,
+  previousStatus,
+  userId: userId || 'system',
+  userName: userName || 'System',
+  notes: transferData.notes
+}, branchId, userId);
 
 // Event validation
 export const validateEvent = (event: any): event is BMSWebSocketEvent => {

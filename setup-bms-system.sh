@@ -54,8 +54,8 @@ check_nodejs() {
     fi
     
     NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-    if [ "$NODE_VERSION" -lt 18 ]; then
-        print_error "Node.js version is too old. Please install Node.js 18+"
+    if [ "$NODE_VERSION" -lt 22 ]; then
+        print_error "Node.js version is too old. Please install Node.js 22+"
         exit 1
     fi
     print_status "Node.js $(node -v) is installed"

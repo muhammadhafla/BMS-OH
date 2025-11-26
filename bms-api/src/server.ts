@@ -22,6 +22,8 @@ import { attendanceRouter } from './routes/attendance';
 import { accountingRouter } from './routes/accounting';
 import { messagesRouter } from './routes/messages';
 import { exportRouter } from './routes/export';
+import { reportsRouter } from './routes/reports';
+import { interBranchTransfersRouter } from './routes/inter-branch-transfers';
 import { createWebSocketServer } from './websocket/server';
 import { TokenService } from './services/token-service';
 
@@ -142,6 +144,8 @@ app.use('/api/attendance', attendanceRouter);
 app.use('/api/accounting', accountingRouter);
 app.use('/api/messages', messagesRouter);
 app.use('/api/export', exportRouter);
+app.use('/api/reports', reportsRouter);
+app.use('/api/inter-branch-transfers', interBranchTransfersRouter);
 
 // Error handling middleware
 app.use(notFound);
