@@ -39,7 +39,7 @@ class ApiService {
 
   constructor() {
     this.api = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+      baseURL: (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001') + '/api',
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
@@ -49,22 +49,26 @@ class ApiService {
     // Request interceptor to add auth token
     this.api.interceptors.request.use(
       async (config) => {
-        // Try to get token from NextAuth session if available
-        let token = Cookies.get('auth_token');
+        // Try to get token from NextAuth session
+        let token = '';
         
-        // If we have NextAuth session, we can also get the access token
         if (typeof window !== 'undefined') {
           try {
             const { getSession } = await import('next-auth/react');
             const session = await getSession();
-            // Try to access token through any property (generic approach)
-            const sessionToken = (session as any)?.accessToken || (session as any)?.user?.accessToken;
-            if (sessionToken) {
-              token = sessionToken;
+            
+            // Get token from NextAuth JWT
+            if (session && (session as any).accessToken) {
+              token = (session as any).accessToken;
             }
           } catch (error) {
+            console.warn('Could not get NextAuth session:', error);
             // Fallback to cookie token
+            token = Cookies.get('auth_token') || '';
           }
+        } else {
+          // Server-side: try cookie token
+          token = Cookies.get('auth_token') || '';
         }
         
         if (token) {

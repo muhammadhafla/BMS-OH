@@ -81,9 +81,9 @@ const fetcher = (url: string): Promise<any> => fetch(url).then(res => res.json()
 export default function ProductsPage() {
   // State management for filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [branchFilter, setBranchFilter] = useState<string>('');
-  const [isActiveFilter, setIsActiveFilter] = useState<string>('true');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all-categories');
+  const [branchFilter, setBranchFilter] = useState<string>('all-branches');
+  const [isActiveFilter, setIsActiveFilter] = useState<string>('all-status');
   const [currentPage, setCurrentPage] = useState(1);
   const [isProductFormOpen, setIsProductFormOpen] = useState(false);
   const [isCsvImportOpen, setIsCsvImportOpen] = useState(false);
@@ -98,9 +98,9 @@ export default function ProductsPage() {
     });
 
     if (searchTerm) params.append('search', searchTerm);
-    if (categoryFilter) params.append('categoryId', categoryFilter);
-    if (branchFilter) params.append('branchId', branchFilter);
-    if (isActiveFilter) params.append('isActive', isActiveFilter);
+    if (categoryFilter && categoryFilter !== 'all-categories') params.append('categoryId', categoryFilter);
+    if (branchFilter && branchFilter !== 'all-branches') params.append('branchId', branchFilter);
+    if (isActiveFilter && isActiveFilter !== 'all-status') params.append('isActive', isActiveFilter);
 
     return params.toString();
   };
@@ -306,7 +306,7 @@ export default function ProductsPage() {
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all-categories">All Categories</SelectItem>
                 <SelectItem value="electronics">Electronics</SelectItem>
                 <SelectItem value="clothing">Clothing</SelectItem>
                 <SelectItem value="food">Food & Beverage</SelectItem>
@@ -318,7 +318,7 @@ export default function ProductsPage() {
                 <SelectValue placeholder="Filter by branch" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Branches</SelectItem>
+                <SelectItem value="all-branches">All Branches</SelectItem>
                 <SelectItem value="main">Main Branch</SelectItem>
                 <SelectItem value="branch-2">Branch 2</SelectItem>
                 <SelectItem value="branch-3">Branch 3</SelectItem>
@@ -331,7 +331,7 @@ export default function ProductsPage() {
               <SelectContent>
                 <SelectItem value="true">Active Only</SelectItem>
                 <SelectItem value="false">Inactive Only</SelectItem>
-                <SelectItem value="">All Status</SelectItem>
+                <SelectItem value="all-status">All Status</SelectItem>
               </SelectContent>
             </Select>
           </div>

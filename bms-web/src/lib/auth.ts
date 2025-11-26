@@ -44,9 +44,10 @@ export interface UserResponse {
   error?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001').replace(/\/$/, '');
 
 export const authOptions: NextAuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET || 'your-fallback-secret-change-in-production',
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -71,6 +72,11 @@ export const authOptions: NextAuthOptions = {
             }),
           });
 
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+          }
+
           const data: LoginResponse = await response.json();
 
           if (data.success && data.data.user && data.data.token) {
@@ -82,12 +88,15 @@ export const authOptions: NextAuthOptions = {
               role: user.role,
               branchId: user.branchId,
               branch: user.branch,
+              // Add token for NextAuth JWT
+              accessToken: data.data.token,
             };
           } else {
             throw new Error(data.error || 'Invalid credentials');
           }
         } catch (error) {
-          throw new Error('Network error. Please check your connection.');
+          console.error('Authentication error:', error);
+          throw new Error(error instanceof Error ? error.message : 'Network error. Please check your connection.');
         }
       },
     }),
@@ -103,8 +112,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {
-        // Initial login
+        // Initial login - extract access token from user object
         token.user = user as ExtendedUser;
+        // Store the access token from the authorize function
+        if ('accessToken' in user) {
+          token.accessToken = (user as any).accessToken;
+        }
       }
 
       // Handle session updates
@@ -113,7 +126,7 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Check if token is close to expiring and refresh if needed
-      if (token.exp && Date.now() / 1000 > token.exp - 60) { // Refresh 1 minute before expiry
+      if (token.exp && Date.now() / 1000 > token.exp - 60 && token.accessToken) { // Refresh 1 minute before expiry
         try {
           const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
             headers: {
@@ -126,6 +139,10 @@ export const authOptions: NextAuthOptions = {
             if (data.success) {
               token.user = data.data.user;
             }
+          } else if (response.status === 401) {
+            // Token is invalid, clear it
+            delete token.accessToken;
+            token.error = 'Token expired';
           }
         } catch (error) {
           // Token refresh failed, user will be logged out

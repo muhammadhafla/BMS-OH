@@ -24,6 +24,7 @@ model User {
   createdProducts    Product[]           @relation("ProductCreator")
   transactions       Transaction[]
   branch             Branch?             @relation(fields: [branchId], references: [id])
+  passwordResetTokens PasswordResetToken[]
 
   @@map("users")
 }
@@ -326,6 +327,18 @@ model SystemSettings {
   updatedAt   DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  userId     String
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+  
+  @@map("password_reset_tokens")
 }
 
 enum UserRole {

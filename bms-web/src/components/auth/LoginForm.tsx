@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Eye, EyeOff, HelpCircle } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { ForgotPasswordModal } from './ForgotPasswordModal';
 
 const loginSchema = z.object({
   email: z
@@ -33,6 +34,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ className }) => {
   const { login } = useAuthContext();
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string>('');
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
 
   const {
     register,
@@ -125,6 +127,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ className }) => {
               <p className="text-sm text-destructive">{errors.password.message}</p>
             )}
           </div>
+
+          {/* Forgot Password Link */}
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-sm text-muted-foreground hover:text-primary"
+              onClick={() => setShowForgotPasswordModal(true)}
+            >
+              <HelpCircle className="mr-1 h-4 w-4" />
+              Forgot your password?
+            </Button>
+          </div>
         </CardContent>
         <CardFooter>
           <Button
@@ -143,6 +159,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({ className }) => {
           </Button>
         </CardFooter>
       </form>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        open={showForgotPasswordModal}
+        onOpenChange={setShowForgotPasswordModal}
+      />
     </Card>
   );
 };

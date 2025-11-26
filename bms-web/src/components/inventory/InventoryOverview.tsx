@@ -40,29 +40,87 @@ export function InventoryOverview() {
     }
   );
 
-  const overview = (data as any)?.data || {
-    summary: {
-      totalProducts: 0,
-      totalValue: 0,
-      totalQuantity: 0,
-      lowStockItems: 0,
-      outOfStockItems: 0,
-      overstockItems: 0,
-    },
-    movements: {
-      today: { in: 0, out: 0, adjustments: 0 },
-      week: { in: 0, out: 0, adjustments: 0 },
-      month: { in: 0, out: 0, adjustments: 0 },
-    },
-    topProducts: [],
-    recentMovements: [],
-    stockLevels: {
-      normal: 0,
-      low: 0,
-      out: 0,
-      overstock: 0,
-    },
+  // Transform API response to match component expectations
+  const transformData = (apiData: any) => {
+    if (!apiData?.data) return {
+      summary: {
+        totalProducts: 0,
+        totalValue: 0,
+        totalQuantity: 0,
+        lowStockItems: 0,
+        outOfStockItems: 0,
+        overstockItems: 0,
+      },
+      movements: {
+        today: { in: 0, out: 0, adjustments: 0 },
+        week: { in: 0, out: 0, adjustments: 0 },
+        month: { in: 0, out: 0, adjustments: 0 },
+      },
+      topProducts: [],
+      recentMovements: [],
+      stockLevels: {
+        normal: 0,
+        low: 0,
+        out: 0,
+        overstock: 0,
+      },
+    };
+
+    const apiSummary = apiData.data.summary;
+    const inventory = apiData.data.inventory || [];
+
+    // Calculate total quantity from inventory
+    const totalQuantity = inventory.reduce((sum: number, product: any) => sum + (product.stock || 0), 0);
+    
+    // Calculate stock levels
+    const stockLevels = {
+      normal: inventory.filter((p: any) => p.stockStatus === 'IN_STOCK').length,
+      low: inventory.filter((p: any) => p.stockStatus === 'LOW_STOCK').length,
+      out: inventory.filter((p: any) => p.stockStatus === 'OUT_OF_STOCK').length,
+      overstock: inventory.filter((p: any) => p.stockStatus === 'OVERSTOCK').length,
+    };
+
+    // Extract recent movements from inventory logs
+    const recentMovements = inventory.flatMap((product: any) => 
+      (product.inventoryLogs || []).map((log: any) => ({
+        ...log,
+        product: {
+          name: product.name,
+          sku: product.sku
+        }
+      }))
+    ).slice(0, 10).sort((a: any, b: any) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+
+    // Mock top products data (would need separate API in real implementation)
+    const topProducts = inventory.slice(0, 5).map((product: any) => ({
+      name: product.name,
+      sku: product.sku,
+      movementCount: Math.floor(Math.random() * 50) + 1 // Mock data for now
+    }));
+
+    return {
+      summary: {
+        totalProducts: apiSummary?.totalProducts || 0,
+        totalValue: apiSummary?.totalInventoryValue || 0,
+        totalQuantity,
+        lowStockItems: apiSummary?.lowStock || 0,
+        outOfStockItems: apiSummary?.outOfStock || 0,
+        overstockItems: apiSummary?.overstock || 0,
+      },
+      movements: {
+        today: { in: 0, out: 0, adjustments: 0 }, // Would need separate endpoint
+        week: { in: 0, out: 0, adjustments: 0 },
+        month: { in: 0, out: 0, adjustments: 0 },
+      },
+      topProducts,
+      recentMovements,
+      stockLevels,
+    };
   };
+
+  const overview = transformData(data);
 
   // Calculate stock level percentages
   const totalStockItems = overview.stockLevels.normal + overview.stockLevels.low + 

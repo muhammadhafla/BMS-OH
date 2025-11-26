@@ -1,3 +1,24 @@
 {
-  "/page": "app/page.js"
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
+  "/api/products/route": "app/api/products/route.js",
+  "/login/page": "app/login/page.js",
+  "/page": "app/page.js",
+  "/(app)/accounting/page": "app/(app)/accounting/page.js",
+  "/(app)/attendance/page": "app/(app)/attendance/page.js",
+  "/(app)/branches/page": "app/(app)/branches/page.js",
+  "/(app)/categories/page": "app/(app)/categories/page.js",
+  "/(app)/dashboard/page": "app/(app)/dashboard/page.js",
+  "/(app)/inventory/page": "app/(app)/inventory/page.js",
+  "/(app)/messages/page": "app/(app)/messages/page.js",
+  "/(app)/products/new/page": "app/(app)/products/new/page.js",
+  "/(app)/products/page": "app/(app)/products/page.js",
+  "/(app)/purchase-orders/new/page": "app/(app)/purchase-orders/new/page.js",
+  "/(app)/purchase-orders/page": "app/(app)/purchase-orders/page.js",
+  "/(app)/reports/page": "app/(app)/reports/page.js",
+  "/(app)/settings/page": "app/(app)/settings/page.js",
+  "/(app)/suppliers/page": "app/(app)/suppliers/page.js",
+  "/(app)/transactions/new/page": "app/(app)/transactions/new/page.js",
+  "/(app)/transactions/page": "app/(app)/transactions/page.js",
+  "/(app)/users/page": "app/(app)/users/page.js"
 }

@@ -19,6 +19,7 @@ import {
   Shield,
   Globe,
 } from 'lucide-react';
+import ChangePasswordForm from '@/components/auth/ChangePasswordForm';
 
 const Settings: React.FC = () => {
   const [settings, setSettings] = useState({
@@ -266,6 +267,12 @@ const Settings: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Change Password Section */}
+        <ChangePasswordForm
+          onSuccess={() => console.log('Password changed successfully')}
+          onError={(error) => console.error('Password change failed:', error)}
+        />
 
         {/* Save Button */}
         <div className="flex justify-end">

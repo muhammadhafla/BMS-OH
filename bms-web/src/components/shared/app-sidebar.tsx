@@ -79,38 +79,6 @@ const navigation: NavigationItem[] = [
     title: 'Inventory',
     href: '/inventory',
     icon: BarChart3,
-    children: [
-      {
-        title: 'Overview',
-        href: '/inventory',
-        icon: Eye,
-      },
-      {
-        title: 'Stock Movement',
-        href: '/inventory/movement',
-        icon: TrendingUp,
-      },
-      {
-        title: 'Adjustments',
-        href: '/inventory/adjustments',
-        icon: Activity,
-      },
-      {
-        title: 'Analytics',
-        href: '/inventory/analytics',
-        icon: BarChart3,
-      },
-      {
-        title: 'Valuation',
-        href: '/inventory/valuation',
-        icon: DollarSign,
-      },
-      {
-        title: 'Audit',
-        href: '/inventory/audit',
-        icon: Search,
-      },
-    ],
   },
   {
     title: 'Users',

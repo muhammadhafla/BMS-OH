@@ -41,11 +41,11 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --sidebar-background: 240 2.4% 25.5%;    /* Using primary dark */
-    --sidebar-foreground: 0 0% 92%;           /* Using text light */
+    --sidebar-background: 210 40% 98%;       /* Light background matching app background */
+    --sidebar-foreground: 210 11% 15%;        /* Dark text matching app text */
     --sidebar-primary: 14.1 89.4% 43.5%;     /* Using primary orange */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 98%;
+    --sidebar-accent: 210 40% 96%;           /* Slightly different light for hover states */
     --sidebar-accent-foreground: 210 11% 15%;
     --sidebar-border: 210 13% 82%;
     --sidebar-ring: 14.1 89.4% 43.5%;

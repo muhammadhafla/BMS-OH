@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST='{"services/api.ts -> next-auth/react":{"id":80605,"files":["static/chunks/605-bc6ae9d8af0a4af3.js"]}}';

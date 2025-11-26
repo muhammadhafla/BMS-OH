@@ -21,6 +21,7 @@ import {
   History,
   Eye,
   Plus,
+  X,
 } from 'lucide-react';
 
 import { InventoryOverview } from '@/components/inventory/InventoryOverview';
@@ -36,6 +37,7 @@ export default function InventoryManagementPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [showAdjustmentForm, setShowAdjustmentForm] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [showRecentActivities, setShowRecentActivities] = useState(true);
 
   // Mock data for demonstration
   const inventoryStats = {
@@ -295,46 +297,71 @@ export default function InventoryManagementPage() {
       </Tabs>
 
       {/* Recent Activities Sidebar */}
-      <Card className="fixed right-6 top-6 w-80 hidden xl:block">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Recent Activities
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-center space-x-3 p-2 rounded-lg border">
-                <div className="flex-shrink-0">
-                  {getActivityIcon(activity.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium truncate">
-                    {activity.product}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {activity.quantity > 0 ? '+' : ''}{activity.quantity} by {activity.user}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatTimestamp(activity.timestamp)}
-                  </div>
-                </div>
-                <Badge 
-                  variant={
-                    activity.type === 'IN' ? 'default' :
-                    activity.type === 'OUT' ? 'destructive' :
-                    'secondary'
-                  }
-                  className="text-xs"
-                >
-                  {activity.type}
-                </Badge>
+      {showRecentActivities && (
+        <Card className="fixed right-6 top-6 w-80 hidden xl:block z-10">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Recent Activities
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowRecentActivities(false)}
+                className="h-6 w-6 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentActivities.map((activity) => (
+                <div key={activity.id} className="flex items-center space-x-3 p-2 rounded-lg border">
+                  <div className="flex-shrink-0">
+                    {getActivityIcon(activity.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">
+                      {activity.product}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {activity.quantity > 0 ? '+' : ''}{activity.quantity} by {activity.user}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {formatTimestamp(activity.timestamp)}
+                    </div>
+                  </div>
+                  <Badge 
+                    variant={
+                      activity.type === 'IN' ? 'default' :
+                      activity.type === 'OUT' ? 'destructive' :
+                      'secondary'
+                    }
+                    className="text-xs"
+                  >
+                    {activity.type}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Toggle Recent Activities Button */}
+      {!showRecentActivities && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowRecentActivities(true)}
+          className="fixed right-6 top-6 z-10 hidden xl:flex"
+        >
+          <Activity className="h-4 w-4 mr-2" />
+          Recent Activities
+        </Button>
+      )}
 
       {/* Stock Adjustment Form Modal */}
       {showAdjustmentForm && (

@@ -94,4 +94,4 @@ temp/
 *.pid.lock
 .kilocode
 reference_*
-/.next
+*/.next

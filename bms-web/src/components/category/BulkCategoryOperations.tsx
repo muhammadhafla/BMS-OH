@@ -253,7 +253,7 @@ export function BulkCategoryOperations({ categories, onSuccess }: BulkCategoryOp
                   onChange={(e) => setTargetCategoryId(e.target.value)}
                   className="w-full p-2 border rounded-md"
                 >
-                  <option value="">Select a category</option>
+                  <option value="none">Select a category</option>
                   {categories.filter(c => c.isActive).map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}

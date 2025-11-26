@@ -303,14 +303,14 @@ export function CategoryForm({ open, onOpenChange, onSuccess, category, parentId
                     <FormItem>
                       <FormLabel>Parent Category</FormLabel>
                       <FormControl>
-                        <Select onValueChange={field.onChange} defaultValue={field.value || ''}>
+                        <Select onValueChange={field.onChange} defaultValue={field.value || 'root'}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select parent category (optional)" />
                           </SelectTrigger>
                         </Select>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">No parent (Root category)</SelectItem>
+                        <SelectItem value="root">No parent (Root category)</SelectItem>
                         {availableParents.map((parent) => (
                           <SelectItem key={parent.id} value={parent.id}>
                             <div className="flex items-center gap-2">

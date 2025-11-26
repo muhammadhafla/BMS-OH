@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import { createServer } from 'http';
 
 import { errorHandler, notFound } from './middleware/error';
@@ -22,6 +23,7 @@ import { accountingRouter } from './routes/accounting';
 import { messagesRouter } from './routes/messages';
 import { exportRouter } from './routes/export';
 import { createWebSocketServer } from './websocket/server';
+import { TokenService } from './services/token-service';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -104,6 +106,9 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
+// Cookie parsing middleware
+app.use(cookieParser());
+
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -161,6 +166,9 @@ const wsConfig = {
 
 // Initialize WebSocket server
 const wsServer = createWebSocketServer(httpServer, wsConfig);
+
+// Initialize token cleanup system
+TokenService.scheduleCleanup();
 
 // WebSocket status endpoint
 app.get('/ws-status', (_req, res) => {
