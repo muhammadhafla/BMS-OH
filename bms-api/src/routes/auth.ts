@@ -25,26 +25,41 @@ const generateToken = (userId: string, email: string, role: string, branchId?: s
 
 router.post('/login', async (req, res): Promise<void> => {
   try {
-    const { email, password } = loginSchema.parse(req.body);
+    // Accept both email and username for login
+    const { email, username, password } = req.body;
+    
+    // Use email if provided, otherwise use username as email
+    const loginIdentifier = email || username;
+    
+    if (!loginIdentifier || !password) {
+      res.status(400).json({ success: false, error: 'Email/username and password are required' });
+      return;
+    }
+    
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: loginIdentifier },
       select: {
         id: true, email: true, password: true, name: true, role: true, branchId: true, isActive: true,
         branch: { select: { id: true, name: true } }
       }
     });
+    
     if (!user || !user.isActive) {
       res.status(401).json({ success: false, error: 'Invalid credentials' });
       return;
     }
+    
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       res.status(401).json({ success: false, error: 'Invalid credentials' });
       return;
     }
+    
     const token = generateToken(user.id, user.email, user.role, user.branchId || undefined);
+    console.log(`✅ User logged in successfully: ${user.email}`);
     res.json({ success: true, message: 'Login successful', data: { user: { id: user.id, email: user.email, name: user.name, role: user.role, branchId: user.branchId, branch: user.branch }, token } });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(400).json({ success: false, error: 'Invalid input data' });
   }
 });
@@ -262,15 +277,18 @@ router.post('/reset-password', async (req, res): Promise<void> => {
 // NextAuth callback endpoints for OAuth-style flow
 router.get('/callback/credentials', async (req, res): Promise<void> => {
   try {
-    const { email, password } = req.query;
+    const { email, username, password } = req.query;
     
-    if (!email || !password) {
-      res.status(400).json({ error: 'Email and password are required' });
+    // Use email if provided, otherwise use username as email
+    const loginIdentifier = String(email || username);
+    
+    if (!loginIdentifier || !password) {
+      res.status(400).json({ error: 'Email/username and password are required' });
       return;
     }
 
     const user = await prisma.user.findUnique({
-      where: { email: String(email) },
+      where: { email: loginIdentifier },
       select: {
         id: true, email: true, password: true, name: true, role: true, branchId: true, isActive: true,
         branch: { select: { id: true, name: true } }
@@ -308,15 +326,18 @@ router.get('/callback/credentials', async (req, res): Promise<void> => {
 
 router.post('/callback/credentials', async (req, res): Promise<void> => {
   try {
-    const { email, password } = req.body;
+    const { email, username, password } = req.body;
     
-    if (!email || !password) {
-      res.status(400).json({ error: 'Email and password are required' });
+    // Use email if provided, otherwise use username as email
+    const loginIdentifier = email || username;
+    
+    if (!loginIdentifier || !password) {
+      res.status(400).json({ error: 'Email/username and password are required' });
       return;
     }
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { email: loginIdentifier },
       select: {
         id: true, email: true, password: true, name: true, role: true, branchId: true, isActive: true,
         branch: { select: { id: true, name: true } }

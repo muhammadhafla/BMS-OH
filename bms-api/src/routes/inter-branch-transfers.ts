@@ -163,9 +163,11 @@ router.get('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
     }
 
     res.json({ success: true, data: { transfer } });
+    return;
   } catch (error) {
     console.error('Error fetching inter-branch transfer:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch inter-branch transfer' });
+    return;
   }
 });
 
@@ -260,6 +262,7 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res) => {
       data: transfer,
       message: 'Inter-branch transfer created successfully'
     });
+    return;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -270,6 +273,7 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res) => {
     }
     console.error('Error creating inter-branch transfer:', error);
     res.status(500).json({ success: false, error: 'Failed to create inter-branch transfer' });
+    return;
   }
 });
 
@@ -366,6 +370,7 @@ router.patch('/:id/status', authenticate, async (req: AuthenticatedRequest, res)
       data: { transfer: updatedTransfer },
       message: `Transfer status updated to ${data.status.toLowerCase()}`
     });
+    return;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -376,6 +381,7 @@ router.patch('/:id/status', authenticate, async (req: AuthenticatedRequest, res)
     }
     console.error('Error updating transfer status:', error);
     res.status(500).json({ success: false, error: 'Failed to update transfer status' });
+    return;
   }
 });
 
@@ -457,6 +463,7 @@ router.patch('/:id/receive', authenticate, async (req: AuthenticatedRequest, res
       data: { updatedItems: result },
       message: 'Received quantities updated successfully'
     });
+    return;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -470,6 +477,7 @@ router.patch('/:id/receive', authenticate, async (req: AuthenticatedRequest, res
       success: false, 
       error: error instanceof Error ? error.message : 'Failed to update received quantities' 
     });
+    return;
   }
 });
 

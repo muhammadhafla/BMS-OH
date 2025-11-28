@@ -175,9 +175,11 @@ router.get('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
     }
 
     res.json({ success: true, data: { customer } });
+    return;
   } catch (error) {
     console.error('Error fetching customer:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch customer' });
+    return;
   }
 });
 
@@ -263,6 +265,7 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res) => {
       data: { customer },
       message: 'Customer created successfully'
     });
+    return;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -273,6 +276,7 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res) => {
     }
     console.error('Error creating customer:', error);
     res.status(500).json({ success: false, error: 'Failed to create customer' });
+    return;
   }
 });
 
@@ -341,6 +345,7 @@ router.put('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
       data: { customer },
       message: 'Customer updated successfully'
     });
+    return;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -351,6 +356,7 @@ router.put('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
     }
     console.error('Error updating customer:', error);
     res.status(500).json({ success: false, error: 'Failed to update customer' });
+    return;
   }
 });
 
@@ -407,6 +413,7 @@ router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
         data: { customer },
         message: 'Customer deactivated (has transaction history)'
       });
+      return;
     } else {
       // Hard delete if no transactions
       await prisma.customer.delete({
@@ -417,10 +424,12 @@ router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
         success: true,
         message: 'Customer deleted successfully'
       });
+      return;
     }
   } catch (error) {
     console.error('Error deleting customer:', error);
     res.status(500).json({ success: false, error: 'Failed to delete customer' });
+    return;
   }
 });
 
@@ -475,6 +484,7 @@ router.post('/:id/contacts', authenticate, async (req: AuthenticatedRequest, res
       data: { contact },
       message: 'Contact added successfully'
     });
+    return;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -485,6 +495,7 @@ router.post('/:id/contacts', authenticate, async (req: AuthenticatedRequest, res
     }
     console.error('Error adding customer contact:', error);
     res.status(500).json({ success: false, error: 'Failed to add customer contact' });
+    return;
   }
 });
 
@@ -547,9 +558,11 @@ router.get('/:id/loyalty-points', authenticate, async (req: AuthenticatedRequest
         pointsHistory: loyaltyPoints
       }
     });
+    return;
   } catch (error) {
     console.error('Error fetching customer loyalty points:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch customer loyalty points' });
+    return;
   }
 });
 
@@ -608,6 +621,7 @@ router.post('/:id/loyalty-points', authenticate, async (req: AuthenticatedReques
       data: { loyaltyPoint },
       message: 'Loyalty points updated successfully'
     });
+    return;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -618,6 +632,7 @@ router.post('/:id/loyalty-points', authenticate, async (req: AuthenticatedReques
     }
     console.error('Error adding loyalty points:', error);
     res.status(500).json({ success: false, error: 'Failed to add loyalty points' });
+    return;
   }
 });
 
@@ -707,9 +722,11 @@ router.get('/:id/analytics', authenticate, async (req: AuthenticatedRequest, res
         }
       }
     });
+    return;
   } catch (error) {
     console.error('Error fetching customer analytics:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch customer analytics' });
+    return;
   }
 });
 

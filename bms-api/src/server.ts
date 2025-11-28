@@ -51,6 +51,9 @@ const corsOptions = {
     
     // Dynamic origin validation for Tailscale and local environments
     const allowedPatterns = [
+      // Specific allowed domains
+      'https://bms.gayabagus.shop',
+      
       // Local development patterns - allow localhost and 127.0.0.1 with any port
       /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/,
       
@@ -73,7 +76,12 @@ const corsOptions = {
     ];
     
     // Check if origin matches any allowed pattern
-    const isAllowed = allowedPatterns.some(pattern => pattern.test(origin));
+    const isAllowed = allowedPatterns.some(pattern => {
+      if (typeof pattern === 'string') {
+        return origin === pattern;
+      }
+      return pattern.test(origin);
+    });
     
     if (isAllowed) {
       console.log(`✅ CORS allowed origin: ${origin}`);

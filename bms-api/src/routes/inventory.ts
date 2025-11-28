@@ -771,9 +771,11 @@ router.get('/batches/:id', authenticate, async (req: AuthenticatedRequest, res) 
         }
       }
     });
+    return;
   } catch (error) {
     console.error('Error fetching batch:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch batch' });
+    return;
   }
 });
 
@@ -863,6 +865,7 @@ router.post('/batches', authenticate, async (req: AuthenticatedRequest, res) => 
       data: { batch },
       message: 'Product batch created successfully'
     });
+    return;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -873,6 +876,7 @@ router.post('/batches', authenticate, async (req: AuthenticatedRequest, res) => 
     }
     console.error('Error creating product batch:', error);
     res.status(500).json({ success: false, error: 'Failed to create product batch' });
+    return;
   }
 });
 
@@ -945,6 +949,7 @@ router.put('/batches/:id', authenticate, async (req: AuthenticatedRequest, res) 
       data: { batch },
       message: 'Product batch updated successfully'
     });
+    return;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -955,6 +960,7 @@ router.put('/batches/:id', authenticate, async (req: AuthenticatedRequest, res) 
     }
     console.error('Error updating product batch:', error);
     res.status(500).json({ success: false, error: 'Failed to update product batch' });
+    return;
   }
 });
 
@@ -1047,6 +1053,7 @@ router.post('/batches/:id/movements', authenticate, async (req: AuthenticatedReq
       data: result,
       message: 'Batch movement recorded successfully'
     });
+    return;
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ 
@@ -1057,6 +1064,7 @@ router.post('/batches/:id/movements', authenticate, async (req: AuthenticatedReq
     }
     console.error('Error recording batch movement:', error);
     res.status(500).json({ success: false, error: 'Failed to record batch movement' });
+    return;
   }
 });
 

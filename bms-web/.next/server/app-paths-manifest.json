@@ -8,6 +8,7 @@
   "/(app)/attendance/page": "app/(app)/attendance/page.js",
   "/(app)/branches/page": "app/(app)/branches/page.js",
   "/(app)/categories/page": "app/(app)/categories/page.js",
+  "/(app)/customers/page": "app/(app)/customers/page.js",
   "/(app)/dashboard/page": "app/(app)/dashboard/page.js",
   "/(app)/inventory/page": "app/(app)/inventory/page.js",
   "/(app)/messages/page": "app/(app)/messages/page.js",
