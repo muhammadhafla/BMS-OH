@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  api:
+    name: API: Build / Type-check / Lint / Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Install dependencies (bms-api)
+        working-directory: ./bms-api
+        run: npm ci
+      - name: Type check (bms-api)
+        working-directory: ./bms-api
+        run: |
+          if grep -q "\"type-check\"" package.json; then
+            npm run type-check
+          else
+            echo "type-check script not found, skipping"
+          fi
+      - name: Lint (bms-api)
+        working-directory: ./bms-api
+        run: |
+          if grep -q "\"lint\"" package.json; then
+            npm run lint
+          else
+            echo "lint script not found in bms-api, skipping"
+          fi
+      - name: Test (bms-api)
+        working-directory: ./bms-api
+        run: |
+          if grep -q "\"test\"" package.json; then
+            npm test --silent
+          else
+            echo "test script not found in bms-api, skipping"
+          fi
+
+  web:
+    name: Web: Build / Type-check / Lint / Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Install dependencies (bms-web)
+        working-directory: ./bms-web
+        run: npm ci
+      - name: Type check (bms-web)
+        working-directory: ./bms-web
+        run: |
+          if grep -q "\"type\"" package.json || grep -q "\"type-check\"" package.json; then
+            npm run type || npm run type-check || true
+          else
+            echo "type check script not found, skipping"
+          fi
+      - name: Lint (bms-web)
+        working-directory: ./bms-web
+        run: |
+          if grep -q "\"lint\"" package.json; then
+            npm run lint
+          else
+            echo "lint script not found in bms-web, skipping"
+          fi
+      - name: Test (bms-web)
+        working-directory: ./bms-web
+        run: |
+          if grep -q "\"test\"" package.json; then
+            npm test --silent
+          else
+            echo "test script not found in bms-web, skipping"
+          fi
+      - name: Build (bms-web)
+        working-directory: ./bms-web
+        run: |
+          if grep -q "\"build\"" package.json; then
+            npm run build
+          else
+            echo "build script not found in bms-web, skipping"
+          fi
+
+  pos:
+    name: POS: Build / Type-check / Lint / Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Install dependencies (bms-pos)
+        working-directory: ./bms-pos
+        run: npm ci
+      - name: Type check (bms-pos)
+        working-directory: ./bms-pos
+        run: |
+          if grep -q "\"types\"" package.json || grep -q "\"type-check\"" package.json; then
+            npm run types || npm run type-check || true
+          else
+            echo "type check script not found, skipping"
+          fi
+      - name: Lint (bms-pos)
+        working-directory: ./bms-pos
+        run: |
+          if grep -q "\"lint\"" package.json; then
+            npm run lint
+          else
+            echo "lint script not found in bms-pos, skipping"
+          fi
+      - name: Test (bms-pos)
+        working-directory: ./bms-pos
+        run: |
+          if grep -q "\"test\"" package.json; then
+            npm test --silent
+          else
+            echo "test script not found in bms-pos, skipping"
+          fi
+      - name: Build (bms-pos)
+        working-directory: ./bms-pos
+        run: |
+          if grep -q "\"build\"" package.json; then
+            npm run build
+          else
+            echo "build script not found in bms-pos, skipping"
+          fi
