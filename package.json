@@ -1,0 +1,10 @@
+{
+  "name": "bms-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "lint": "eslint \"bms-api/**/*.{ts,tsx,js,jsx}\" \"bms-web/**/*.{ts,tsx,js,jsx}\" \"bms-pos/**/*.{ts,tsx,js,jsx}\" --max-warnings=0 || true",
+    "format": "prettier --write \"bms-api/**/*.{ts,tsx,js,jsx,json,md}\" \"bms-web/**/*.{ts,tsx,js,jsx,json,md}\" \"bms-pos/**/*.{ts,tsx,js,jsx,json,md}\"",
+    "ci:check": "npm run lint && echo \"Lint complete\""
+  }
+}

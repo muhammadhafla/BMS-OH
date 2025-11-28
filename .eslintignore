@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.next/
+dist-electron/
+*.min.js
+coverage/
