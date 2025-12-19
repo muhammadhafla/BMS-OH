@@ -1,0 +1,14 @@
+dist
+build
+node_modules
+coverage
+*.js.map
+*.css.map
+*.d.ts.map
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.prettierignore
+.eslintignore
+.lintstagedrc.*
+.env*

@@ -61,8 +61,8 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
   const loadProducts = async () => {
     setLoading(true);
     try {
-      if (!window.electronAPI) return;
-      const result = await window.electronAPI.getProducts({ limit: 50 });
+      if (!window.webAPI) return;
+      const result = await window.webAPI.getProducts({ limit: 50 });
       if (result.success) {
         setProducts(result.data);
       } else {
@@ -129,8 +129,8 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
 
     setLoading(true);
     try {
-      if (!window.electronAPI) return;
-      const result = await window.electronAPI.getProducts({
+      if (!window.webAPI) return;
+      const result = await window.webAPI.getProducts({
         search: searchTerm,
         limit: 50
       });

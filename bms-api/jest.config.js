@@ -29,6 +29,6 @@ module.exports = {
   clearMocks: true,
   restoreMocks: true,
   testEnvironmentOptions: {
-    url: 'http://localhost:3001',
+    url: 'http://localhost:3002',
   },
 };

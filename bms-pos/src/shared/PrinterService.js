@@ -1,320 +1,484 @@
-const { ipcRenderer } = require('electron');
+/**
+ * Printer Service for PWA
+ * Browser-compatible printer service using native Web APIs
+ */
+
+const PrinterSettings = {
+  paperSize: '',
+  orientation: 'portrait',
+  margins: { top: 0, right: 0, bottom: 0, left: 0 },
+}
+
+const TransactionData = {
+  transaction: {
+    id: '',
+    transactionCode: '',
+    totalAmount: 0,
+    discount: 0,
+    tax: 0,
+    finalAmount: 0,
+    paymentMethod: '',
+    amountPaid: 0,
+    change: 0,
+    createdAt: '',
+    cashierName: '',
+  },
+  items: [{
+    productName: '',
+    quantity: 0,
+    unitPrice: 0,
+    discount: 0,
+    total: 0,
+  }],
+  customer: {
+    name: '',
+    phone: '',
+  },
+}
+
+const PrinterInfo = {
+  name: '',
+  type: '',
+  description: '',
+  id: '',
+}
 
 class PrinterService {
   constructor() {
-    this.isQZAvailable = false;
-    this.printers = [];
-    this.selectedPrinter = null;
+    this.isElectronAvailable = false
+    this.printerSettings = null
+    this.checkElectron()
   }
 
-  async init() {
+  checkElectron() {
+    // Check if we're running in Electron (for hybrid scenarios)
+    this.isElectronAvailable = typeof window !== 'undefined' && 
+                               window.process && 
+                               window.process.type === 'renderer'
+  }
+
+  async initialize() {
     try {
-      // Check if QZ Tray is available
-      await this.checkQZAvailability();
+      console.log('ℹ️ Using browser printing service (PWA mode)')
+      console.log('💡 Tip: For better printing results, use Chrome or Edge browsers')
       
-      if (this.isQZAvailable) {
-        await this.getPrinters();
-        console.log('✅ QZ Tray printer service initialized');
-      } else {
-        console.warn('⚠️ QZ Tray not available, using fallback printing');
+      return { 
+        success: true, 
+        method: 'browser',
+        message: 'Browser printing service initialized for PWA',
       }
     } catch (error) {
-      console.error('❌ Printer service initialization failed:', error);
-      this.isQZAvailable = false;
-    }
-  }
-
-  async checkQZAvailability() {
-    return new Promise((resolve) => {
-      // QZ Tray should be running as a separate application
-      // We'll use AJAX calls to communicate with QZ Tray
-      try {
-        // Check if we can connect to QZ Tray
-        const checkQZ = () => {
-          // In a real implementation, you would check if QZ Tray is running
-          // and available on the standard port (8181)
-          this.isQZAvailable = true;
-          resolve(true);
-        };
-        
-        // Set timeout for QZ availability check
-        setTimeout(() => {
-          this.isQZAvailable = true; // Assume available for now
-          resolve(true);
-        }, 1000);
-      } catch (error) {
-        console.error('QZ availability check failed:', error);
-        this.isQZAvailable = false;
-        resolve(false);
+      console.error('❌ Printer service initialization failed:', error)
+      return { 
+        success: false, 
+        error: error.message, 
+        method: 'browser', 
       }
-    });
+    }
   }
 
-  async getPrinters() {
+  async printReceipt(transactionData, printerSettings = {}) {
     try {
-      if (!this.isQZAvailable) {
-        // Return system printers in fallback mode
-        this.printers = [
-          { name: 'Default Printer', type: 'fallback' },
-          { name: 'POS Printer', type: 'thermal' }
-        ];
-        return this.printers;
-      }
-
-      // In real QZ implementation, this would use QZ API
-      // For now, return mock printer list
-      this.printers = [
-        { name: 'EPSON TM-T88V', type: 'thermal', width: '58mm' },
-        { name: 'Star TSP100', type: 'thermal', width: '80mm' },
-        { name: 'Default System Printer', type: 'fallback' }
-      ];
-
-      // Auto-select first thermal printer
-      const thermalPrinter = this.printers.find(p => p.type === 'thermal');
-      this.selectedPrinter = thermalPrinter || this.printers[0];
-
-      return this.printers;
+      return await this.printReceiptFallback(transactionData, printerSettings)
     } catch (error) {
-      console.error('Error getting printers:', error);
-      return [];
+      console.error('❌ Receipt printing failed:', error)
+      throw error
     }
   }
 
-  async printReceipt(receiptData) {
+  async printReceiptFallback(transactionData, printerSettings = {}) {
     try {
-      if (!this.isQZAvailable) {
-        return this.printReceiptFallback(receiptData);
-      }
-
-      const { 
-        transaction, 
-        items, 
-        cashier, 
-        branch,
-        printerSettings = {} 
-      } = receiptData;
-
-      // Format receipt content
-      const receiptContent = this.formatReceiptContent({
-        transaction,
-        items,
-        cashier,
-        branch,
-        printerSettings
-      });
-
-      // Send to QZ Tray for printing
-      return await this.sendToQZTray(receiptContent, printerSettings);
-
-    } catch (error) {
-      console.error('Error printing receipt:', error);
+      const receiptHTML = this.generateReceiptHTML(transactionData)
       
-      // Fallback to browser print
-      return this.printReceiptFallback(receiptData);
-    }
-  }
-
-  formatReceiptContent({ transaction, items, cashier, branch, printerSettings }) {
-    const { width = 58 } = printerSettings;
-    const lineWidth = width === 80 ? 40 : 28;
-    
-    let content = '';
-
-    // Header
-    content += this.centerText(branch?.name || 'BMS POS', lineWidth) + '\n';
-    content += this.centerText(branch?.address || '', lineWidth) + '\n';
-    content += this.centerText(`Telp: ${branch?.phone || ''}`, lineWidth) + '\n';
-    content += '='.repeat(lineWidth) + '\n\n';
-
-    // Transaction info
-    content += `No: ${transaction.transactionCode}\n`;
-    content += `Kasir: ${cashier?.name || 'N/A'}\n`;
-    content += `Tgl: ${new Date(transaction.createdAt).toLocaleString('id-ID')}\n`;
-    content += '-'.repeat(lineWidth) + '\n\n';
-
-    // Items
-    content += this.padText('ITEM', 15) + this.padText('QTY', 4) + this.padText('HARGA', 9) + '\n';
-    content += '-'.repeat(lineWidth) + '\n';
-
-    items.forEach(item => {
-      const itemName = item.productName.substring(0, 15);
-      const qty = item.quantity.toString();
-      const price = `Rp${item.total.toLocaleString('id-ID')}`;
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank', 'width=400,height=600')
       
-      content += this.padText(itemName, 15) + this.padText(qty, 4) + this.padText(price, 9) + '\n';
-    });
-
-    content += '-'.repeat(lineWidth) + '\n';
-
-    // Totals
-    content += this.padText('SUBTOTAL:', 20) + `Rp${transaction.totalAmount.toLocaleString('id-ID')}\n`;
-    if (transaction.discount > 0) {
-      content += this.padText('DISKON:', 20) + `-Rp${transaction.discount.toLocaleString('id-ID')}\n`;
-    }
-    content += this.padText('TOTAL:', 20) + `Rp${transaction.finalAmount.toLocaleString('id-ID')}\n`;
-    content += this.padText('BAYAR:', 20) + `Rp${transaction.amountPaid.toLocaleString('id-ID')}\n`;
-    content += this.padText('KEMBALI:', 20) + `Rp${transaction.change.toLocaleString('id-ID')}\n`;
-    content += '\n';
-
-    // Payment method
-    content += this.centerText(`Pembayaran: ${transaction.paymentMethod}`, lineWidth) + '\n\n';
-    
-    // Footer
-    content += this.centerText('Terima Kasih', lineWidth) + '\n';
-    content += this.centerText('Selamat Belanja Lagi', lineWidth) + '\n\n';
-    content += '\n\n\n'; // Feed paper
-
-    return content;
-  }
-
-  async sendToQZTray(content, printerSettings) {
-    try {
-      // In real QZ implementation, this would use the QZ API
-      // For now, we'll simulate successful printing
-      
-      console.log('🖨️ Printing receipt via QZ Tray...');
-      console.log('Receipt content:', content);
-      
-      // Simulate printing delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      return { success: true, message: 'Receipt sent to printer' };
-    } catch (error) {
-      console.error('QZ printing error:', error);
-      throw error;
-    }
-  }
-
-  async printReceiptFallback(receiptData) {
-    try {
-      // Fallback: Create a new window and print
-      const printWindow = window.open('', '_blank');
       if (!printWindow) {
-        throw new Error('Could not open print window');
+        // Fallback: Print directly to main window (not ideal but works)
+        const printContent = window.open('', '_self')
+        if (printContent) {
+          printContent.document.write(receiptHTML)
+          printContent.document.close()
+          printContent.onload = () => {
+            printContent.print()
+          }
+        }
+        return { success: true, method: 'browser-direct' }
+      }
+      
+      // Write content to the new window
+      printWindow.document.write(receiptHTML)
+      printWindow.document.close()
+      
+      // Wait for content to load then print
+      printWindow.onload = () => {
+        // Add a small delay to ensure styles are applied
+        setTimeout(() => {
+          printWindow.print()
+          // Close the window after printing (some browsers require user interaction)
+          setTimeout(() => {
+            printWindow.close()
+          }, 100)
+        }, 500)
       }
 
-      const { transaction, items, cashier, branch } = receiptData;
+      console.log('✅ Receipt printed via browser (PWA mode)')
+      return { success: true, method: 'browser' }
+    } catch (error) {
+      console.error('❌ Browser printing failed:', error)
       
-      // Create HTML content for printing
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Receipt - ${transaction.transactionCode}</title>
-          <style>
-            body { 
-              font-family: monospace; 
-              font-size: 12px; 
-              margin: 0; 
-              padding: 10px;
-              width: 280px;
+      // Last resort: show receipt in main window
+      this.showReceiptInModal(transactionData)
+      return { 
+        success: true, 
+        method: 'modal-fallback',
+        message: 'Receipt shown in modal - please print manually',
+      }
+    }
+  }
+
+  showReceiptInModal(transactionData) {
+    // Create a modal with the receipt for manual printing
+    const receiptHTML = this.generateReceiptHTML(transactionData)
+    
+    // Create modal overlay
+    const overlay = document.createElement('div')
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `
+    
+    // Create modal content
+    const modal = document.createElement('div')
+    modal.style.cssText = `
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+      position: relative;
+    `
+    
+    // Add close button
+    const closeBtn = document.createElement('button')
+    closeBtn.textContent = '✕'
+    closeBtn.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      border: none;
+      background: #f0f0f0;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 16px;
+    `
+    
+    // Add print button
+    const printBtn = document.createElement('button')
+    printBtn.textContent = '🖨️ Print Receipt'
+    printBtn.style.cssText = `
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 0;
+      font-size: 14px;
+    `
+    
+    // Add receipt content
+    const receiptContainer = document.createElement('div')
+    receiptContainer.innerHTML = receiptHTML
+    receiptContainer.style.cssText = 'font-family: monospace; font-size: 12px;'
+    
+    // Assemble modal
+    modal.appendChild(closeBtn)
+    modal.appendChild(printBtn)
+    modal.appendChild(receiptContainer)
+    overlay.appendChild(modal)
+    document.body.appendChild(overlay)
+    
+    // Event handlers
+    closeBtn.onclick = () => {
+      if (document.body.contains(overlay)) {
+        document.body.removeChild(overlay)
+      }
+    }
+    
+    printBtn.onclick = () => {
+      const printFrame = document.createElement('iframe')
+      printFrame.style.position = 'absolute'
+      printFrame.style.left = '-9999px'
+      document.body.appendChild(printFrame)
+      
+      printFrame.onload = () => {
+        if (printFrame.contentWindow) {
+          printFrame.contentWindow.print()
+          setTimeout(() => {
+            if (document.body.contains(printFrame)) {
+              document.body.removeChild(printFrame)
             }
-            .center { text-align: center; }
-            .line { border-bottom: 1px solid #000; margin: 5px 0; }
-            .right { text-align: right; }
-            .bold { font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <div class="center">
-            <div class="bold">${branch?.name || 'BMS POS'}</div>
-            <div>${branch?.address || ''}</div>
-            <div>Telp: ${branch?.phone || ''}</div>
-            <div class="line"></div>
+          }, 100)
+        }
+      }
+      
+      if (printFrame.contentDocument) {
+        printFrame.contentDocument.write(receiptHTML)
+        printFrame.contentDocument.close()
+      }
+    }
+    
+    overlay.onclick = (e) => {
+      if (e.target === overlay && document.body.contains(overlay)) {
+        document.body.removeChild(overlay)
+      }
+    }
+  }
+
+  generateReceiptHTML(transactionData) {
+    const { transaction, items, customer } = transactionData
+    
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Receipt - ${transaction.transactionCode || transaction.id}</title>
+        <style>
+          body { 
+            font-family: 'Courier New', monospace; 
+            max-width: 300px; 
+            margin: 0 auto; 
+            padding: 20px;
+            font-size: 12px;
+            line-height: 1.4;
+          }
+          .header { 
+            text-align: center; 
+            border-bottom: 2px dashed #000; 
+            padding-bottom: 10px; 
+            margin-bottom: 15px; 
+          }
+          .item { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 5px 0; 
+            font-size: 11px;
+          }
+          .item-details {
+            flex: 1;
+          }
+          .item-price {
+            text-align: right;
+            min-width: 60px;
+          }
+          .total { 
+            border-top: 2px dashed #000; 
+            padding-top: 10px; 
+            margin-top: 15px; 
+            font-weight: bold; 
+          }
+          .footer { 
+            text-align: center; 
+            border-top: 1px dashed #000; 
+            padding-top: 10px; 
+            margin-top: 15px; 
+            font-size: 10px;
+          }
+          .customer-info {
+            font-size: 11px;
+            margin: 10px 0;
+          }
+          .separator {
+            border-bottom: 1px dotted #ccc;
+            margin: 5px 0;
+          }
+          @media print { 
+            body { margin: 0; padding: 10px; } 
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h2 style="margin: 0; font-size: 16px;">🏪 BMS POS</h2>
+          <p style="margin: 5px 0; font-size: 10px;">
+            Your Store Address<br>
+            Phone: +1234567890
+          </p>
+          <div class="separator"></div>
+          <p style="margin: 5px 0; font-size: 11px;">
+            <strong>Receipt:</strong> ${transaction.transactionCode || transaction.id}<br>
+            <strong>Date:</strong> ${new Date(transaction.createdAt || Date.now()).toLocaleString()}<br>
+            <strong>Cashier:</strong> ${transaction.cashierName || 'System'}
+          </p>
+        </div>
+        
+        ${customer ? `
+          <div class="customer-info">
+            <strong>Customer:</strong> ${customer.name || 'N/A'}<br>
+            ${customer.phone ? `<strong>Phone:</strong> ${customer.phone}` : ''}
           </div>
-          
-          <div>No: ${transaction.transactionCode}</div>
-          <div>Kasir: ${cashier?.name || 'N/A'}</div>
-          <div>Tgl: ${new Date(transaction.createdAt).toLocaleString('id-ID')}</div>
-          <div class="line"></div>
-          
-          <table style="width: 100%; font-size: 11px;">
-            <thead>
-              <tr>
-                <th style="text-align: left;">ITEM</th>
-                <th style="text-align: right;">QTY</th>
-                <th style="text-align: right;">HARGA</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${items.map(item => `
-                <tr>
-                  <td>${item.productName.substring(0, 15)}</td>
-                  <td style="text-align: right;">${item.quantity}</td>
-                  <td style="text-align: right;">Rp${item.total.toLocaleString('id-ID')}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          <div class="line"></div>
-          <div style="display: flex; justify-content: space-between;">
-            <span>SUBTOTAL:</span>
-            <span>Rp${transaction.totalAmount.toLocaleString('id-ID')}</span>
+          <div class="separator"></div>
+        ` : ''}
+        
+        <div class="items">
+          ${items.map(item => `
+            <div class="item">
+              <div class="item-details">
+                <div>${item.productName || 'Product'}</div>
+                <div style="font-size: 10px; color: #666;">
+                  ${item.quantity} × $${(item.unitPrice || 0).toFixed(2)}
+                  ${(item.discount || 0) > 0 ? `<br><span style="color: red;">(-$${(item.discount || 0).toFixed(2)} discount)</span>` : ''}
+                </div>
+              </div>
+              <div class="item-price">
+                $${(item.total || 0).toFixed(2)}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="separator"></div>
+        
+        <div class="total">
+          <div class="item">
+            <span>Subtotal:</span>
+            <span>$${(transaction.totalAmount || 0).toFixed(2)}</span>
           </div>
-          ${transaction.discount > 0 ? `
-            <div style="display: flex; justify-content: space-between;">
-              <span>DISKON:</span>
-              <span>-Rp${transaction.discount.toLocaleString('id-ID')}</span>
+          ${(transaction.discount || 0) > 0 ? `
+            <div class="item" style="color: red;">
+              <span>Discount:</span>
+              <span>-$${(transaction.discount || 0).toFixed(2)}</span>
             </div>
           ` : ''}
-          <div class="bold" style="display: flex; justify-content: space-between;">
-            <span>TOTAL:</span>
-            <span>Rp${transaction.finalAmount.toLocaleString('id-ID')}</span>
+          ${(transaction.tax || 0) > 0 ? `
+            <div class="item">
+              <span>Tax:</span>
+              <span>$${(transaction.tax || 0).toFixed(2)}</span>
+            </div>
+          ` : ''}
+          <div class="item" style="font-size: 13px;">
+            <span><strong>TOTAL:</strong></span>
+            <span><strong>$${(transaction.finalAmount || 0).toFixed(2)}</strong></span>
           </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span>BAYAR:</span>
-            <span>Rp${transaction.amountPaid.toLocaleString('id-ID')}</span>
+          <div class="separator"></div>
+          <div class="item">
+            <span>Paid (${transaction.paymentMethod || 'CASH'}):</span>
+            <span>$${(transaction.amountPaid || 0).toFixed(2)}</span>
           </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span>KEMBALI:</span>
-            <span>Rp${transaction.change.toLocaleString('id-ID')}</span>
+          <div class="item">
+            <span>Change:</span>
+            <span>$${(transaction.change || 0).toFixed(2)}</span>
           </div>
-          
-          <div class="center" style="margin-top: 20px;">
-            <div>Pembayaran: ${transaction.paymentMethod}</div>
-            <div class="bold" style="margin-top: 20px;">Terima Kasih</div>
-            <div>Selamat Belanja Lagi</div>
-          </div>
-        </body>
-        </html>
-      `;
+        </div>
+        
+        <div class="footer">
+          <p style="margin: 10px 0;">🙏 Thank you for your business!</p>
+          <p style="margin: 5px 0; font-size: 9px;">www.bms-pos.com</p>
+          <p style="margin: 5px 0; font-size: 9px; color: #666;">
+            Powered by BMS POS PWA
+          </p>
+        </div>
+      </body>
+      </html>
+    `
+  }
 
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      
-      // Print the content
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 500);
-
-      return { success: true, message: 'Receipt printed (fallback mode)' };
+  async getAvailablePrinters() {
+    try {
+      // In PWA, we only have browser printing
+      return [{ 
+        name: 'Default Printer', 
+        type: 'browser',
+        description: 'Browser default printer',
+      }]
     } catch (error) {
-      console.error('Fallback printing error:', error);
-      throw error;
+      console.error('Failed to get available printers:', error)
+      return [{ 
+        name: 'Default Printer', 
+        type: 'browser',
+        description: 'Browser default printer',
+      }]
     }
   }
 
-  // Helper methods
-  centerText(text, width) {
-    if (text.length >= width) return text;
-    const padding = Math.floor((width - text.length) / 2);
-    return ' '.repeat(padding) + text + ' '.repeat(width - text.length - padding);
-  }
+  async testPrint(printerName = 'Default') {
+    try {
+      const testData = {
+        type: 'test',
+        content: 'Test print from BMS POS PWA',
+        timestamp: new Date().toISOString(),
+      }
 
-  padText(text, width) {
-    if (text.length >= width) return text.substring(0, width);
-    return text + ' '.repeat(width - text.length);
-  }
-
-  getSelectedPrinter() {
-    return this.selectedPrinter;
-  }
-
-  setSelectedPrinter(printerName) {
-    this.selectedPrinter = this.printers.find(p => p.name === printerName);
+      // Browser test print
+      const printWindow = window.open('', '_blank', 'width=400,height=600')
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Test Print - BMS POS</title>
+            <style>
+              body { 
+                font-family: 'Courier New', monospace; 
+                padding: 20px; 
+                text-align: center;
+              }
+              .test-content {
+                border: 2px dashed #000;
+                padding: 20px;
+                margin: 20px 0;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>🧪 Test Print</h1>
+            <div class="test-content">
+              <h2>BMS POS PWA</h2>
+              <p>This is a test print from the BMS POS Progressive Web Application.</p>
+              <p><strong>Timestamp:</strong> ${testData.timestamp}</p>
+              <p><strong>Printer:</strong> ${printerName}</p>
+              <p>✅ Printer service is working correctly!</p>
+            </div>
+            <p style="font-size: 12px; color: #666;">
+              If you can see this message, the PWA printing functionality is working.
+            </p>
+          </body>
+          </html>
+        `)
+        printWindow.document.close()
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print()
+            setTimeout(() => {
+              printWindow.close()
+            }, 100)
+          }, 500)
+        }
+      }
+      
+      return { 
+        success: true, 
+        method: 'browser',
+        message: 'Test print sent to browser',
+      }
+    } catch (error) {
+      console.error('Test print failed:', error)
+      throw error
+    }
   }
 }
 
-module.exports = PrinterService;
+export default PrinterService

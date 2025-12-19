@@ -81,7 +81,6 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res) => {
           requester: { select: { id: true, name: true, email: true } },
           approver: { select: { id: true, name: true, email: true } },
           shipper: { select: { id: true, name: true, email: true } },
-          receiver: { select: { id: true, name: true, email: true } },
           items: {
             include: {
               product: {
@@ -131,7 +130,6 @@ router.get('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
         requester: { select: { id: true, name: true, email: true } },
         approver: { select: { id: true, name: true, email: true } },
         shipper: { select: { id: true, name: true, email: true } },
-        receiver: { select: { id: true, name: true, email: true } },
         items: {
           include: {
             product: {

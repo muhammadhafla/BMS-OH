@@ -1,0 +1,67 @@
+import { testPrisma } from './setup';
+
+/**
+ * Test utility to ensure a default branch exists for testing
+ */
+export class TestBranchHelper {
+  private static defaultBranchId: string | null = null;
+
+  /**
+   * Get or create a default test branch
+   */
+  static async getDefaultBranch(): Promise<string> {
+    if (this.defaultBranchId) {
+      // Verify the branch still exists
+      const existingBranch = await testPrisma.branch.findUnique({
+        where: { id: this.defaultBranchId }
+      });
+      
+      if (existingBranch) {
+        return this.defaultBranchId;
+      }
+    }
+
+    // Create a new default branch
+    const defaultBranch = await testPrisma.branch.create({
+      data: {
+        name: 'Default Test Branch',
+        address: '123 Test Address',
+        phone: '+1234567890'
+      }
+    });
+
+    this.defaultBranchId = defaultBranch.id;
+    return this.defaultBranchId;
+  }
+
+  /**
+   * Reset the default branch (for cleanup between test suites)
+   */
+  static async resetDefaultBranch(): Promise<void> {
+    if (this.defaultBranchId) {
+      try {
+        await testPrisma.branch.delete({
+          where: { id: this.defaultBranchId }
+        });
+      } catch (error) {
+        // Branch might already be deleted, ignore error
+      }
+      this.defaultBranchId = null;
+    }
+  }
+
+  /**
+   * Create a new unique branch for a specific test
+   */
+  static async createUniqueBranch(testName: string): Promise<string> {
+    const branch = await testPrisma.branch.create({
+      data: {
+        name: `${testName} Branch`,
+        address: `${testName} Address`,
+        phone: `+1234567890`
+      }
+    });
+
+    return branch.id;
+  }
+}

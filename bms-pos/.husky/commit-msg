@@ -1,0 +1,44 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# BMS-POS Commit Message Hook
+# This hook validates commit messages against conventional commit standards
+
+commit_regex='^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: .{1,50}'
+
+error_msg="❌ Invalid commit message format!
+
+Please use conventional commit format:
+<type>(<scope>): <subject>
+
+Examples:
+✅ feat(auth): add user login functionality
+✅ fix(api): resolve database connection timeout
+✅ docs(readme): update installation instructions
+✅ style(css): fix button alignment issues
+✅ refactor(components): optimize CartTable performance
+✅ perf(websocket): implement connection pooling
+✅ test(auth): add login flow tests
+✅ chore(deps): update React to version 18
+
+Types allowed:
+- feat: A new feature
+- fix: A bug fix
+- docs: Documentation only changes
+- style: Changes that do not affect the meaning of the code
+- refactor: A code change that neither fixes a bug nor adds a feature
+- perf: A code change that improves performance
+- test: Adding missing tests or correcting existing tests
+- chore: Changes to the build process or auxiliary tools
+- ci: Changes to our CI configuration files and scripts
+- build: Changes that affect the build system or external dependencies
+- revert: Reverts a previous commit
+
+For more details, see: https://www.conventionalcommits.org/"
+
+if ! grep -qE "$commit_regex" "$1"; then
+    echo "$error_msg" >&2
+    exit 1
+fi
+
+echo "✅ Commit message format is valid!"

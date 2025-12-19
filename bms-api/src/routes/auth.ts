@@ -25,8 +25,8 @@ const generateToken = (userId: string, email: string, role: string, branchId?: s
 
 router.post('/login', async (req, res): Promise<void> => {
   try {
-    // Accept both email and username for login
-    const { email, username, password } = req.body;
+    // Validate input using loginSchema
+    const { email, username, password } = loginSchema.parse(req.body);
     
     // Use email if provided, otherwise use username as email
     const loginIdentifier = email || username;
@@ -58,8 +58,12 @@ router.post('/login', async (req, res): Promise<void> => {
     const token = generateToken(user.id, user.email, user.role, user.branchId || undefined);
     console.log(`✅ User logged in successfully: ${user.email}`);
     res.json({ success: true, message: 'Login successful', data: { user: { id: user.id, email: user.email, name: user.name, role: user.role, branchId: user.branchId, branch: user.branch }, token } });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
+    if (error.name === 'ZodError') {
+      res.status(400).json({ success: false, error: 'Invalid input data', details: error.errors });
+      return;
+    }
     res.status(400).json({ success: false, error: 'Invalid input data' });
   }
 });

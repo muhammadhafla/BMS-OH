@@ -1,0 +1,39 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# BMS-POS Pre-commit Hook
+# This hook runs lint-staged to ensure code quality before committing
+
+echo "🔍 Running pre-commit checks..."
+
+# Check if lint-staged is available
+if ! command -v lint-staged >/dev/null 2>&1; then
+    echo "❌ lint-staged is not installed. Please install it with: npm install --save-dev lint-staged"
+    exit 1
+fi
+
+# Run lint-staged to format and lint staged files
+npx lint-staged
+
+# Check if lint-staged completed successfully
+if [ $? -eq 0 ]; then
+    echo "✅ Pre-commit checks passed!"
+else
+    echo "❌ Pre-commit checks failed. Please fix the issues and try again."
+    echo ""
+    echo "Common fixes:"
+    echo "- Run 'npm run format' to format your code"
+    echo "- Run 'npm run lint' to see linting issues"
+    echo "- Run 'npm run types' to check TypeScript errors"
+    exit 1
+fi
+
+# Optional: Run tests for changed files (uncomment if desired)
+# echo "🧪 Running tests for changed files..."
+# npx jest --passWithNoTests --findRelatedTests $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(test|spec)\.(ts|tsx)$' | tr '\n' ' ')
+
+# Optional: Run security audit (uncomment if desired)
+# echo "🔒 Running security audit..."
+# npm audit --audit-level moderate
+
+echo "🚀 Ready to commit!"

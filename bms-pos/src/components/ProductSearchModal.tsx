@@ -51,9 +51,9 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
   const loadProducts = async () => {
     setLoading(true);
     try {
-      // Check if electronAPI is available
-      if (window.electronAPI && window.electronAPI.getProducts) {
-        const result = await window.electronAPI.getProducts({ limit: 500 });
+      // Check if webAPI is available
+      if (window.webAPI && window.webAPI.getProducts) {
+        const result = await window.webAPI.getProducts({ limit: 500 });
         if (result.success) {
           setProducts(result.data);
           // Extract unique categories
@@ -63,8 +63,8 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
           throw new Error(result.error || 'Failed to load products');
         }
       } else {
-        // Fallback to sample data when electronAPI is not available
-        throw new Error('electronAPI not available');
+        // Fallback to sample data when webAPI is not available
+        throw new Error('webAPI not available');
       }
     } catch (error) {
       console.warn('Using fallback sample data:', error);

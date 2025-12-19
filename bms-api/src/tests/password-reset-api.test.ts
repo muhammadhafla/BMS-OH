@@ -6,11 +6,13 @@
 import request from 'supertest';
 import app from '../server';
 import { testPrisma } from './setup';
+import { TestBranchHelper } from './test-branch-helper';
 import bcrypt from 'bcryptjs';
 
 describe('Password Reset API Endpoints', () => {
   let testUser: any;
   let authToken: string;
+  let testBranchId: string;
   const testPassword = 'TestPassword123!';
   const newPassword = 'NewPassword456!';
   const weakPassword = 'weak';
@@ -18,14 +20,9 @@ describe('Password Reset API Endpoints', () => {
   const nonExistentEmail = 'nonexistent@example.com';
   const validEmail = 'test@bms.com';
 
-  beforeAll(async () => {
-    // Create a test branch first
-    const branch = await testPrisma.branch.create({
-      data: {
-        name: 'Test Branch',
-        address: '123 Test Street'
-      }
-    });
+  beforeEach(async () => {
+    // Get or create a default test branch
+    testBranchId = await TestBranchHelper.getDefaultBranch();
 
     // Create test user
     const hashedPassword = await bcrypt.hash(testPassword, 12);
@@ -35,7 +32,7 @@ describe('Password Reset API Endpoints', () => {
         password: hashedPassword,
         name: 'Test User',
         role: 'ADMIN',
-        branchId: branch.id
+        branchId: testBranchId
       }
     });
 
@@ -50,7 +47,7 @@ describe('Password Reset API Endpoints', () => {
     authToken = loginResponse.body.data.token;
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     // Cleanup is handled by setup.ts afterEach
   });
 
@@ -61,7 +58,8 @@ describe('Password Reset API Endpoints', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           currentPassword: testPassword,
-          newPassword: newPassword
+          newPassword: newPassword,
+          confirmPassword: newPassword
         });
 
       expect(response.status).toBe(200);
@@ -88,7 +86,8 @@ describe('Password Reset API Endpoints', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           currentPassword: 'wrongpassword',
-          newPassword: newPassword
+          newPassword: newPassword,
+          confirmPassword: newPassword
         });
 
       expect(response.status).toBe(400);
@@ -102,7 +101,8 @@ describe('Password Reset API Endpoints', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           currentPassword: testPassword,
-          newPassword: weakPassword
+          newPassword: weakPassword,
+          confirmPassword: weakPassword
         });
 
       expect(response.status).toBe(400);
@@ -115,7 +115,8 @@ describe('Password Reset API Endpoints', () => {
         .post('/api/auth/change-password')
         .send({
           currentPassword: testPassword,
-          newPassword: newPassword
+          newPassword: newPassword,
+          confirmPassword: newPassword
         });
 
       expect(response.status).toBe(401);
@@ -207,6 +208,11 @@ describe('Password Reset API Endpoints', () => {
       const tokenData = await request(app)
         .post('/api/auth/forgot-password')
         .send({ email: validEmail });
+      
+      // Verify expected data  
+      the API response contains expect(tokenData.status).toBe(200);
+      expect(tokenData.body.success).toBe(true);
+      expect(tokenData.body.message).toContain('password reset link has been sent');
       
       // Get the token from database
       const tokens = await testPrisma.passwordResetToken.findMany({
@@ -363,7 +369,8 @@ describe('Password Reset API Endpoints', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           currentPassword: testPassword,
-          newPassword: veryLongPassword
+          newPassword: veryLongPassword,
+          confirmPassword: veryLongPassword
         });
 
       expect(response.status).toBe(400);

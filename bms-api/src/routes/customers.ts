@@ -19,8 +19,6 @@ const createCustomerSchema = z.object({
   dateOfBirth: z.string().datetime().optional().nullable(),
   gender: z.nativeEnum(CustomerGender).optional(),
   customerType: z.nativeEnum(CustomerType).default('REGULAR'),
-  creditLimit: z.number().min(0).default(0),
-  currentBalance: z.number().min(0).default(0),
   notes: z.string().optional().nullable(),
   branchId: z.string()
 });
@@ -86,11 +84,6 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res) => {
         take: Number(limit),
         include: {
           branch: { select: { id: true, name: true } },
-          creator: { select: { id: true, name: true, email: true } },
-          customerContacts: {
-            where: { isPrimary: true },
-            take: 1
-          },
           transactions: {
             take: 5,
             orderBy: { createdAt: 'desc' },
@@ -98,14 +91,6 @@ router.get('/', authenticate, async (req: AuthenticatedRequest, res) => {
               id: true,
               amount: true,
               createdAt: true,
-              transaction: {
-                select: {
-                  id: true,
-                  transactionCode: true,
-                  finalAmount: true,
-                  createdAt: true
-                }
-              }
             }
           }
         },
@@ -141,24 +126,13 @@ router.get('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
       where: { id },
       include: {
         branch: { select: { id: true, name: true } },
-        creator: { select: { id: true, name: true, email: true } },
-        customerContacts: true,
         transactions: {
           include: {
-            transaction: {
-              select: {
-                id: true,
-                transactionCode: true,
-                finalAmount: true,
-                createdAt: true,
-                paymentMethod: true
-              }
-            }
           },
           orderBy: { createdAt: 'desc' },
           take: 20
         },
-        loyaltyPointsLog: {
+        points: {
           orderBy: { createdAt: 'desc' },
           take: 10
         }
@@ -210,6 +184,7 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res) => {
 
     const customer = await prisma.customer.create({
       data: {
+        code: data.customerCode,
         customerCode: data.customerCode,
         name: data.name,
         email: data.email,
@@ -220,16 +195,11 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res) => {
         country: data.country,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         gender: data.gender,
-        customerType: data.customerType,
-        creditLimit: data.creditLimit,
-        currentBalance: data.currentBalance,
-        notes: data.notes,
-        branchId: data.branchId,
-        createdBy: req.user!.id
+        type: data.customerType,
+        branchId: data.branchId
       },
       include: {
         branch: { select: { id: true, name: true } },
-        creator: { select: { id: true, name: true, email: true } }
       }
     });
 
@@ -253,7 +223,7 @@ router.post('/', authenticate, async (req: AuthenticatedRequest, res) => {
 
     // Emit real-time customer created event
     try {
-      const event = createCustomerUpdatedEvent(customer, 'created', customer.branchId, req.user!.id);
+      const event = createCustomerUpdatedEvent(customer, 'created', customer.branchId!, req.user!.id);
       websocketEventEmitter.emit(event);
       console.log(`📡 Emitted customer:created event for customer ${customer.customerCode}`);
     } catch (error) {
@@ -327,13 +297,12 @@ router.put('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
       },
       include: {
         branch: { select: { id: true, name: true } },
-        creator: { select: { id: true, name: true, email: true } }
       }
     });
 
     // Emit real-time customer updated event
     try {
-      const event = createCustomerUpdatedEvent(customer, 'updated', customer.branchId, req.user!.id);
+      const event = createCustomerUpdatedEvent(customer, 'updated', customer.branchId!, req.user!.id);
       websocketEventEmitter.emit(event);
       console.log(`📡 Emitted customer:updated event for customer ${customer.customerCode}`);
     } catch (error) {
@@ -401,7 +370,7 @@ router.delete('/:id', authenticate, async (req: AuthenticatedRequest, res) => {
 
       // Emit real-time customer deactivated event
       try {
-        const event = createCustomerUpdatedEvent(customer, 'deactivated', customer.branchId, req.user!.id);
+        const event = createCustomerUpdatedEvent(customer, 'deactivated', customer.branchId!, req.user!.id);
         websocketEventEmitter.emit(event);
         console.log(`📡 Emitted customer:deactivated event for customer ${customer.customerCode}`);
       } catch (error) {

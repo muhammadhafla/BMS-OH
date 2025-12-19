@@ -1,40 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { formatCurrency, generateTransactionCode } from '../lib/utils';
-import { inventoryService } from '../services/InventoryService';
 import { authService } from '../services/AuthService';
 import { useToast } from '../hooks/useToast';
 import { syncService, SyncStatus } from '../services/SyncService';
+import { inventoryService } from '../services/InventoryService';
+import { formatCurrency, generateTransactionCode } from '../lib/utils';
 
 // Components
-import SearchPanel from './SearchPanel';
-import CartTable from './CartTable';
+import POSHeader from './POSHeader';
+import POSMainPanel from './POSMainPanel';
+import POSSidePanel from './POSSidePanel';
 import PaymentModal from './PaymentModal';
 import Receipt from './Receipt';
 import StockAlerts from './inventory/StockAlerts';
-import InventoryOverview from './inventory/InventoryOverview';
-import StockAdjustment from './inventory/StockAdjustment';
 import SyncStatusHeader from './SyncStatusHeader';
 import SyncNotifications from './SyncNotifications';
 import SyncStatusModal from './SyncStatusModal';
-
 import { Button } from './ui/button';
-import {
-  User,
-  LogOut,
-  Package,
-  AlertTriangle,
-  Settings,
-  Wifi,
-  Clock,
-  Store,
-  CreditCard,
-  Scan,
-  ChevronDown,
-  Bell,
-  RefreshCw,
-  CloudOff,
-  Database
-} from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -70,412 +52,6 @@ interface Transaction {
   createdAt: string;
 }
 
-interface HeaderSectionProps {
-  cashier: { name: string; id: string; role: string; lastLogin?: string };
-  branch: { name: string; address: string; phone: string };
-  onLogout: () => void;
-  activeView: 'pos' | 'inventory' | 'adjustment' | 'alerts';
-  onViewChange: (view: 'pos' | 'inventory' | 'adjustment' | 'alerts') => void;
-  showStockAlerts: boolean;
-  connectionStatus: 'online' | 'offline';
-  isInventoryDropdownOpen: boolean;
-  setIsInventoryDropdownOpen: (open: boolean) => void;
-  setIsAlertsModalOpen: (open: boolean) => void;
-  syncStatus: any;
-  onSync: () => void;
-}
-
-const HeaderSection: React.FC<HeaderSectionProps> = ({
-  cashier,
-  branch,
-  onLogout,
-  activeView,
-  onViewChange,
-  showStockAlerts,
-  connectionStatus,
-  isInventoryDropdownOpen,
-  setIsInventoryDropdownOpen,
-  setIsAlertsModalOpen,
-  syncStatus,
-  onSync
-}) => {
-  return (
-    <div className="bg-white border-b shadow-sm">
-      {/* Top Bar */}
-      <div className="px-6 py-3 border-b bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div className="flex justify-between items-center">
-          {/* Left - Branding & Store Info */}
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Store className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">BMS POS</h1>
-                <p className="text-sm text-gray-600">{branch.name}</p>
-              </div>
-            </div>
-            <div className="text-sm text-gray-600">
-              <p>{branch.address}</p>
-              <p>{branch.phone}</p>
-            </div>
-          </div>
-
-          {/* Right - System Controls */}
-          <div className="flex items-center space-x-4">
-            {/* Connection Status */}
-            <div className="flex items-center space-x-2">
-              {connectionStatus === 'online' ? (
-                <Wifi className="h-4 w-4 text-green-500" />
-              ) : (
-                <CloudOff className="h-4 w-4 text-red-500" />
-              )}
-              <span className="text-sm text-gray-600">
-                {connectionStatus === 'online' ? 'Online' : 'Offline'}
-              </span>
-            </div>
-
-            {/* Sync Status */}
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onSync}
-                disabled={syncStatus.isSyncing}
-                className="text-xs"
-              >
-                {syncStatus.isSyncing ? (
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                ) : syncStatus.isOnline ? (
-                  <Database className="h-3 w-3" />
-                ) : (
-                  <CloudOff className="h-3 w-3 text-red-500" />
-                )}
-                {syncStatus.pendingTransactions > 0 && (
-                  <span className="ml-1 text-xs bg-orange-100 text-orange-800 px-1 rounded">
-                    {syncStatus.pendingTransactions}
-                  </span>
-                )}
-              </Button>
-            </div>
-
-            {/* Alerts Icon */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsAlertsModalOpen(true)}
-              className="relative text-gray-600 hover:text-gray-900"
-            >
-              <Bell className="h-4 w-4" />
-              {showStockAlerts && (
-                <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
-              )}
-            </Button>
-
-            {/* Time Display */}
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Clock className="h-4 w-4" />
-              <span>{new Date().toLocaleString('id-ID')}</span>
-            </div>
-
-            {/* Cashier Info */}
-            <div className="flex items-center space-x-2 text-sm">
-              <User className="h-4 w-4 text-gray-500" />
-              <span className="font-medium text-gray-900">{cashier.name}</span>
-              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                {cashier.role}
-              </span>
-            </div>
-
-            {/* Logout Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onLogout}
-              className="text-gray-600 hover:text-gray-900"
-            >
-              <LogOut className="h-4 w-4 mr-1" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs */}
-      <div className="px-6 py-3">
-        <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg w-fit">
-          <Button
-            variant={activeView === 'pos' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onViewChange('pos')}
-            className="text-sm font-medium"
-          >
-            <Scan className="h-4 w-4 mr-2" />
-            POS
-          </Button>
-
-          {/* Inventory Dropdown */}
-          <div className="relative">
-            <Button
-              variant={activeView === 'inventory' || activeView === 'adjustment' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setIsInventoryDropdownOpen(!isInventoryDropdownOpen)}
-              className="text-sm font-medium"
-            >
-              <Package className="h-4 w-4 mr-2" />
-              Inventory
-              <ChevronDown className="h-3 w-3 ml-1" />
-            </Button>
-
-            {/* Dropdown Menu */}
-            {isInventoryDropdownOpen && (
-              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-                <Button
-                  variant={activeView === 'inventory' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    onViewChange('inventory');
-                    setIsInventoryDropdownOpen(false);
-                  }}
-                  className="w-full justify-start text-sm font-normal rounded-none border-0"
-                >
-                  <Package className="h-4 w-4 mr-2" />
-                  Overview
-                </Button>
-                <Button
-                  variant={activeView === 'adjustment' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => {
-                    onViewChange('adjustment');
-                    setIsInventoryDropdownOpen(false);
-                  }}
-                  className="w-full justify-start text-sm font-normal rounded-none border-0"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Adjust Stock
-                </Button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Overlay for dropdown */}
-      {isInventoryDropdownOpen && (
-        <div 
-          className="fixed inset-0 z-40"
-          onClick={() => setIsInventoryDropdownOpen(false)}
-        />
-      )}
-    </div>
-  );
-};
-
-interface MainPanelProps {
-  activeView: 'pos' | 'inventory' | 'adjustment' | 'alerts';
-  cart: CartItem[];
-  onAddToCart: (product: Product, quantity?: number) => void;
-  onUpdateCartItem: (productId: string, quantity: number) => void;
-  onUpdateCartDiscount: (productId: string, discount: number) => void;
-  onRemoveFromCart: (productId: string) => void;
-  onClearCart: () => void;
-  onStockAlert: () => void;
-  onPayment: () => void;
-}
-
-const MainPanel: React.FC<MainPanelProps> = ({
-  activeView,
-  cart,
-  onAddToCart,
-  onUpdateCartItem,
-  onUpdateCartDiscount,
-  onRemoveFromCart,
-  onClearCart,
-  onStockAlert
-}) => {
-  if (activeView === 'inventory') {
-    return (
-      <div className="h-full bg-white">
-        <InventoryOverview
-          onProductSelect={(productId) => console.log('Selected:', productId)}
-          onProductEdit={(productId) => console.log('Edit:', productId)}
-        />
-      </div>
-    );
-  }
-
-  if (activeView === 'adjustment') {
-    return (
-      <div className="h-full bg-white">
-        <StockAdjustment
-          onSuccess={(adjustment) => {
-            console.log('Stock adjusted:', adjustment);
-            onStockAlert();
-          }}
-          onClose={() => {}}
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex-1 overflow-hidden flex flex-col p-6">
-      {/* Product Search Section */}
-      <div className="flex-shrink-0 h-48 mb-4">
-        <SearchPanel
-          onAddToCart={onAddToCart}
-          onStockAlert={onStockAlert}
-        />
-      </div>
-
-      {/* Cart Table Section */}
-      <div className="flex-1 min-h-0">
-        <CartTable
-          items={cart}
-          onUpdateQuantity={onUpdateCartItem}
-          onUpdateDiscount={onUpdateCartDiscount}
-          onRemoveItem={onRemoveFromCart}
-          onClearAll={onClearCart}
-        />
-      </div>
-    </div>
-  );
-};
-
-interface SidePanelProps {
-  cart: CartItem[];
-  onPayment: () => void;
-  onClearCart: () => void;
-  totalAmount: number;
-  onPaymentSubmit: (paymentData: {
-    paymentMethod: string;
-    amountPaid: number;
-    discount: number;
-  }) => void;
-}
-
-const SidePanel: React.FC<SidePanelProps> = ({
-  cart,
-  onPayment,
-  onClearCart,
-  totalAmount
-}) => {
-  const getTotalItems = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
-  };
-
-  const getTotalDiscount = () => {
-    return cart.reduce((total, item) => total + item.discount, 0);
-  };
-
-  return (
-    <div className="w-[380px] bg-white border-l shadow-lg flex flex-col">
-      {/* Payment Summary */}
-      <div className="p-6 border-b">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <CreditCard className="h-5 w-5 mr-2 text-blue-600" />
-          Payment Summary
-        </h3>
-        
-        {/* Summary Cards */}
-        <div className="space-y-3">
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-sm text-gray-600">Items</div>
-            <div className="text-xl font-bold text-gray-900">{getTotalItems()}</div>
-          </div>
-          
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-sm text-gray-600">Subtotal</div>
-            <div className="text-xl font-bold text-gray-900">
-              {formatCurrency(totalAmount)}
-            </div>
-          </div>
-          
-          <div className="bg-gray-50 rounded-lg p-3">
-            <div className="text-sm text-gray-600">Discount</div>
-            <div className="text-xl font-bold text-red-600">
-              -{formatCurrency(getTotalDiscount())}
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg p-4">
-            <div className="text-sm opacity-90">Total</div>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalAmount - getTotalDiscount())}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="p-6 space-y-4">
-        <Button
-          onClick={onPayment}
-          disabled={cart.length === 0}
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-lg font-semibold"
-          size="lg"
-        >
-          <CreditCard className="h-5 w-5 mr-2" />
-          Pay Now
-        </Button>
-        
-        <Button
-          variant="outline"
-          onClick={onClearCart}
-          disabled={cart.length === 0}
-          className="w-full border-red-300 text-red-600 hover:bg-red-50 py-3"
-          size="lg"
-        >
-          Clear All Items
-        </Button>
-      </div>
-
-      {/* Quick Payment Options */}
-      <div className="px-6 pb-6">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h4>
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={cart.length === 0}
-          >
-            Cash
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={cart.length === 0}
-          >
-            Card
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={cart.length === 0}
-          >
-            QRIS
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={cart.length === 0}
-          >
-            Split
-          </Button>
-        </div>
-      </div>
-
-      {/* System Status */}
-      <div className="mt-auto p-6 border-t bg-gray-50">
-        <div className="text-xs text-gray-500 text-center">
-          <p className="mb-1">System Status: Ready</p>
-          <p>Last updated: {new Date().toLocaleTimeString()}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 interface POSLayoutProps {
   user?: { username: string; id: string; role: string; lastLogin?: string };
   onLogout?: () => void;
@@ -509,6 +85,7 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
     role: currentUser?.role || 'admin',
     lastLogin: currentUser?.lastLogin
   };
+  
   const branch = {
     name: 'BMS Store',
     address: 'Jl. Example No. 123',
@@ -522,12 +99,12 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
     error?: string;
   }> => {
     try {
-      const availability = await inventoryService.checkStockAvailability([
+      const result = await inventoryService.checkStockAvailability([
         { productId: product.id, quantity: requestedQuantity }
       ]);
       
-      if (!availability.available) {
-        const issue = availability.issues.find(i => i.productId === product.id);
+      if (result.success && result.data && !result.data.available) {
+        const issue = result.data.issues.find(i => i.productId === product.id);
         return {
           available: false,
           availableStock: issue?.available || 0,
@@ -644,20 +221,20 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
       const stockUpdates = cartItems.map(item => ({
         productId: item.productId,
         quantity: -item.quantity, // Negative for sales (stock reduction)
-        type: 'sale' as const,
-        reason: `Sale transaction ${transactionId}`,
-        notes: `Sold ${item.quantity} units`
+        type: 'OUT' as const,
+        notes: `Sale transaction ${transactionId}`,
+        reference: `Sale-${transactionId}`
       }));
 
-      const result = await inventoryService.batchUpdateStock(stockUpdates, currentUser.id, transactionId);
+      const result = await inventoryService.bulkAdjustStock(stockUpdates);
       
-      if (result.success) {
-        const successCount = result.results.filter(r => r.success).length;
-        if (successCount === cartItems.length) {
-          showSuccess(`Stock updated for ${successCount} items`);
+      if (result.success && result.data) {
+        const { successful, failed } = result.data.summary;
+        if (failed === 0) {
+          showSuccess(`Stock updated for ${successful} items`);
           return true;
         } else {
-          showWarning(`Stock updated for ${successCount}/${cartItems.length} items`);
+          showWarning(`Stock updated for ${successful}/${cartItems.length} items`);
           return true; // Partial success is still acceptable
         }
       } else {
@@ -676,8 +253,8 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
     amountPaid: number;
     discount: number;
   }) => {
-    if (!window.electronAPI) {
-      showError('Electron API not available');
+    if (!window.webAPI) {
+      showError('Web API not available');
       return;
     }
 
@@ -714,7 +291,7 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
       }
 
       // Then create the transaction
-      const result = await window.electronAPI.createTransaction(transactionData);
+      const result = await window.webAPI.createTransaction(transactionData);
 
       if (result.success) {
         const transaction: Transaction = {
@@ -738,13 +315,16 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
           const rollbackUpdates = cart.map(item => ({
             productId: item.productId,
             quantity: item.quantity, // Positive for rollback
-            type: 'adjustment' as const,
-            reason: `Transaction rollback ${transactionId}`,
-            notes: `Rolled back ${item.quantity} units`
+            type: 'ADJUSTMENT' as const,
+            notes: `Transaction rollback ${transactionId}`,
+            reference: `Rollback-${transactionId}`
           }));
           
           if (currentUser) {
-            await inventoryService.batchUpdateStock(rollbackUpdates, currentUser.id, transactionId);
+            const rollbackResult = await inventoryService.bulkAdjustStock(rollbackUpdates);
+            if (!rollbackResult.success) {
+              console.error('Rollback failed:', rollbackResult.error);
+            }
           }
           showWarning('Sale cancelled - inventory rolled back');
         } catch (rollbackError) {
@@ -761,7 +341,7 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
   };
 
   const printReceipt = async () => {
-    if (!currentTransaction || !window.electronAPI) return;
+    if (!currentTransaction || !window.webAPI) return;
 
     try {
       const receiptData = {
@@ -771,7 +351,7 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
         branch
       };
 
-      await window.electronAPI.printReceipt(receiptData);
+      await window.webAPI.printReceipt(receiptData);
     } catch (error) {
       console.error('Print error:', error);
       alert('Failed to print receipt');
@@ -867,7 +447,7 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
   return (
     <div className="h-screen flex flex-col bg-gray-50">
       {/* Header Section */}
-      <HeaderSection
+      <POSHeader
         cashier={cashier}
         branch={branch}
         onLogout={handleLogout}
@@ -893,7 +473,7 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
       {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Main Panel - Search + Transaction Table */}
-        <MainPanel
+        <POSMainPanel
           activeView={activeView}
           cart={cart}
           onAddToCart={addToCart}
@@ -907,7 +487,7 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
 
         {/* Side Panel - Payment Summary (380px fixed width) - Only show on POS page */}
         {activeView === 'pos' && (
-          <SidePanel
+          <POSSidePanel
             cart={cart}
             onPayment={() => setIsPaymentModalOpen(true)}
             onClearCart={clearCart}
@@ -972,7 +552,7 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
         </div>
       )}
 
-      {/* Keyboard Shortcuts Help (can be shown/hidden) */}
+      {/* Keyboard Shortcuts Help */}
       <div className="fixed bottom-4 right-4 text-xs text-gray-500 bg-white p-2 rounded shadow opacity-60 hover:opacity-100 transition-opacity">
         F2: Pay | F3: Clear | F4: Switch View | F5: Refresh | F11: Logout
       </div>

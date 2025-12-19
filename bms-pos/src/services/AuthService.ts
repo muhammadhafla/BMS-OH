@@ -1,3 +1,6 @@
+import { configService } from './ConfigService';
+import { sessionManager } from './SessionManager';
+
 export interface User {
   id: string;
   username: string;
@@ -17,6 +20,7 @@ export interface LoginResult {
   user?: User;
   token?: string;
   error?: string;
+  remainingAttempts?: number;
 }
 
 class AuthService {
@@ -49,14 +53,8 @@ class AuthService {
 
   private userTokens: Map<string, string> = new Map();
 
-  private passwordMap: Map<string, string> = new Map([
-    ['admin', 'admin123'],
-    ['cashier1', 'cashier123'],
-    ['manager1', 'manager123']
-  ]);
-
   private generateToken(): string {
-    return `token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return configService.generateSecureToken();
   }
 
   
@@ -92,12 +90,8 @@ class AuthService {
           this.users[userIndex] = updatedUser;
         }
         
-        // Store REAL token in localStorage for API service
-        localStorage.setItem('bms_pos_session', JSON.stringify({
-          userId: user.id,
-          token: realBackendToken,
-          timestamp: Date.now()
-        }));
+        // Store session securely
+        sessionManager.storeSession(user.id, realBackendToken);
         localStorage.setItem('bms_user', JSON.stringify(updatedUser));
         
         console.log('✅ Backend login successful, using real JWT token');
@@ -120,28 +114,58 @@ class AuthService {
   }
 
   private async mockLogin(username: string, password: string): Promise<LoginResult> {
+    // Check rate limiting
+    if (!sessionManager.canAttemptLogin()) {
+      return {
+        success: false,
+        error: `Too many failed attempts. ${sessionManager.getRemainingAttempts()} attempts remaining.`,
+        remainingAttempts: sessionManager.getRemainingAttempts()
+      };
+    }
+
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    // Validate credentials
-    const expectedPassword = this.passwordMap.get(username);
-    if (!expectedPassword || expectedPassword !== password) {
+    // Get user credentials from secure config
+    const userCredentials = configService.getUserCredentials();
+    const userConfig = userCredentials.find(u => u.username === username);
+    
+    if (!userConfig) {
+      sessionManager.recordLoginAttempt(false);
       return {
         success: false,
-        error: 'Invalid username or password'
+        error: 'Invalid username or password',
+        remainingAttempts: sessionManager.getRemainingAttempts()
+      };
+    }
+
+    // Verify password using secure hashing
+    const isPasswordValid = await configService.verifyPassword(password, userConfig.passwordHash);
+    
+    if (!isPasswordValid) {
+      sessionManager.recordLoginAttempt(false);
+      return {
+        success: false,
+        error: 'Invalid username or password',
+        remainingAttempts: sessionManager.getRemainingAttempts()
       };
     }
 
     // Find user
-    const user = this.users.find(u => u.username === username);
+    const user = this.users.find(u => u.id === userConfig.id);
     if (!user || !user.isActive) {
+      sessionManager.recordLoginAttempt(false);
       return {
         success: false,
-        error: 'Account is inactive or not found'
+        error: 'Account is inactive or not found',
+        remainingAttempts: sessionManager.getRemainingAttempts()
       };
     }
 
-    // Generate token
+    // Record successful login
+    sessionManager.recordLoginAttempt(true);
+
+    // Generate secure token
     const token = this.generateToken();
     
     // Update user last login and store token
@@ -156,12 +180,10 @@ class AuthService {
     const userIndex = this.users.findIndex(u => u.id === user.id);
     this.users[userIndex] = updatedUser;
 
-    // Store in localStorage for ApiService compatibility
-    localStorage.setItem('bms_pos_session', JSON.stringify({
-      userId: user.id,
-      token,
-      timestamp: Date.now()
-    }));
+    // Store session securely
+    sessionManager.storeSession(user.id, token);
+    
+    // Store user data for compatibility (minimal exposure)
     localStorage.setItem('bms_user', JSON.stringify(updatedUser));
 
     return {
@@ -189,31 +211,29 @@ class AuthService {
       this.userTokens.delete(currentUser.id);
     }
     
-    // Clear from localStorage
-    localStorage.removeItem('bms_pos_session');
+    // Clear session securely
+    sessionManager.clearSession();
   }
 
   getCurrentUser(): User | null {
     try {
-      const sessionData = localStorage.getItem('bms_pos_session');
-      if (!sessionData) {
+      const session = sessionManager.getSession();
+      if (!session) {
         return null;
       }
 
-      const { userId, token } = JSON.parse(sessionData);
-      
       // Verify token exists and is valid
-      if (!this.userTokens.has(userId) || this.userTokens.get(userId) !== token) {
-        localStorage.removeItem('bms_pos_session');
+      if (!this.userTokens.has(session.userId) || this.userTokens.get(session.userId) !== session.token) {
+        sessionManager.clearSession();
         return null;
       }
 
       // Find and return user
-      const user = this.users.find(u => u.id === userId);
+      const user = this.users.find(u => u.id === session.userId);
       return user && user.isActive ? user : null;
     } catch (error) {
       console.error('Error getting current user:', error);
-      localStorage.removeItem('bms_pos_session');
+      sessionManager.clearSession();
       return null;
     }
   }
@@ -231,30 +251,47 @@ class AuthService {
   }
 
   validateSession(): boolean {
-    const sessionData = localStorage.getItem('bms_pos_session');
-    if (!sessionData) {
+    return sessionManager.isValid();
+  }
+
+  /**
+   * Async session validation with token refresh
+   */
+  async validateSessionAsync(): Promise<boolean> {
+    const session = sessionManager.getSession();
+    if (!session) {
       return false;
     }
 
-    try {
-      const { userId, token, timestamp } = JSON.parse(sessionData);
-      
-      // Check if session is less than 24 hours old
-      const sessionAge = Date.now() - timestamp;
-      const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-      
-      if (sessionAge > maxAge) {
-        localStorage.removeItem('bms_pos_session');
-        return false;
-      }
-
-      // Verify token is still valid
-      return this.userTokens.has(userId) && this.userTokens.get(userId) === token;
-    } catch (error) {
-      console.error('Error validating session:', error);
-      localStorage.removeItem('bms_pos_session');
-      return false;
+    // Check if session needs refresh
+    if (sessionManager.needsRefresh()) {
+      // Attempt to refresh the token (async)
+      const refreshed = await sessionManager.refreshToken();
+      return refreshed;
     }
+
+    // Verify token is still valid
+    return this.userTokens.has(session.userId) && this.userTokens.get(session.userId) === session.token;
+  }
+
+  /**
+   * Get session security statistics
+   */
+  getSecurityStats() {
+    return {
+      sessionValid: this.isAuthenticated(),
+      sessionStats: sessionManager.getSessionStats(),
+      remainingAttempts: sessionManager.getRemainingAttempts(),
+      canAttemptLogin: sessionManager.canAttemptLogin(),
+      secureMode: configService.isSecureMode()
+    };
+  }
+
+  /**
+   * Check if system is running in secure mode
+   */
+  isSecureMode(): boolean {
+    return configService.isSecureMode();
   }
 }
 

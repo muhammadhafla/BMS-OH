@@ -2,7 +2,7 @@
 
 declare global {
   interface Window {
-    electronAPI?: {
+    webAPI?: {
       getProducts: (args?: any) => Promise<any>;
       searchProduct: (searchTerm: string) => Promise<any>;
       createTransaction: (transactionData: any) => Promise<any>;
@@ -13,7 +13,7 @@ declare global {
       versions: {
         node: string;
         chrome: string;
-        electron: string;
+        electron?: string;
       };
     };
   }

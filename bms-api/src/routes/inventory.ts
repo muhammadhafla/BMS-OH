@@ -805,12 +805,10 @@ router.post('/batches', authenticate, async (req: AuthenticatedRequest, res) => 
     }
 
     // Check if batch number already exists for this product
-    const existingBatch = await prisma.productBatch.findUnique({
+    const existingBatch = await prisma.productBatch.findFirst({
       where: {
-        productId_batchNumber: {
-          productId: data.productId,
-          batchNumber: data.batchNumber
-        }
+        productId: data.productId,
+        batchNumber: data.batchNumber
       }
     });
 
@@ -824,14 +822,18 @@ router.post('/batches', authenticate, async (req: AuthenticatedRequest, res) => 
     // Create batch
     const batch = await prisma.productBatch.create({
       data: {
+        batchCode: `BATCH-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         productId: data.productId,
         batchNumber: data.batchNumber,
         lotNumber: data.lotNumber,
         expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
         manufactureDate: data.manufactureDate ? new Date(data.manufactureDate) : null,
         quantity: data.quantity,
+        remainingQty: data.quantity,
         availableQty: data.quantity,
         cost: data.cost,
+        costPrice: data.cost,
+        sellingPrice: data.cost * 1.2, // Default 20% markup
         supplier: data.supplier,
         location: data.location,
         status: 'ACTIVE',
@@ -908,12 +910,10 @@ router.put('/batches/:id', authenticate, async (req: AuthenticatedRequest, res) 
 
     // Check batch number uniqueness if being updated
     if (data.batchNumber && data.batchNumber !== existingBatch.batchNumber) {
-      const duplicateBatch = await prisma.productBatch.findUnique({
+      const duplicateBatch = await prisma.productBatch.findFirst({
         where: {
-          productId_batchNumber: {
-            productId: existingBatch.productId,
-            batchNumber: data.batchNumber
-          }
+          productId: existingBatch.productId,
+          batchNumber: data.batchNumber
         }
       });
       

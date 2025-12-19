@@ -8,6 +8,7 @@ dotenv.config({ path: '.env.test' });
 beforeAll(async () => {
   // Set test environment variables
   process.env.NODE_ENV = 'test';
+  process.env.PORT = '3002'; // Use different port to avoid conflicts
   process.env.JWT_SECRET = 'test-jwt-secret-for-password-reset-testing';
   process.env.FRONTEND_URL = 'http://localhost:3000';
   
@@ -29,7 +30,7 @@ afterAll(async () => {
 beforeEach(async () => {
   const prisma = new PrismaClient();
   
-  // Clean up test data before each test (order matters due to foreign keys)
+  // Clean up test data before each test (reverse order due to foreign keys)
   await prisma.passwordResetToken.deleteMany({});
   await prisma.transactionItem.deleteMany({});
   await prisma.transaction.deleteMany({});
@@ -40,14 +41,14 @@ beforeEach(async () => {
   await prisma.product.deleteMany({});
   await prisma.message.deleteMany({});
   await prisma.attendance.deleteMany({});
-  await prisma.user.deleteMany({});
-  await prisma.branch.deleteMany({});
-  await prisma.category.deleteMany({});
-  await prisma.cashDrawerActivity.deleteMany({});
   await prisma.cashDrawerSession.deleteMany({});
+  await prisma.cashDrawerActivity.deleteMany({});
   await prisma.journalEntryItem.deleteMany({});
   await prisma.journalEntry.deleteMany({});
   await prisma.chartOfAccount.deleteMany({});
+  await prisma.category.deleteMany({});
+  await prisma.user.deleteMany({});
+  await prisma.branch.deleteMany({});
 });
 
 // Export Prisma client for tests

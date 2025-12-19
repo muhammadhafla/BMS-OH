@@ -1,0 +1,180 @@
+# BMS System Environment Setup Complete
+
+## System Requirements Installed ✅
+
+### Core Dependencies
+- **Node.js**: v22.21.0 (required: >=22.0.0) ✅
+- **npm**: 10.9.4 ✅
+- **PostgreSQL**: 15.14 ✅
+- **Build Tools**: gcc, g++, make, python3-dev ✅
+
+## Project Structure
+
+### 1. BMS API (Backend) - Port 3001
+- **Location**: `bms-api/`
+- **Technology**: Node.js + TypeScript + Express + Prisma
+- **Database**: PostgreSQL (`bms_database`)
+- **Status**: ✅ Configured and tested
+
+**Key Features**:
+- RESTful API server
+- WebSocket support (multiple namespaces)
+- JWT authentication
+- Email service (logging mode for development)
+- Prisma ORM with PostgreSQL
+
+**Environment Variables**:
+```env
+DATABASE_URL="postgresql://postgres:password@localhost:5432/bms_database"
+JWT_SECRET="development-jwt-secret-key-for-bms-system"
+PORT=3001
+FRONTEND_URL="http://localhost:3000"
+```
+
+### 2. BMS Web (Frontend) - Port 3000
+- **Location**: `bms-web/`
+- **Technology**: Next.js 14 + React 18.2.0 + TypeScript
+- **Status**: ✅ Configured and tested
+
+**Key Features**:
+- Next.js 14 App Router
+- React 18.2.0
+- Tailwind CSS
+- TypeScript support
+- API integration ready
+
+### 3. BMS POS (Desktop App) - Electron
+- **Location**: `bms-pos/`
+- **Technology**: Electron + React 18.3.1 + TypeScript
+- **Status**: ✅ Configured and tested
+
+**Key Features**:
+- Electron desktop application
+- React 18.3.1
+- better-sqlite3 for local storage
+- Vite build system
+- Electron Forge for packaging
+
+## Database Setup
+
+### Database Details
+- **Host**: localhost
+- **Port**: 5432
+- **Database**: bms_database
+- **User**: postgres
+- **Password**: password
+
+### Migrations Applied
+- ✅ `20251110144814_init` - Initial schema
+- ✅ `20251125101219_add_password_reset_tokens` - Password reset functionality
+
+### Database Schema
+The system includes comprehensive business management features:
+- User management with roles (ADMIN, MANAGER, STAFF)
+- Multi-branch operations
+- Product catalog with categories
+- Inventory management with stock alerts
+- Transaction processing
+- Customer management with loyalty programs
+- Supplier and purchase order management
+- Accounting with chart of accounts
+- Attendance tracking
+- Tax management
+- Inter-branch transfers
+- Batch and lot tracking
+
+## How to Run the Services
+
+### 1. Start Backend API
+```bash
+cd bms-api
+npm run dev
+```
+**Expected Output**: Server running on http://localhost:3001
+
+### 2. Start Web Frontend (in new terminal)
+```bash
+cd bms-web
+npm run dev
+```
+**Expected Output**: Next.js running on http://localhost:3000
+
+### 3. Start Desktop POS App (in new terminal)
+```bash
+cd bms-pos
+npm run electron:dev
+```
+**Expected Output**: Electron app window opens
+
+## API Endpoints
+
+### WebSocket Endpoints
+- **Main**: ws://localhost:3001/ws
+- **Admin**: ws://localhost:3001/ws-admin  
+- **POS**: ws://localhost:3001/ws-pos
+
+### REST API
+- **Base URL**: http://localhost:3001
+- **Documentation**: http://localhost:3001/api-docs
+
+## Development Scripts
+
+### Backend (bms-api)
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm test` - Run tests
+- `npx prisma studio` - Open Prisma database GUI
+- `npx prisma migrate dev` - Create and apply migrations
+
+### Web Frontend (bms-web)
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+### Desktop POS (bms-pos)
+- `npm run dev` - Start Vite development server
+- `npm run electron:dev` - Start Electron development app
+- `npm run build` - Build web assets
+- `npm run electron:build` - Build Electron app
+- `npm run build:win` - Build Windows installer
+- `npm run build:linux` - Build Linux AppImage
+
+## Security Notes
+
+⚠️ **Development Environment Only**
+- Database credentials are for development
+- JWT secret should be changed for production
+- Email service is in logging mode
+- No HTTPS configured
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Error**
+   - Ensure PostgreSQL is running: `sudo systemctl status postgresql`
+   - Check database exists: `sudo -u postgres psql -l`
+
+2. **Port Already in Use**
+   - API (3001): `lsof -ti:3001 | xargs kill`
+   - Web (3000): `lsof -ti:3000 | xargs kill`
+
+3. **Permission Errors**
+   - Use `sudo` for system-level installations
+   - Check file permissions in project directories
+
+4. **Node.js Version**
+   - Requires Node.js >=22.0.0
+   - Check version: `node --version`
+
+## Environment Ready! 🚀
+
+All BMS system components are now configured and ready for development:
+- ✅ Backend API with PostgreSQL
+- ✅ Web Frontend with Next.js
+- ✅ Desktop POS with Electron
+- ✅ Database with complete schema
+- ✅ All dependencies installed
+
+You can now start developing and testing the Business Management System!

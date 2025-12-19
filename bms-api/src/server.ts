@@ -71,8 +71,9 @@ const corsOptions = {
       /:5174$/,   // Alternative Vite port
       /:4173$/,   // Second display port
       
-      // Backend API port
-      /:3001$/    // Backend API
+      // Backend API ports
+      /:3001$/,   // Backend API (production)
+      /:3002$/    // Backend API (testing)
     ];
     
     // Check if origin matches any allowed pattern
@@ -166,7 +167,7 @@ const httpServer = createServer(app);
 const wsConfig = {
   port: typeof PORT === 'string' ? parseInt(PORT) : PORT,
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:4173'], // Simplified for WebSocket
+    origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:4173', 'http://localhost:3002'], // Simplified for WebSocket
     credentials: corsOptions.credentials
   },
   namespaces: {

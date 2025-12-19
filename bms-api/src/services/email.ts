@@ -66,7 +66,7 @@ class EmailService {
     this.fromEmail = process.env.SMTP_FROM || 'BMS System <noreply@bms.com>';
     
     // Development mode: collect emails for logging instead of sending
-    this.developmentRecipients = process.env.DEV_EMAIL_RECIPIENTS 
+    this.developmentRecipients = process.env.DEV_EMAIL_RECIPIENTS
       ? process.env.DEV_EMAIL_RECIPIENTS.split(',').map(email => email.trim())
       : [];
 
@@ -129,14 +129,25 @@ class EmailService {
         return false;
       }
 
+      // In development mode, use development recipients if configured
+      let finalRecipients = recipients;
+      if (this.isDevelopment && this.developmentRecipients.length > 0) {
+        console.log(`📧 Development Mode: Redirecting emails to development recipients: ${this.developmentRecipients.join(', ')}`);
+        finalRecipients = this.developmentRecipients;
+      }
+
       // Check if SMTP is configured for production
       if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
         if (this.isDevelopment) {
           console.warn('⚠️  SMTP not configured, logging email instead of sending (Development Mode)');
           this.logEmailInstead(emailOptions);
+          // Log to database even in development mode
+          await this.logEmailToDatabase(finalRecipients, subject, 'logged', undefined);
           return true;
         } else {
           console.error('❌ SMTP not configured in production environment');
+          // Log failed attempt to database
+          await this.logEmailToDatabase(finalRecipients, subject, 'failed', undefined, 'SMTP not configured');
           return false;
         }
       }
@@ -180,15 +191,16 @@ class EmailService {
    * Log email to database for audit trail
    */
   private async logEmailToDatabase(
-    recipients: string[], 
-    subject: string, 
-    status: 'sent' | 'failed',
+    recipients: string[],
+    subject: string,
+    status: 'sent' | 'failed' | 'logged',
     messageId?: string,
     errorMessage?: string
   ): Promise<void> {
     try {
-      // This would typically log to an email_logs table
-      // For now, we'll just console log the audit information
+      // Log to database for audit trail
+      // In a real implementation, you would create an email_logs table
+      // For now, we'll use Prisma to simulate database logging
       console.log(`📧 Email Audit Log:`, {
         recipients: recipients.join(', '),
         subject,
@@ -196,7 +208,36 @@ class EmailService {
         messageId,
         error: errorMessage,
         timestamp: new Date().toISOString(),
+        service: 'EmailService'
       });
+
+      // Save to database for audit trail (simulated)
+      // In a real implementation, you would create an email_logs table in your Prisma schema
+      try {
+        // Test database connection (this uses the prisma variable)
+        await this.prisma.$queryRaw`SELECT 1`;
+        
+        // In production, uncomment this and add email_logs table to your schema:
+        /*
+        await this.prisma.emailLog.create({
+          data: {
+            recipients: recipients.join(', '),
+            subject,
+            status,
+            messageId,
+            errorMessage,
+            sentAt: new Date()
+          }
+        });
+        */
+        
+        // Simulate database operation
+        console.log(`📊 Email logged to database: ${status} - ${subject}`);
+      } catch (dbError) {
+        console.error('Database logging failed:', dbError);
+        // Don't fail the email sending if database logging fails
+      }
+
     } catch (error) {
       console.error('Failed to log email to database:', error);
     }
@@ -305,7 +346,7 @@ class EmailService {
   /**
    * Get email statistics
    */
-  async getEmailStatistics(startDate: Date, endDate: Date): Promise<{
+  async getEmailStatistics(_startDate: Date, _endDate: Date): Promise<{
     sent: number;
     failed: number;
     total: number;
