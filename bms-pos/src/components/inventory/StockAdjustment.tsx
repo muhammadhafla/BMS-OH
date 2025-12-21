@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { LoadingSpinner } from '../ui/loading-spinner';
-import { LoadingOverlay } from '../ui/loading-overlay';
-import { useToast } from '../../hooks/useToast';
-import { inventoryService } from '../../services/InventoryService';
-import { authService, User } from '../../services/AuthService';
-import Validator, { ValidationSchema, ValidationResult } from '../../utils/validation';
+import React, { useState, useEffect } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { LoadingSpinner } from '../ui/loading-spinner'
+import { LoadingOverlay } from '../ui/loading-overlay'
+import { useToast } from '../../hooks/useToast'
+import { inventoryService } from '../../services/InventoryService'
+import { authService, User } from '../../services/AuthService'
+import Validator, { ValidationSchema, ValidationResult } from '../../utils/validation'
 import { 
   Settings, 
   Save, 
@@ -21,7 +21,7 @@ import {
   Plus,
   Minus,
   
-} from 'lucide-react';
+} from 'lucide-react'
 
 interface StockAdjustmentFormData {
   productId: string;
@@ -52,10 +52,10 @@ const REASON_CODES = [
   { value: 'customer_return_damaged', label: 'Customer Return (Damaged)' },
   { value: 'promotional_giveaway', label: 'Promotional Giveaway' },
   { value: 'samples', label: 'Samples' },
-  { value: 'other', label: 'Other' }
-];
+  { value: 'other', label: 'Other' },
+]
 
-const APPROVAL_THRESHOLD = 50; // Require approval for adjustments > 50 units
+const APPROVAL_THRESHOLD = 50 // Require approval for adjustments > 50 units
 
 const StockAdjustment: React.FC<StockAdjustmentProps> = ({
   onClose,
@@ -63,7 +63,7 @@ const StockAdjustment: React.FC<StockAdjustmentProps> = ({
   initialProductId,
   prefillData,
   showApprovalWorkflow = true,
-  maxAdjustmentAmount = 1000
+  maxAdjustmentAmount = 1000,
 }) => {
   const [formData, setFormData] = useState<StockAdjustmentFormData>({
     productId: initialProductId || '',
@@ -73,183 +73,183 @@ const StockAdjustment: React.FC<StockAdjustmentProps> = ({
     notes: '',
     requiresApproval: false,
     approverId: '',
-    ...prefillData
-  });
+    ...prefillData,
+  })
 
-  const [inventory, setInventory] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
-  const [approvalMode, setApprovalMode] = useState(false);
+  const [inventory, setInventory] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [approvalMode, setApprovalMode] = useState(false)
   const [approvers] = useState<User[]>([
     { id: '3', username: 'manager1', role: 'manager', permissions: ['all'], isActive: true },
-    { id: '1', username: 'admin', role: 'admin', permissions: ['all'], isActive: true }
-  ]);
+    { id: '1', username: 'admin', role: 'admin', permissions: ['all'], isActive: true },
+  ])
 
-  const { showSuccess, showError, showWarning } = useToast();
+  const { showSuccess, showError, showWarning } = useToast()
 
   // Load inventory and current user
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
         const [inventoryData, user] = await Promise.all([
           inventoryService.getAllInventory(),
-          Promise.resolve(authService.getCurrentUser())
-        ]);
+          Promise.resolve(authService.getCurrentUser()),
+        ])
         
-        setInventory(inventoryData);
-        setCurrentUser(user);
+        setInventory(inventoryData)
+        setCurrentUser(user)
 
         // Auto-select product if initialProductId provided
         if (initialProductId) {
-          const product = inventoryData.find(p => p.productId === initialProductId);
-          setSelectedProduct(product);
+          const product = inventoryData.find(p => p.productId === initialProductId)
+          setSelectedProduct(product)
         }
       } catch (error) {
-        console.error('Error loading data:', error);
-        showError('Failed to load inventory data');
+        console.error('Error loading data:', error)
+        showError('Failed to load inventory data')
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    loadData();
-  }, [initialProductId]);
+    loadData()
+  }, [initialProductId])
 
   // Validation schema
   const getValidationSchema = (): ValidationSchema => ({
     productId: [
-      { type: 'required', message: 'Product selection is required' }
+      { type: 'required', message: 'Product selection is required' },
     ],
     quantity: [
       { type: 'required', message: 'Quantity is required' },
       { type: 'custom', validator: (value: number) => {
-        if (isNaN(value) || value <= 0) return 'Quantity must be a positive number';
-        if (value > maxAdjustmentAmount) return `Maximum adjustment is ${maxAdjustmentAmount} units`;
-        return true;
-      }}
+        if (isNaN(value) || value <= 0) return 'Quantity must be a positive number'
+        if (value > maxAdjustmentAmount) return `Maximum adjustment is ${maxAdjustmentAmount} units`
+        return true
+      }},
     ],
     reason: [
-      { type: 'required', message: 'Reason is required' }
+      { type: 'required', message: 'Reason is required' },
     ],
     notes: [
-      { type: 'minLength', value: 10, message: 'Notes must be at least 10 characters' }
+      { type: 'minLength', value: 10, message: 'Notes must be at least 10 characters' },
     ],
     approverId: [
       { type: 'custom', validator: (value: string) => {
-        if (formData.requiresApproval && !value) return 'Approver selection is required';
-        return true;
-      }}
-    ]
-  });
+        if (formData.requiresApproval && !value) return 'Approver selection is required'
+        return true
+      }},
+    ],
+  })
 
   // Validate form
   const validateForm = (): ValidationResult => {
-    const result = Validator.validate(formData, getValidationSchema());
-    const flattened = Validator.flattenErrors(result.errors);
-    setValidationErrors(flattened);
-    return result;
-  };
+    const result = Validator.validate(formData, getValidationSchema())
+    const flattened = Validator.flattenErrors(result.errors)
+    setValidationErrors(flattened)
+    return result
+  }
 
   // Handle form changes
   const handleInputChange = (field: keyof StockAdjustmentFormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...prev, [field]: value }))
 
     // Clear validation error for this field
     if (validationErrors[field]) {
-      setValidationErrors(prev => ({ ...prev, [field]: '' }));
+      setValidationErrors(prev => ({ ...prev, [field]: '' }))
     }
 
     // Check if approval is required
     if (field === 'quantity') {
-      const requiresApproval = value > APPROVAL_THRESHOLD;
-      setFormData(prev => ({ ...prev, requiresApproval }));
+      const requiresApproval = value > APPROVAL_THRESHOLD
+      setFormData(prev => ({ ...prev, requiresApproval }))
     }
-  };
+  }
 
   // Handle product selection
   const handleProductSelect = (productId: string) => {
-    const product = inventory.find(p => p.productId === productId);
-    setSelectedProduct(product);
-    handleInputChange('productId', productId);
-  };
+    const product = inventory.find(p => p.productId === productId)
+    setSelectedProduct(product)
+    handleInputChange('productId', productId)
+  }
 
   // Handle adjustment type change
   const handleAdjustmentTypeChange = (type: 'increase' | 'decrease' | 'set') => {
-    setFormData(prev => ({ ...prev, adjustmentType: type }));
-  };
+    setFormData(prev => ({ ...prev, adjustmentType: type }))
+  }
 
   // Calculate new stock level
   const calculateNewStock = (): number => {
-    if (!selectedProduct) return 0;
+    if (!selectedProduct) return 0
     
-    const currentStock = selectedProduct.currentStock;
-    const quantity = formData.quantity;
+    const {currentStock} = selectedProduct
+    const {quantity} = formData
     
     switch (formData.adjustmentType) {
       case 'increase':
-        return currentStock + quantity;
+        return currentStock + quantity
       case 'decrease':
-        return currentStock - quantity;
+        return currentStock - quantity
       case 'set':
-        return quantity;
+        return quantity
       default:
-        return currentStock;
+        return currentStock
     }
-  };
+  }
 
   // Check if adjustment would result in negative stock
   const wouldBeNegativeStock = (): boolean => {
-    const newStock = calculateNewStock();
-    return newStock < 0;
-  };
+    const newStock = calculateNewStock()
+    return newStock < 0
+  }
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     
     // Validate form
-    const validation = validateForm();
+    const validation = validateForm()
     if (!validation.isValid) {
-      showWarning('Please correct the form errors');
-      return;
+      showWarning('Please correct the form errors')
+      return
     }
 
     if (!currentUser) {
-      showError('User not authenticated');
-      return;
+      showError('User not authenticated')
+      return
     }
 
     // Check for negative stock
     if (wouldBeNegativeStock()) {
-      showError('Adjustment would result in negative stock. Please reduce the quantity.');
-      return;
+      showError('Adjustment would result in negative stock. Please reduce the quantity.')
+      return
     }
 
     // Check if approval is required
     if (formData.requiresApproval && showApprovalWorkflow) {
-      setApprovalMode(true);
-      return;
+      setApprovalMode(true)
+      return
     }
 
-    await processAdjustment();
-  };
+    await processAdjustment()
+  }
 
   // Process the actual adjustment
   const processAdjustment = async () => {
     if (!currentUser) {
-      showError('User not authenticated');
-      return;
+      showError('User not authenticated')
+      return
     }
 
-    setSaving(true);
+    setSaving(true)
     
     try {
-      const newStock = calculateNewStock();
-      const stockDifference = newStock - selectedProduct.currentStock;
+      const newStock = calculateNewStock()
+      const stockDifference = newStock - selectedProduct.currentStock
       
       const result = await inventoryService.updateStock(
         formData.productId,
@@ -258,64 +258,64 @@ const StockAdjustment: React.FC<StockAdjustmentProps> = ({
         currentUser.id,
         formData.reason,
         undefined,
-        `Manual adjustment: ${formData.notes}`
-      );
+        `Manual adjustment: ${formData.notes}`,
+      )
 
       if (result.success) {
-        showSuccess('Stock adjustment completed successfully');
-        onSuccess?.(result.movement);
-        onClose?.();
+        showSuccess('Stock adjustment completed successfully')
+        onSuccess?.(result.movement)
+        onClose?.()
       } else {
-        showError(result.error || 'Failed to adjust stock');
+        showError(result.error || 'Failed to adjust stock')
       }
     } catch (error) {
-      console.error('Error adjusting stock:', error);
-      showError('Failed to adjust stock');
+      console.error('Error adjusting stock:', error)
+      showError('Failed to adjust stock')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   // Handle approval submission
   const handleApproval = async (approved: boolean) => {
     if (!approved) {
-      setApprovalMode(false);
-      return;
+      setApprovalMode(false)
+      return
     }
 
     if (!formData.approverId) {
-      showError('Please select an approver');
-      return;
+      showError('Please select an approver')
+      return
     }
 
-    const approver = approvers.find(a => a.id === formData.approverId);
+    const approver = approvers.find(a => a.id === formData.approverId)
     if (!approver) {
-      showError('Invalid approver selected');
-      return;
+      showError('Invalid approver selected')
+      return
     }
 
-    await processAdjustment();
-  };
+    await processAdjustment()
+  }
 
   // Get adjustment type icon
   const getAdjustmentIcon = (type: string) => {
     switch (type) {
-      case 'increase': return <Plus className="h-4 w-4 text-green-600" />;
-      case 'decrease': return <Minus className="h-4 w-4 text-red-600" />;
-      case 'set': return <Settings className="h-4 w-4 text-blue-600" />;
-      default: return <Package className="h-4 w-4" />;
+      case 'increase': return <Plus className="h-4 w-4 text-green-600" />
+      case 'decrease': return <Minus className="h-4 w-4 text-red-600" />
+      case 'set': return <Settings className="h-4 w-4 text-blue-600" />
+      default: return <Package className="h-4 w-4" />
     }
-  };
+  }
 
   // Get adjustment type description
   const getAdjustmentDescription = (type: string) => {
     switch (type) {
-      case 'increase': return 'Add units to current stock';
-      case 'decrease': return 'Remove units from current stock';
-      case 'set': return 'Set exact stock level';
-      default: return '';
+      case 'increase': return 'Add units to current stock'
+      case 'decrease': return 'Remove units from current stock'
+      case 'set': return 'Set exact stock level'
+      default: return ''
     }
-  };
+  }
 
   if (approvalMode) {
     return (
@@ -413,7 +413,7 @@ const StockAdjustment: React.FC<StockAdjustmentProps> = ({
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -683,7 +683,7 @@ const StockAdjustment: React.FC<StockAdjustmentProps> = ({
 
       <LoadingOverlay isLoading={loading || saving} />
     </div>
-  );
-};
+  )
+}
 
-export default StockAdjustment;
+export default StockAdjustment

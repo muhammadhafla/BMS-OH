@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Badge } from './ui/badge'
 import {
   Search,
   Plus,
@@ -17,13 +17,13 @@ import {
   List,
   SortAsc,
   SortDesc,
-  RefreshCw
-} from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
-import { useToast } from '../hooks/useToast';
-import ProductSearchModal from './ProductSearchModal';
+  RefreshCw,
+} from 'lucide-react'
+import { formatCurrency } from '../lib/utils'
+import { useToast } from '../hooks/useToast'
+import ProductSearchModal from './ProductSearchModal'
 // import { syncService } from '../services/SyncService'; // Not used in API mode
-import { apiService } from '../services/ApiService';
+import { apiService } from '../services/ApiService'
 // PRODUCTION OFFLINE-FIRST MODE (Uncomment these lines for Electron/offline mode)
 // import DatabaseService from '../database/DatabaseService';
 
@@ -68,305 +68,305 @@ interface SearchFilters {
 }
 
 const SearchPanel: React.FC<SearchPanelProps> = ({ onAddToCart }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [showProductSearchModal, setShowProductSearchModal] = useState(false);
-  const [filteredResults, setFilteredResults] = useState<Product[]>([]);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [sortBy, setSortBy] = useState<'name' | 'price' | 'stock' | 'popularity'>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [quickAddQuantities, setQuickAddQuantities] = useState<{[key: string]: number}>({});
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('')
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showProductSearchModal, setShowProductSearchModal] = useState(false)
+  const [filteredResults, setFilteredResults] = useState<Product[]>([])
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
+  const [sortBy, setSortBy] = useState<'name' | 'price' | 'stock' | 'popularity'>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [quickAddQuantities, setQuickAddQuantities] = useState<{[key: string]: number}>({})
+  const [recentSearches, setRecentSearches] = useState<string[]>([])
+  const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<SearchFilters>({
     category: '',
     supplier: '',
     priceRange: [0, 1000000],
     inStock: false,
     lowStock: false,
-    popular: false
-  });
-  const { showSuccess, showError, showWarning } = useToast();
+    popular: false,
+  })
+  const { showSuccess, showError, showWarning } = useToast()
 
   // PRODUCTION OFFLINE-FIRST MODE: Uncomment for Electron
   // const dbService = new DatabaseService();
 
   // Load products
   useEffect(() => {
-    loadInitialProducts();
-    loadRecentSearches();
-  }, []);
+    loadInitialProducts()
+    loadRecentSearches()
+  }, [])
 
   const loadInitialProducts = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
       // API mode - load products directly from backend
-      const response = await apiService.getProducts({ limit: 500 });
+      const response = await apiService.getProducts({ limit: 500 })
       
       if (response.success && response.data?.products) {
-        setProducts(response.data.products);
-        console.log(`✅ Loaded ${response.data.products.length} products from API`);
+        setProducts(response.data.products)
+        console.log(`✅ Loaded ${response.data.products.length} products from API`)
       } else {
-        throw new Error(response.error || 'Failed to load products from API');
+        throw new Error(response.error || 'Failed to load products from API')
       }
     } catch (error) {
-      console.warn('Failed to load products:', error);
-      showError('Failed to load products. Please check your connection.');
-      setProducts([]);
+      console.warn('Failed to load products:', error)
+      showError('Failed to load products. Please check your connection.')
+      setProducts([])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const loadRecentSearches = () => {
-    const searches = localStorage.getItem('pos-recent-searches');
+    const searches = localStorage.getItem('pos-recent-searches')
     if (searches) {
-      setRecentSearches(JSON.parse(searches));
+      setRecentSearches(JSON.parse(searches))
     }
-  };
+  }
 
   const saveRecentSearch = (term: string) => {
-    if (!term.trim()) return;
+    if (!term.trim()) return
     
-    const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
-    setRecentSearches(updated);
-    localStorage.setItem('pos-recent-searches', JSON.stringify(updated));
-  };
+    const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5)
+    setRecentSearches(updated)
+    localStorage.setItem('pos-recent-searches', JSON.stringify(updated))
+  }
 
   // Enhanced search function
   const performSmartSearch = useCallback((query: string) => {
     if (!query.trim()) {
-      setFilteredResults([]);
-      return;
+      setFilteredResults([])
+      return
     }
 
-    const searchQuery = query.toLowerCase().trim();
+    const searchQuery = query.toLowerCase().trim()
     
     // Exact matches (by name, barcode, or SKU)
     const exactMatches = products.filter(product => {
-      const nameMatch = product.name.toLowerCase() === searchQuery;
-      const barcodeMatch = product.barcode && product.barcode === searchQuery;
-      const skuMatch = product.sku.toLowerCase() === searchQuery;
+      const nameMatch = product.name.toLowerCase() === searchQuery
+      const barcodeMatch = product.barcode && product.barcode === searchQuery
+      const skuMatch = product.sku.toLowerCase() === searchQuery
       
-      return nameMatch || barcodeMatch || skuMatch;
-    });
+      return nameMatch || barcodeMatch || skuMatch
+    })
 
     // Partial matches with scoring
     const partialMatches = products
       .filter(product => {
-        const nameMatch = product.name.toLowerCase().includes(searchQuery);
-        const barcodeMatch = product.barcode && product.barcode.includes(searchQuery);
-        const skuMatch = product.sku.toLowerCase().includes(searchQuery);
-        const categoryName = (product.category as any)?.name || product.categoryName;
-        const categoryMatch = categoryName && categoryName.toLowerCase().includes(searchQuery);
+        const nameMatch = product.name.toLowerCase().includes(searchQuery)
+        const barcodeMatch = product.barcode?.includes(searchQuery)
+        const skuMatch = product.sku.toLowerCase().includes(searchQuery)
+        const categoryName = (product.category as any)?.name || product.categoryName
+        const categoryMatch = categoryName?.toLowerCase().includes(searchQuery)
         
-        return nameMatch || barcodeMatch || skuMatch || categoryMatch;
+        return nameMatch || barcodeMatch || skuMatch || categoryMatch
       })
       .map(product => ({
         ...product,
-        searchScore: calculateSearchScore(product, searchQuery)
+        searchScore: calculateSearchScore(product, searchQuery),
       }))
-      .sort((a, b) => b.searchScore - a.searchScore);
+      .sort((a, b) => b.searchScore - a.searchScore)
   
-      setFilteredResults(partialMatches);
+      setFilteredResults(partialMatches)
 
     // Auto-add if exact match found
     if (exactMatches.length === 1) {
-      const product = exactMatches[0];
+      const product = exactMatches[0]
       if (product.stock > 0) {
-        onAddToCart(product, 1);
-        showSuccess(`✓ ${product.name} added to cart`);
-        saveRecentSearch(query);
-        setSearchTerm('');
-        setFilteredResults([]);
-        return;
+        onAddToCart(product, 1)
+        showSuccess(`✓ ${product.name} added to cart`)
+        saveRecentSearch(query)
+        setSearchTerm('')
+        setFilteredResults([])
+        return
       } else {
-        showWarning(`${product.name} is out of stock`);
+        showWarning(`${product.name} is out of stock`)
       }
     }
 
     // Show modal if no exact match
     if (exactMatches.length === 0 && partialMatches.length > 0) {
-      saveRecentSearch(query);
+      saveRecentSearch(query)
     } else if (partialMatches.length === 0) {
-      showError('Product not found');
-      saveRecentSearch(query);
+      showError('Product not found')
+      saveRecentSearch(query)
     }
-  }, [products, onAddToCart, showSuccess, showWarning, showError]);
+  }, [products, onAddToCart, showSuccess, showWarning, showError])
 
   const calculateSearchScore = (product: Product, query: string): number => {
-    let score = 0;
-    const lowerQuery = query.toLowerCase();
+    let score = 0
+    const lowerQuery = query.toLowerCase()
     
     // Name match scoring
     if (product.name.toLowerCase().includes(lowerQuery)) {
-      score += 10;
-      if (product.name.toLowerCase().startsWith(lowerQuery)) score += 5;
+      score += 10
+      if (product.name.toLowerCase().startsWith(lowerQuery)) score += 5
     }
     
     // SKU match scoring
     if (product.sku.toLowerCase().includes(lowerQuery)) {
-      score += 8;
-      if (product.sku.toLowerCase().startsWith(lowerQuery)) score += 3;
+      score += 8
+      if (product.sku.toLowerCase().startsWith(lowerQuery)) score += 3
     }
     
     // Barcode match scoring
-    if (product.barcode && product.barcode.includes(lowerQuery)) {
-      score += 6;
+    if (product.barcode?.includes(lowerQuery)) {
+      score += 6
     }
     
     // Category match scoring
-    const categoryName = (typeof product.category === 'object' && product.category?.name) || product.categoryName;
-    if (categoryName && categoryName.toLowerCase().includes(lowerQuery)) {
-      score += 4;
+    const categoryName = (typeof product.category === 'object' && product.category?.name) || product.categoryName
+    if (categoryName?.toLowerCase().includes(lowerQuery)) {
+      score += 4
     }
     
     // Supplier match scoring
-    if (product.supplier && product.supplier.toLowerCase().includes(lowerQuery)) {
-      score += 3;
+    if (product.supplier?.toLowerCase().includes(lowerQuery)) {
+      score += 3
     }
     
     // Popularity bonus (simulate based on sales patterns or stock turnover)
-    if (product.isPopular) score += 2;
+    if (product.isPopular) score += 2
     
     // Stock availability bonus
-    if (product.stock > 0) score += 1;
+    if (product.stock > 0) score += 1
     
     // Low stock penalty (less important if low stock)
-    const isLowStock = product.isLowStock || product.stock <= 10;
-    if (isLowStock) score -= 1;
+    const isLowStock = product.isLowStock || product.stock <= 10
+    if (isLowStock) score -= 1
     
-    return score;
-  };
+    return score
+  }
 
   const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    performSmartSearch(searchTerm);
-  };
+    e.preventDefault()
+    performSmartSearch(searchTerm)
+  }
 
   const handleSearchInputChange = (value: string) => {
-    setSearchTerm(value);
+    setSearchTerm(value)
     if (value.length >= 2) {
       // Debounced search for real-time feedback
       setTimeout(() => {
-        performSmartSearch(value);
-      }, 300);
+        performSmartSearch(value)
+      }, 300)
     } else {
-      setFilteredResults([]);
+      setFilteredResults([])
     }
-  };
+  }
 
   const handleProductSelectFromModal = (product: Product) => {
-    const quantity = quickAddQuantities[product.id] || 1;
-    onAddToCart(product, quantity);
-    setShowProductSearchModal(false);
-    setSearchTerm('');
-    setFilteredResults([]);
-    setQuickAddQuantities(prev => ({ ...prev, [product.id]: 1 }));
-  };
+    const quantity = quickAddQuantities[product.id] || 1
+    onAddToCart(product, quantity)
+    setShowProductSearchModal(false)
+    setSearchTerm('')
+    setFilteredResults([])
+    setQuickAddQuantities(prev => ({ ...prev, [product.id]: 1 }))
+  }
 
   const handleQuickAdd = async (product: Product, quantity: number = 1) => {
     try {
       // Validate stock availability first
       if (product.stock <= 0) {
-        showError(`${product.name} is out of stock`);
-        return;
+        showError(`${product.name} is out of stock`)
+        return
       }
       
       if (quantity > product.stock) {
-        showWarning(`Only ${product.stock} items available`);
-        quantity = product.stock;
+        showWarning(`Only ${product.stock} items available`)
+        quantity = product.stock
       }
       
       // Attempt to add to cart
-      await onAddToCart(product, quantity);
+      await onAddToCart(product, quantity)
       
       // Success notification - only show if cart addition was successful
-      showSuccess(`✅ ${quantity}x ${product.name} added to cart`);
+      showSuccess(`✅ ${quantity}x ${product.name} added to cart`)
       
       // Clear quick add quantity after successful add
-      setQuickAddQuantities(prev => ({ ...prev, [product.id]: 1 }));
+      setQuickAddQuantities(prev => ({ ...prev, [product.id]: 1 }))
       
     } catch (error) {
-      console.error('Failed to add item to cart:', error);
-      showError(`❌ Failed to add ${product.name} to cart`);
+      console.error('Failed to add item to cart:', error)
+      showError(`❌ Failed to add ${product.name} to cart`)
     }
-  };
+  }
 
   // Note: updateQuickAddQuantity function removed as it's not used
 
   // Apply filters and sorting
   const getFilteredAndSortedProducts = useMemo(() => {
-    let filtered = [...filteredResults];
+    let filtered = [...filteredResults]
 
     // Apply filters
     if (filters.category) {
       filtered = filtered.filter(p =>
         (typeof p.category === 'object' && p.category?.name === filters.category) ||
-        p.categoryName === filters.category
-      );
+        p.categoryName === filters.category,
+      )
     }
     if (filters.supplier) {
-      filtered = filtered.filter(p => p.supplier === filters.supplier);
+      filtered = filtered.filter(p => p.supplier === filters.supplier)
     }
     if (filters.inStock) {
-      filtered = filtered.filter(p => p.stock > 0);
+      filtered = filtered.filter(p => p.stock > 0)
     }
     if (filters.lowStock) {
-      filtered = filtered.filter(p => (p.isLowStock || p.stock <= 10) && p.stock > 0);
+      filtered = filtered.filter(p => (p.isLowStock || p.stock <= 10) && p.stock > 0)
     }
     if (filters.popular) {
-      filtered = filtered.filter(p => p.isPopular);
+      filtered = filtered.filter(p => p.isPopular)
     }
 
     // Apply price range filter
     filtered = filtered.filter(p =>
-      p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]
-    );
+      p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1],
+    )
 
     // Apply sorting
     filtered.sort((a, b) => {
-      let comparison = 0;
+      let comparison = 0
       
       switch (sortBy) {
         case 'name':
-          comparison = a.name.localeCompare(b.name);
-          break;
+          comparison = a.name.localeCompare(b.name)
+          break
         case 'price':
-          comparison = a.price - b.price;
-          break;
+          comparison = a.price - b.price
+          break
         case 'stock':
-          comparison = a.stock - b.stock;
-          break;
+          comparison = a.stock - b.stock
+          break
         case 'popularity':
-          comparison = (b.isPopular ? 1 : 0) - (a.isPopular ? 1 : 0);
-          break;
+          comparison = (b.isPopular ? 1 : 0) - (a.isPopular ? 1 : 0)
+          break
         default:
-          comparison = 0;
+          comparison = 0
       }
       
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
+      return sortOrder === 'asc' ? comparison : -comparison
+    })
 
-    return filtered;
-  }, [filteredResults, filters, sortBy, sortOrder]);
+    return filtered
+  }, [filteredResults, filters, sortBy, sortOrder])
 
   // Get unique categories and suppliers for filters
   const categories = useMemo(() => {
     const allCategories = products.map(p => {
-      const category = p.category;
+      const {category} = p
       if (typeof category === 'object' && category && 'name' in category) {
-        return category.name;
+        return category.name
       }
-      return category || p.categoryName;
-    }).filter(Boolean);
-    return [...new Set(allCategories)] as string[];
-  }, [products]);
+      return category || p.categoryName
+    }).filter(Boolean)
+    return [...new Set(allCategories)] as string[]
+  }, [products])
 
   const suppliers = useMemo(() => {
-    return [...new Set(products.map(p => p.supplier).filter(Boolean))] as string[];
-  }, [products]);
+    return [...new Set(products.map(p => p.supplier).filter(Boolean))] as string[]
+  }, [products])
 
   const clearFilters = () => {
     setFilters({
@@ -375,12 +375,12 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onAddToCart }) => {
       priceRange: [0, 1000000],
       inStock: false,
       lowStock: false,
-      popular: false
-    });
-  };
+      popular: false,
+    })
+  }
 
   const hasActiveFilters = filters.category || filters.supplier || filters.inStock || filters.lowStock || filters.popular || 
-                          filters.priceRange[0] > 0 || filters.priceRange[1] < 1000000;
+                          filters.priceRange[0] > 0 || filters.priceRange[1] < 1000000
 
   return (
     <div className="h-full flex flex-col space-y-4">
@@ -639,8 +639,8 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onAddToCart }) => {
                         variant="ghost"
                         className="h-8 w-8 p-0 hover:bg-green-100"
                         onClick={(e) => {
-                          e.stopPropagation();
-                          handleQuickAdd(product, (quickAddQuantities[product.id] || 1) + 1);
+                          e.stopPropagation()
+                          handleQuickAdd(product, (quickAddQuantities[product.id] || 1) + 1)
                         }}
                         disabled={product.stock <= 0}
                       >
@@ -689,7 +689,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ onAddToCart }) => {
         searchQuery={searchTerm}
       />
     </div>
-  );
-};
+  )
+}
 
-export default SearchPanel;
+export default SearchPanel

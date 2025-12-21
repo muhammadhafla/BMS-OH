@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Search, Plus, Minus, Package, AlertTriangle } from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
-import { inventoryService, InventoryItem } from '../services/InventoryService';
-import { useToast } from '../hooks/useToast';
+import React, { useState, useEffect, useCallback } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Search, Plus, Minus, Package, AlertTriangle } from 'lucide-react'
+import { formatCurrency } from '../lib/utils'
+import { inventoryService, InventoryItem } from '../services/InventoryService'
+import { useToast } from '../hooks/useToast'
 
 
 interface Product {
@@ -27,46 +27,46 @@ interface ProductSearchProps {
 }
 
 const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [inventoryData, setInventoryData] = useState<Record<string, InventoryItem>>({});
-  const { showWarning, showError } = useToast();
+  const [searchTerm, setSearchTerm] = useState('')
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [quantity, setQuantity] = useState(1)
+  const [inventoryData, setInventoryData] = useState<Record<string, InventoryItem>>({})
+  const { showWarning, showError } = useToast()
 
   useEffect(() => {
     // Get current user
     // Note: setCurrentUser usage removed
-    loadProducts();
-    loadInventoryData();
-  }, []);
+    loadProducts()
+    loadInventoryData()
+  }, [])
 
   // Load inventory data for all products
   const loadInventoryData = async () => {
     try {
-      const inventory = await inventoryService.getAllInventory();
-      const inventoryMap: Record<string, InventoryItem> = {};
+      const inventory = await inventoryService.getAllInventory()
+      const inventoryMap: Record<string, InventoryItem> = {}
       
       inventory.forEach(item => {
-        inventoryMap[item.productId] = item;
-      });
+        inventoryMap[item.productId] = item
+      })
       
-      setInventoryData(inventoryMap);
+      setInventoryData(inventoryMap)
     } catch (error) {
-      console.error('Error loading inventory data:', error);
+      console.error('Error loading inventory data:', error)
     }
-  };
+  }
 
   const loadProducts = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
-      if (!window.webAPI) return;
-      const result = await window.webAPI.getProducts({ limit: 50 });
+      if (!window.webAPI) return
+      const result = await window.webAPI.getProducts({ limit: 50 })
       if (result.success) {
-        setProducts(result.data);
+        setProducts(result.data)
       } else {
-        console.error('Failed to load products:', result.error);
+        console.error('Failed to load products:', result.error)
         // Load sample products for demo
         setProducts([
           {
@@ -77,7 +77,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
             cost: 8000,
             stock: 100,
             unit: 'pcs',
-            barcode: '123456789'
+            barcode: '123456789',
           },
           {
             id: '2',
@@ -87,12 +87,12 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
             cost: 20000,
             stock: 50,
             unit: 'pcs',
-            barcode: '987654321'
-          }
-        ]);
+            barcode: '987654321',
+          },
+        ])
       }
     } catch (error) {
-      console.error('Error loading products:', error);
+      console.error('Error loading products:', error)
       // Load sample products for demo
       setProducts([
         {
@@ -103,7 +103,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
           cost: 8000,
           stock: 100,
           unit: 'pcs',
-          barcode: '123456789'
+          barcode: '123456789',
         },
         {
           id: '2',
@@ -113,42 +113,42 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
           cost: 20000,
           stock: 50,
           unit: 'pcs',
-          barcode: '987654321'
-        }
-      ]);
+          barcode: '987654321',
+        },
+      ])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) {
-      loadProducts();
-      return;
+      loadProducts()
+      return
     }
 
-    setLoading(true);
+    setLoading(true)
     try {
-      if (!window.webAPI) return;
+      if (!window.webAPI) return
       const result = await window.webAPI.getProducts({
         search: searchTerm,
-        limit: 50
-      });
+        limit: 50,
+      })
       if (result.success) {
-        setProducts(result.data);
+        setProducts(result.data)
       }
     } catch (error) {
-      console.error('Search error:', error);
+      console.error('Search error:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      handleSearch();
+      handleSearch()
     }
-  };
+  }
 
   // Stock validation function
   const checkStockAvailability = useCallback(async (product: Product, requestedQuantity: number): Promise<{
@@ -156,70 +156,70 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
     availableStock: number;
     issues: string[];
   }> => {
-    const issues: string[] = [];
+    const issues: string[] = []
     
     try {
       // Get current inventory data
-      const inventoryItem = inventoryData[product.id];
+      const inventoryItem = inventoryData[product.id]
       if (!inventoryItem) {
         return {
           available: false,
           availableStock: 0,
-          issues: ['Product not found in inventory system']
-        };
+          issues: ['Product not found in inventory system'],
+        }
       }
 
-      const availableStock = inventoryItem.currentStock - inventoryItem.reservedStock;
+      const availableStock = inventoryItem.currentStock - inventoryItem.reservedStock
       
       if (availableStock <= 0) {
-        issues.push('Product is out of stock');
+        issues.push('Product is out of stock')
       } else if (availableStock < requestedQuantity) {
-        issues.push(`Only ${availableStock} units available`);
+        issues.push(`Only ${availableStock} units available`)
       }
 
       return {
         available: issues.length === 0,
         availableStock,
-        issues
-      };
+        issues,
+      }
     } catch (error) {
-      console.error('Error checking stock availability:', error);
+      console.error('Error checking stock availability:', error)
       return {
         available: false,
         availableStock: 0,
-        issues: ['Error checking stock availability']
-      };
+        issues: ['Error checking stock availability'],
+      }
     }
-  }, [inventoryData]);
+  }, [inventoryData])
 
   const handleAddToCart = async (product: Product) => {
-    const stockCheck = await checkStockAvailability(product, quantity);
+    const stockCheck = await checkStockAvailability(product, quantity)
     
     if (!stockCheck.available) {
-      showError(stockCheck.issues.join('. '));
+      showError(stockCheck.issues.join('. '))
       
       // Call stock alert callback if provided
       if (onStockAlert) {
-        onStockAlert(product, stockCheck.availableStock);
+        onStockAlert(product, stockCheck.availableStock)
       }
-      return;
+      return
     }
 
     // Show warning for low stock
     if (stockCheck.availableStock < 10) {
-      showWarning(`Low stock warning: Only ${stockCheck.availableStock} units remaining`);
+      showWarning(`Low stock warning: Only ${stockCheck.availableStock} units remaining`)
     }
 
-    onAddToCart(product, quantity);
-    setSelectedProduct(null);
-    setQuantity(1);
-  };
+    onAddToCart(product, quantity)
+    setSelectedProduct(null)
+    setQuantity(1)
+  }
 
   const filteredProducts = products.filter(product =>
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     product.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (product.barcode && product.barcode.includes(searchTerm))
-  );
+    (product.barcode?.includes(searchTerm)),
+  )
 
   return (
     <div className="h-full flex flex-col">
@@ -282,19 +282,19 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
                             {/* Inventory status indicators */}
                             <div className="flex items-center space-x-2">
                               {(() => {
-                                const inventoryItem = inventoryData[product.id];
+                                const inventoryItem = inventoryData[product.id]
                                 if (!inventoryItem) {
                                   return (
                                     <span className="text-xs text-gray-400 flex items-center">
                                       <Package className="h-3 w-3 mr-1" />
                                       No inventory data
                                     </span>
-                                  );
+                                  )
                                 }
 
-                                const availableStock = inventoryItem.currentStock - inventoryItem.reservedStock;
-                                const isLowStock = availableStock <= inventoryItem.reorderLevel;
-                                const isOutOfStock = availableStock <= 0;
+                                const availableStock = inventoryItem.currentStock - inventoryItem.reservedStock
+                                const isLowStock = availableStock <= inventoryItem.reorderLevel
+                                const isOutOfStock = availableStock <= 0
 
                                 if (isOutOfStock) {
                                   return (
@@ -302,7 +302,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
                                       <AlertTriangle className="h-3 w-3 mr-1" />
                                       Out of stock
                                     </span>
-                                  );
+                                  )
                                 }
 
                                 if (isLowStock) {
@@ -311,7 +311,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
                                       <AlertTriangle className="h-3 w-3 mr-1" />
                                       Low stock: {availableStock}
                                     </span>
-                                  );
+                                  )
                                 }
 
                                 return (
@@ -319,7 +319,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
                                     <Package className="h-3 w-3 mr-1" />
                                     In stock: {availableStock}
                                   </span>
-                                );
+                                )
                               })()}
                             </div>
                           </div>
@@ -372,7 +372,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ onAddToCart, onStockAlert
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default ProductSearch;
+export default ProductSearch

@@ -1,7 +1,7 @@
-import React from 'react';
-import { Button } from './ui/button';
-import { formatCurrency } from '../lib/utils';
-import { CreditCard } from 'lucide-react';
+import React from 'react'
+import { Button } from './ui/button'
+import { formatCurrency } from '../lib/utils'
+import { CreditCard } from 'lucide-react'
 
 interface CartItem {
   productId: string;
@@ -29,19 +29,19 @@ const POSSidePanel: React.FC<POSSidePanelProps> = ({
   cart,
   onPayment,
   onClearCart,
-  totalAmount
+  totalAmount,
 }) => {
   const getTotalItems = () => {
-    return cart.reduce((total, item) => total + item.quantity, 0);
-  };
+    return cart.reduce((total, item) => total + item.quantity, 0)
+  }
 
   const getTotalDiscount = () => {
-    return cart.reduce((total, item) => total + item.discount, 0);
-  };
+    return cart.reduce((total, item) => total + item.discount, 0)
+  }
 
   const getFinalTotal = () => {
-    return totalAmount - getTotalDiscount();
-  };
+    return totalAmount - getTotalDiscount()
+  }
 
   return (
     <div className="w-[380px] bg-white border-l shadow-lg flex flex-col">
@@ -152,7 +152,7 @@ const POSSidePanel: React.FC<POSSidePanelProps> = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default POSSidePanel;
+export default POSSidePanel

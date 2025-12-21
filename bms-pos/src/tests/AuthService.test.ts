@@ -8,10 +8,17 @@ import { sessionManager } from '../services/SessionManager'
 import { configService } from '../services/ConfigService'
 import { createMockUser, createMockApiResponse } from './setup'
 
+// Suppress unused variable warnings
+void configService
+void createMockApiResponse
+
 // Mock the dependencies
 jest.mock('../services/ConfigService')
 jest.mock('../services/SessionManager')
 jest.mock('../services/ApiService')
+
+// Add global to window for test environment
+(global as any).global = global
 
 describe('AuthService', () => {
   beforeEach(() => {
@@ -162,7 +169,7 @@ describe('AuthService', () => {
           remainingAttempts: 5,
           canAttemptLogin: true,
           secureMode: expect.any(Boolean),
-        })
+        }),
       )
     })
 

@@ -1,7 +1,7 @@
-import React from 'react';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
-import { Card } from './ui/card';
+import React from 'react'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Card } from './ui/card'
 import { 
   Wifi, 
   CloudOff, 
@@ -11,9 +11,9 @@ import {
   Clock,
   CheckCircle,
   WifiOff,
-  Activity
-} from 'lucide-react';
-import { SyncStatus } from '../services/SyncService';
+  Activity,
+} from 'lucide-react'
+import { SyncStatus } from '../services/SyncService'
 
 interface SyncStatusHeaderProps {
   syncStatus: SyncStatus;
@@ -34,42 +34,42 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status, label }) => {
         return {
           icon: <CheckCircle className="h-3 w-3" />,
           className: 'bg-green-100 text-green-800 border-green-200',
-          dotColor: 'bg-green-500'
-        };
+          dotColor: 'bg-green-500',
+        }
       case 'offline':
         return {
           icon: <WifiOff className="h-3 w-3" />,
           className: 'bg-red-100 text-red-800 border-red-200',
-          dotColor: 'bg-red-500'
-        };
+          dotColor: 'bg-red-500',
+        }
       case 'syncing':
         return {
           icon: <RefreshCw className="h-3 w-3 animate-spin" />,
           className: 'bg-blue-100 text-blue-800 border-blue-200',
-          dotColor: 'bg-blue-500'
-        };
+          dotColor: 'bg-blue-500',
+        }
       case 'error':
         return {
           icon: <AlertCircle className="h-3 w-3" />,
           className: 'bg-red-100 text-red-800 border-red-200',
-          dotColor: 'bg-red-500'
-        };
+          dotColor: 'bg-red-500',
+        }
       case 'pending':
         return {
           icon: <Clock className="h-3 w-3" />,
           className: 'bg-orange-100 text-orange-800 border-orange-200',
-          dotColor: 'bg-orange-500'
-        };
+          dotColor: 'bg-orange-500',
+        }
       default:
         return {
           icon: <Activity className="h-3 w-3" />,
           className: 'bg-gray-100 text-gray-800 border-gray-200',
-          dotColor: 'bg-gray-500'
-        };
+          dotColor: 'bg-gray-500',
+        }
     }
-  };
+  }
 
-  const config = getStatusConfig();
+  const config = getStatusConfig()
 
   return (
     <div className="flex items-center space-x-2">
@@ -79,44 +79,44 @@ const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status, label }) => {
         <span>{label}</span>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const SyncStatusHeader: React.FC<SyncStatusHeaderProps> = ({ 
   syncStatus, 
   onSync, 
   onViewDetails,
-  compact = false 
+  compact = false, 
 }) => {
   const getOverallStatus = (): 'online' | 'offline' | 'syncing' | 'error' | 'pending' => {
-    if (syncStatus.isSyncing) return 'syncing';
-    if (syncStatus.syncErrors.length > 0) return 'error';
-    if (syncStatus.pendingTransactions > 0 || syncStatus.pendingProducts > 0) return 'pending';
-    if (syncStatus.isOnline) return 'online';
-    return 'offline';
-  };
+    if (syncStatus.isSyncing) return 'syncing'
+    if (syncStatus.syncErrors.length > 0) return 'error'
+    if (syncStatus.pendingTransactions > 0 || syncStatus.pendingProducts > 0) return 'pending'
+    if (syncStatus.isOnline) return 'online'
+    return 'offline'
+  }
 
   const getConnectionIcon = () => {
-    if (syncStatus.isSyncing) return <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />;
-    if (syncStatus.isOnline) return <Wifi className="h-4 w-4 text-green-500" />;
-    return <CloudOff className="h-4 w-4 text-red-500" />;
-  };
+    if (syncStatus.isSyncing) return <RefreshCw className="h-4 w-4 animate-spin text-blue-500" />
+    if (syncStatus.isOnline) return <Wifi className="h-4 w-4 text-green-500" />
+    return <CloudOff className="h-4 w-4 text-red-500" />
+  }
 
   const formatLastSync = (date: Date | null) => {
-    if (!date) return 'Never';
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
+    if (!date) return 'Never'
+    const now = new Date()
+    const diff = now.getTime() - date.getTime()
+    const minutes = Math.floor(diff / 60000)
+    const hours = Math.floor(minutes / 60)
+    const days = Math.floor(hours / 24)
 
-    if (days > 0) return `${days}d ago`;
-    if (hours > 0) return `${hours}h ago`;
-    if (minutes > 0) return `${minutes}m ago`;
-    return 'Just now';
-  };
+    if (days > 0) return `${days}d ago`
+    if (hours > 0) return `${hours}h ago`
+    if (minutes > 0) return `${minutes}m ago`
+    return 'Just now'
+  }
 
-  const overallStatus = getOverallStatus();
+  const overallStatus = getOverallStatus()
 
   if (compact) {
     return (
@@ -157,7 +157,7 @@ const SyncStatusHeader: React.FC<SyncStatusHeaderProps> = ({
           Details
         </Button>
       </div>
-    );
+    )
   }
 
   return (
@@ -291,7 +291,7 @@ const SyncStatusHeader: React.FC<SyncStatusHeaderProps> = ({
         )}
       </div>
     </Card>
-  );
-};
+  )
+}
 
-export default SyncStatusHeader;
+export default SyncStatusHeader

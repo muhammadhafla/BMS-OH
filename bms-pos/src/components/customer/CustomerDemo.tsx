@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
-import CustomerSearch from './CustomerSearch';
-import { Customer } from '@/services/CustomerService';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/useToast';
+import React, { useState } from 'react'
+import CustomerSearch from './CustomerSearch'
+import { Customer } from '@/services/CustomerService'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/useToast'
 
 interface DemoTransaction {
   id: string;
@@ -18,10 +18,10 @@ interface DemoTransaction {
 }
 
 const CustomerDemo: React.FC = () => {
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [demoTransactions, setDemoTransactions] = useState<DemoTransaction[]>([]);
-  const [cart, setCart] = useState<Array<{ name: string; quantity: number; price: number }>>([]);
-  const { showSuccess, showError } = useToast();
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [demoTransactions, setDemoTransactions] = useState<DemoTransaction[]>([])
+  const [cart, setCart] = useState<Array<{ name: string; quantity: number; price: number }>>([])
+  const { showSuccess, showError } = useToast()
 
   // Demo product catalog
   const demoProducts = [
@@ -29,52 +29,52 @@ const CustomerDemo: React.FC = () => {
     { id: 2, name: 'Sandwich', price: 25000 },
     { id: 3, name: 'Cake', price: 20000 },
     { id: 4, name: 'Juice', price: 12000 },
-  ];
+  ]
 
   // Handle customer selection
   const handleCustomerSelect = (customer: Customer | null) => {
-    setSelectedCustomer(customer);
+    setSelectedCustomer(customer)
     if (customer) {
-      showSuccess(`Customer selected: ${customer.name}`);
+      showSuccess(`Customer selected: ${customer.name}`)
     } else {
-      showSuccess('Customer selection cleared');
+      showSuccess('Customer selection cleared')
     }
-  };
+  }
 
   // Add item to demo cart
   const addToCart = (product: typeof demoProducts[0]) => {
     setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.name === product.name);
+      const existingItem = prevCart.find(item => item.name === product.name)
       if (existingItem) {
         return prevCart.map(item =>
           item.name === product.name
             ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
+            : item,
+        )
       } else {
-        return [...prevCart, { name: product.name, quantity: 1, price: product.price }];
+        return [...prevCart, { name: product.name, quantity: 1, price: product.price }]
       }
-    });
-  };
+    })
+  }
 
   // Remove item from demo cart
   const removeFromCart = (productName: string) => {
-    setCart(prevCart => prevCart.filter(item => item.name !== productName));
-  };
+    setCart(prevCart => prevCart.filter(item => item.name !== productName))
+  }
 
   // Calculate cart total
-  const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0)
 
   // Process demo transaction
   const processTransaction = () => {
     if (cart.length === 0) {
-      showError('Cart is empty');
-      return;
+      showError('Cart is empty')
+      return
     }
 
     if (!selectedCustomer) {
-      showError('Please select a customer');
-      return;
+      showError('Please select a customer')
+      return
     }
 
     // Create demo transaction
@@ -84,18 +84,18 @@ const CustomerDemo: React.FC = () => {
       items: [...cart],
       total: cartTotal,
       timestamp: new Date(),
-    };
+    }
 
-    setDemoTransactions(prev => [transaction, ...prev]);
-    setCart([]);
-    showSuccess(`Transaction processed for ${selectedCustomer.name}!`);
-  };
+    setDemoTransactions(prev => [transaction, ...prev])
+    setCart([])
+    showSuccess(`Transaction processed for ${selectedCustomer.name}!`)
+  }
 
   // Clear cart
   const clearCart = () => {
-    setCart([]);
-    showSuccess('Cart cleared');
-  };
+    setCart([])
+    showSuccess('Cart cleared')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -271,7 +271,7 @@ const CustomerDemo: React.FC = () => {
         </Card>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default CustomerDemo;
+export default CustomerDemo

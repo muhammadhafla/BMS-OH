@@ -1,12 +1,12 @@
-import { useToast } from "./useToast"
-import { useCallback, useEffect, useRef, useState } from "react"
-import axios, { AxiosError, AxiosRequestConfig } from "axios"
+import { useToast } from './useToast'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import axios, { AxiosError, AxiosRequestConfig } from 'axios'
 
 // API fetcher function
 const fetcher = async (url: string, config?: AxiosRequestConfig) => {
   const response = await axios({
     url,
-    method: "GET",
+    method: 'GET',
     ...config,
   })
   return response.data
@@ -36,7 +36,7 @@ export interface UseApiOptions<T = any> {
 // Generic API hook
 export const useApi = <T = any>(
   url: string | null,
-  options: UseApiOptions<T> = {}
+  options: UseApiOptions<T> = {},
 ): ApiResponse<T> => {
   const {
     onError,
@@ -92,7 +92,7 @@ export const useApi = <T = any>(
       setError(axiosError)
       
       if (showToast && showErrorToast) {
-        showError(errorMessage || (axiosError.response as any)?.data?.message || "An error occurred")
+        showError(errorMessage || (axiosError.response as any)?.data?.message || 'An error occurred')
       }
       onError?.(axiosError)
     } finally {
@@ -111,7 +111,7 @@ export const useApi = <T = any>(
     data,
     isLoading,
     showSuccess,
-    showError
+    showError,
   ])
 
   const mutate = useCallback(async () => {
@@ -156,7 +156,7 @@ export const useMutation = <TData = any, TVariables = any>(
     showSuccessToast?: boolean
     showErrorToast?: boolean
     successMessage?: string
-  } = {}
+  } = {},
 ) => {
   const { showSuccess, showError } = useToast()
   const { onSuccess, onError, showSuccessToast, showErrorToast, successMessage } = options
@@ -176,14 +176,14 @@ export const useMutation = <TData = any, TVariables = any>(
         const axiosError = error as AxiosError
         
         if (showErrorToast) {
-          showError((axiosError.response as any)?.data?.message || "An error occurred")
+          showError((axiosError.response as any)?.data?.message || 'An error occurred')
         }
         
         onError?.(axiosError, variables)
         throw error
       }
     },
-    [mutationFn, showSuccess, showError, showSuccessToast, showErrorToast, successMessage, onSuccess, onError]
+    [mutationFn, showSuccess, showError, showSuccessToast, showErrorToast, successMessage, onSuccess, onError],
   )
 
   return { mutate }
@@ -191,7 +191,7 @@ export const useMutation = <TData = any, TVariables = any>(
 
 // Specific API hooks for common entities
 export const useProducts = (search?: string) => {
-  const url = search ? `/api/products?search=${encodeURIComponent(search)}` : "/api/products"
+  const url = search ? `/api/products?search=${encodeURIComponent(search)}` : '/api/products'
   
   return useApi<any[]>(url, {
     dedupingInterval: 60000, // 1 minute
@@ -199,7 +199,7 @@ export const useProducts = (search?: string) => {
 }
 
 export const useCustomers = (query?: string) => {
-  const url = query ? `/api/customers?query=${encodeURIComponent(query)}` : "/api/customers"
+  const url = query ? `/api/customers?query=${encodeURIComponent(query)}` : '/api/customers'
   
   return useApi<any[]>(url, {
     dedupingInterval: 60000,
@@ -207,7 +207,7 @@ export const useCustomers = (query?: string) => {
 }
 
 export const useTransactions = (limit?: number) => {
-  const url = limit ? `/api/transactions?limit=${limit}` : "/api/transactions"
+  const url = limit ? `/api/transactions?limit=${limit}` : '/api/transactions'
   
   return useApi<any[]>(url, {
     refreshInterval: 30000, // 30 seconds
@@ -215,7 +215,7 @@ export const useTransactions = (limit?: number) => {
 }
 
 export const useInventory = () => {
-  return useApi<any[]>("/api/inventory", {
+  return useApi<any[]>('/api/inventory', {
     refreshInterval: 60000, // 1 minute
   })
 }

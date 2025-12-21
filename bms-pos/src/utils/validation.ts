@@ -1,5 +1,4 @@
 
-
 // Validation Rule Types
 export type ValidationType = 'required' | 'minLength' | 'maxLength' | 'pattern' | 'min' | 'max' | 'custom';
 
@@ -7,7 +6,7 @@ export interface ValidationRule {
   type: ValidationType;
   value?: any;
   message?: string;
-  validator?: (value: any, data?: any) => boolean | string;
+  validator?: (_value: any, _data?: any) => boolean | string;
 }
 
 export interface ValidationSchema {
@@ -50,18 +49,18 @@ const DEFAULT_MESSAGES = {
   stock: 'Stock must be a non-negative integer',
   price: 'Price must be a valid decimal number with maximum 2 decimal places',
   category: 'Please select a valid category',
-};
+}
 
 // Built-in validation patterns
 export const VALIDATION_PATTERNS = {
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   phone: /^[\+]?[1-9][\d]{0,15}$/,
-  url: /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$/,
+  url: /^https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_.~#?&//=]*)$/,
   alphanumeric: /^[a-zA-Z0-9]+$/,
   alpha: /^[a-zA-Z]+$/,
   sku: /^[A-Z]{2,5}[-]?[0-9]{1,6}$/,
   phoneIndonesian: /^(\+62|62|0)[0-9]{9,13}$/,
-};
+}
 
 // Built-in validation functions
 export const VALIDATION_FUNCTIONS = {
@@ -76,22 +75,113 @@ export const VALIDATION_FUNCTIONS = {
   isInteger: (value: number) => Number.isInteger(value),
   isNumber: (value: any) => !isNaN(value) && !isNaN(parseFloat(value)),
   isValidPrice: (value: number) => {
-    if (!VALIDATION_FUNCTIONS.isNumber(value) || value < 0) return false;
-    const decimalPlaces = (value.toString().split('.')[1] || '').length;
-    return decimalPlaces <= 2;
+    if (!VALIDATION_FUNCTIONS.isNumber(value) || value < 0) return false
+    const decimalPlaces = (value.toString().split('.')[1] || '').length
+    return decimalPlaces <= 2
   },
   isValidStock: (value: number) => {
     return VALIDATION_FUNCTIONS.isNumber(value) && 
            VALIDATION_FUNCTIONS.isNonNegative(value) && 
-           VALIDATION_FUNCTIONS.isInteger(value);
+           VALIDATION_FUNCTIONS.isInteger(value)
   },
   isNonEmpty: (value: any) => {
-    if (value === null || value === undefined) return false;
-    if (typeof value === 'string') return value.trim().length > 0;
-    if (Array.isArray(value)) return value.length > 0;
-    return true;
+    if (value === null || value === undefined) return false
+    if (typeof value === 'string') return value.trim().length > 0
+    if (Array.isArray(value)) return value.length > 0
+    return true
   },
-};
+}
+
+// Individual validation rule handlers to reduce complexity
+class ValidationRuleHandlers {
+  private static handleRequired(value: any, rule: ValidationRule): string | null {
+    if (!VALIDATION_FUNCTIONS.isNonEmpty(value)) {
+      return rule.message || DEFAULT_MESSAGES.required
+    }
+    return null
+  }
+
+  private static handleMinLength(value: string, rule: ValidationRule): string | null {
+    if (typeof value === 'string' && value.length < (rule.value as number)) {
+      return rule.message ?? DEFAULT_MESSAGES.minLength(rule.value)
+    }
+    return null
+  }
+
+  private static handleMaxLength(value: string, rule: ValidationRule): string | null {
+    if (typeof value === 'string' && value.length > (rule.value as number)) {
+      return rule.message ?? DEFAULT_MESSAGES.maxLength(rule.value)
+    }
+    return null
+  }
+
+  private static handlePattern(value: string, rule: ValidationRule): string | null {
+    if (typeof value === 'string' && !(rule.value as RegExp).test(value)) {
+      return rule.message ?? DEFAULT_MESSAGES.pattern
+    }
+    return null
+  }
+
+  private static handleMin(value: number, rule: ValidationRule): string | null {
+    if (VALIDATION_FUNCTIONS.isNumber(value) && value < (rule.value as number)) {
+      return rule.message ?? DEFAULT_MESSAGES.min(rule.value)
+    }
+    return null
+  }
+
+  private static handleMax(value: number, rule: ValidationRule): string | null {
+    if (VALIDATION_FUNCTIONS.isNumber(value) && value > (rule.value as number)) {
+      return rule.message ?? DEFAULT_MESSAGES.max(rule.value)
+    }
+    return null
+  }
+
+  private static handleCustom(value: any, rule: ValidationRule, data: any): string | null {
+    if (rule.validator) {
+      const result = rule.validator(value, data)
+      if (result === false) {
+        return rule.message ?? DEFAULT_MESSAGES.custom
+      }
+      if (typeof result === 'string') {
+        return result
+      }
+    }
+    return null
+  }
+
+  // Main handler that delegates to specific rule handlers
+  static validateRule(
+    type: ValidationType,
+    value: any,
+    rule: ValidationRule,
+    data: any,
+  ): string | null {
+    // Skip validation if field is empty and not required
+    if (!VALIDATION_FUNCTIONS.isNonEmpty(value) && type !== 'required') {
+      return null
+    }
+
+    switch (type) {
+      case 'required':
+        return this.handleRequired(value, rule)
+      case 'minLength':
+        return this.handleMinLength(value, rule)
+      case 'maxLength':
+        return this.handleMaxLength(value, rule)
+      case 'pattern':
+        return this.handlePattern(value, rule)
+      case 'min':
+        return this.handleMin(value, rule)
+      case 'max':
+        return this.handleMax(value, rule)
+      case 'custom':
+        return this.handleCustom(value, rule, data)
+      default:
+        // Unknown validation type encountered
+        return null
+    }
+  }
+}
 
 class Validator {
   /**
@@ -101,27 +191,27 @@ class Validator {
    * @returns ValidationResult with isValid boolean and errors object
    */
   static validate(data: any, schema: ValidationSchema): ValidationResult {
-    const errors: Record<string, string[]> = {};
-    let isValid = true;
+    const errors: Record<string, string[]> = {}
+    let isValid = true
 
     for (const [field, rules] of Object.entries(schema)) {
-      const fieldErrors: string[] = [];
-      const value = data[field];
+      const fieldErrors: string[] = []
+      const value = data[field]
 
       for (const rule of rules) {
-        const errorMessage = this.validateField(field, value, rule, data);
+        const errorMessage = this.validateField(field, value, rule, data)
         if (errorMessage) {
-          fieldErrors.push(errorMessage);
-          isValid = false;
+          fieldErrors.push(errorMessage)
+          isValid = false
         }
       }
 
       if (fieldErrors.length > 0) {
-        errors[field] = fieldErrors;
+        errors[field] = fieldErrors
       }
     }
 
-    return { isValid, errors };
+    return { isValid, errors }
   }
 
   /**
@@ -136,70 +226,9 @@ class Validator {
     _fieldName: string,
     value: any,
     rule: ValidationRule,
-    data: any
+    data: any,
   ): string | null {
-    const { type, value: ruleValue, message, validator } = rule;
-
-    // Required validation
-    if (type === 'required') {
-      if (!VALIDATION_FUNCTIONS.isNonEmpty(value)) {
-        return message || DEFAULT_MESSAGES.required;
-      }
-    }
-
-    // Skip other validations if field is empty and not required
-    if (!VALIDATION_FUNCTIONS.isNonEmpty(value) && type !== 'required') {
-      return null;
-    }
-
-    switch (type) {
-      case 'minLength':
-        if (typeof value === 'string' && value.length < (ruleValue as number)) {
-          return message || DEFAULT_MESSAGES.minLength(ruleValue);
-        }
-        break;
-
-      case 'maxLength':
-        if (typeof value === 'string' && value.length > (ruleValue as number)) {
-          return message || DEFAULT_MESSAGES.maxLength(ruleValue);
-        }
-        break;
-
-      case 'pattern':
-        if (typeof value === 'string' && !(ruleValue as RegExp).test(value)) {
-          return message || DEFAULT_MESSAGES.pattern;
-        }
-        break;
-
-      case 'min':
-        if (VALIDATION_FUNCTIONS.isNumber(value) && value < (ruleValue as number)) {
-          return message || DEFAULT_MESSAGES.min(ruleValue);
-        }
-        break;
-
-      case 'max':
-        if (VALIDATION_FUNCTIONS.isNumber(value) && value > (ruleValue as number)) {
-          return message || DEFAULT_MESSAGES.max(ruleValue);
-        }
-        break;
-
-      case 'custom':
-        if (validator) {
-          const result = validator(value, data);
-          if (result === false) {
-            return message || DEFAULT_MESSAGES.custom;
-          }
-          if (typeof result === 'string') {
-            return result;
-          }
-        }
-        break;
-
-      default:
-        console.warn(`Unknown validation type: ${type}`);
-    }
-
-    return null;
+    return ValidationRuleHandlers.validateRule(rule.type, value, rule, data)
   }
 
   /**
@@ -208,7 +237,7 @@ class Validator {
    * @returns boolean
    */
   static isValidEmail(email: string): boolean {
-    return VALIDATION_FUNCTIONS.isEmail(email);
+    return VALIDATION_FUNCTIONS.isEmail(email)
   }
 
   /**
@@ -217,7 +246,7 @@ class Validator {
    * @returns boolean
    */
   static isValidPhone(phone: string): boolean {
-    return VALIDATION_FUNCTIONS.isPhone(phone);
+    return VALIDATION_FUNCTIONS.isPhone(phone)
   }
 
   /**
@@ -226,7 +255,7 @@ class Validator {
    * @returns boolean
    */
   static isValidSKU(sku: string): boolean {
-    return VALIDATION_FUNCTIONS.isSKU(sku);
+    return VALIDATION_FUNCTIONS.isSKU(sku)
   }
 
   /**
@@ -235,7 +264,7 @@ class Validator {
    * @returns ValidationResult
    */
   static validateProduct(product: Partial<ProductValidationData>): ValidationResult {
-    return this.validate(product, this.createProductValidation());
+    return this.validate(product, this.createProductValidation())
   }
 
   /**
@@ -255,10 +284,10 @@ class Validator {
           type: 'custom' as const, 
           validator: (value: string) => {
             if (!VALIDATION_FUNCTIONS.isSKU(value)) {
-              return 'SKU must be in format ABC-123 or ABC123 (2-5 letters, optional dash, 1-6 numbers)';
+              return 'SKU must be in format ABC-123 or ABC123 (2-5 letters, optional dash, 1-6 numbers)'
             }
-            return true;
-          }
+            return true
+          },
         },
       ],
       price: [
@@ -267,13 +296,13 @@ class Validator {
           type: 'custom' as const, 
           validator: (value: number) => {
             if (!VALIDATION_FUNCTIONS.isValidPrice(value)) {
-              return 'Price must be a valid number with maximum 2 decimal places';
+              return 'Price must be a valid number with maximum 2 decimal places'
             }
             if (!VALIDATION_FUNCTIONS.isPositive(value)) {
-              return 'Price must be a positive number';
+              return 'Price must be a positive number'
             }
-            return true;
-          }
+            return true
+          },
         },
       ],
       stock: [
@@ -282,10 +311,10 @@ class Validator {
           type: 'custom' as const, 
           validator: (value: number) => {
             if (!VALIDATION_FUNCTIONS.isValidStock(value)) {
-              return 'Stock must be a non-negative whole number';
+              return 'Stock must be a non-negative whole number'
             }
-            return true;
-          }
+            return true
+          },
         },
       ],
       category: [
@@ -294,20 +323,20 @@ class Validator {
           type: 'custom' as const, 
           validator: (value: string) => {
             if (typeof value === 'string' && value.trim().length === 0) {
-              return 'Please select a valid category';
+              return 'Please select a valid category'
             }
-            return true;
-          }
+            return true
+          },
         },
       ],
       description: [
         { 
           type: 'maxLength' as const, 
           value: 500, 
-          message: 'Description must be no more than 500 characters' 
+          message: 'Description must be no more than 500 characters', 
         },
       ],
-    };
+    }
   }
 
   /**
@@ -323,7 +352,7 @@ class Validator {
         {
           type: 'pattern' as const,
           value: /^[a-zA-Z0-9_]+$/,
-          message: 'Username can only contain letters, numbers, and underscores'
+          message: 'Username can only contain letters, numbers, and underscores',
         },
       ],
       email: [
@@ -332,16 +361,16 @@ class Validator {
           type: 'custom' as const,
           validator: (value: string) => {
             if (!VALIDATION_FUNCTIONS.isEmail(value)) {
-              return 'Please enter a valid email address';
+              return 'Please enter a valid email address'
             }
-            return true;
-          }
+            return true
+          },
         },
       ],
       role: [
         { type: 'required' as const, message: 'Role is required' },
       ],
-    };
+    }
   }
 
   /**
@@ -355,10 +384,10 @@ class Validator {
           type: 'custom' as const,
           validator: (value: any[]) => {
             if (!Array.isArray(value) || value.length === 0) {
-              return 'At least one item is required for the transaction';
+              return 'At least one item is required for the transaction'
             }
-            return true;
-          }
+            return true
+          },
         },
       ],
       total: [
@@ -367,13 +396,13 @@ class Validator {
           type: 'custom' as const,
           validator: (value: number) => {
             if (!VALIDATION_FUNCTIONS.isValidPrice(value) || !VALIDATION_FUNCTIONS.isPositive(value)) {
-              return 'Total must be a valid positive amount';
+              return 'Total must be a valid positive amount'
             }
-            return true;
-          }
+            return true
+          },
         },
       ],
-    };
+    }
   }
 
   /**
@@ -392,10 +421,10 @@ class Validator {
           type: 'custom' as const,
           validator: (value: string) => {
             if (value && !VALIDATION_FUNCTIONS.isPhone(value)) {
-              return 'Please enter a valid phone number';
+              return 'Please enter a valid phone number'
             }
-            return true;
-          }
+            return true
+          },
         },
       ],
       email: [
@@ -403,20 +432,20 @@ class Validator {
           type: 'custom' as const,
           validator: (value: string) => {
             if (value && !VALIDATION_FUNCTIONS.isEmail(value)) {
-              return 'Please enter a valid email address';
+              return 'Please enter a valid email address'
             }
-            return true;
-          }
+            return true
+          },
         },
       ],
       address: [
         {
           type: 'maxLength' as const,
           value: 500,
-          message: 'Address must be no more than 500 characters'
+          message: 'Address must be no more than 500 characters',
         },
       ],
-    };
+    }
   }
 
   /**
@@ -425,13 +454,13 @@ class Validator {
    * @returns Flattened error object
    */
   static flattenErrors(errors: Record<string, string[]>): Record<string, string> {
-    const flattened: Record<string, string> = {};
+    const flattened: Record<string, string> = {}
     
     for (const [field, fieldErrors] of Object.entries(errors)) {
-      flattened[field] = fieldErrors[0]; // Use first error message
+      flattened[field] = fieldErrors[0] // Use first error message
     }
     
-    return flattened;
+    return flattened
   }
 
   /**
@@ -440,9 +469,9 @@ class Validator {
    * @returns Formatted error string
    */
   static formatErrors(errors: Record<string, string[]>): string {
-    const flattened = this.flattenErrors(errors);
-    return Object.values(flattened).join(', ');
+    const flattened = this.flattenErrors(errors)
+    return Object.values(flattened).join(', ')
   }
 }
 
-export default Validator;
+export default Validator

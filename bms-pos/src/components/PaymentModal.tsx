@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
+import React, { useState, useEffect, useMemo } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Badge } from './ui/badge'
 import {
   X,
   CreditCard,
@@ -13,10 +13,10 @@ import {
   Banknote,
   Receipt,
   CheckCircle,
-  AlertCircle
-} from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
-import { useToast } from '../hooks/useToast';
+  AlertCircle,
+} from 'lucide-react'
+import { formatCurrency } from '../lib/utils'
+import { useToast } from '../hooks/useToast'
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -44,14 +44,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
   onClose,
   totalAmount,
-  onPayment
+  onPayment,
 }) => {
-  const [paymentMethod, setPaymentMethod] = useState('cash');
-  const [amountPaid, setAmountPaid] = useState('');
-  const [discount, setDiscount] = useState(0);
-  const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('amount');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const { showSuccess, showError } = useToast();
+  const [paymentMethod, setPaymentMethod] = useState('cash')
+  const [amountPaid, setAmountPaid] = useState('')
+  const [discount, setDiscount] = useState(0)
+  const [discountType, setDiscountType] = useState<'percentage' | 'amount'>('amount')
+  const [isProcessing, setIsProcessing] = useState(false)
+  const { showSuccess, showError } = useToast()
 
   const paymentMethods: PaymentMethod[] = [
     { 
@@ -60,7 +60,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       icon: Banknote, 
       color: 'text-green-600', 
       bgColor: 'bg-green-50 border-green-200',
-      requiresAmount: true
+      requiresAmount: true,
     },
     { 
       id: 'debit', 
@@ -68,7 +68,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       icon: CreditCard, 
       color: 'text-blue-600', 
       bgColor: 'bg-blue-50 border-blue-200',
-      requiresAmount: false
+      requiresAmount: false,
     },
     { 
       id: 'credit', 
@@ -76,7 +76,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       icon: CreditCard, 
       color: 'text-purple-600', 
       bgColor: 'bg-purple-50 border-purple-200',
-      requiresAmount: false
+      requiresAmount: false,
     },
     { 
       id: 'qris', 
@@ -84,86 +84,86 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       icon: QrCode, 
       color: 'text-indigo-600', 
       bgColor: 'bg-indigo-50 border-indigo-200',
-      requiresAmount: false
-    }
-  ];
+      requiresAmount: false,
+    },
+  ]
 
   // Calculated values
   const finalAmount = useMemo(() => {
     if (discountType === 'percentage') {
-      return totalAmount * (1 - discount / 100);
+      return totalAmount * (1 - discount / 100)
     }
-    return totalAmount - discount;
-  }, [totalAmount, discount, discountType]);
+    return totalAmount - discount
+  }, [totalAmount, discount, discountType])
 
-  const amountPaidNum = useMemo(() => parseFloat(amountPaid) || 0, [amountPaid]);
-  const change = useMemo(() => Math.max(0, amountPaidNum - finalAmount), [amountPaidNum, finalAmount]);
+  const amountPaidNum = useMemo(() => parseFloat(amountPaid) || 0, [amountPaid])
+  const change = useMemo(() => Math.max(0, amountPaidNum - finalAmount), [amountPaidNum, finalAmount])
   
   // Quick cash amount suggestions
   const suggestedCashAmounts = useMemo(() => {
-    const amounts = [];
+    const amounts = []
     for (let i = 1; i <= 10; i++) {
-      amounts.push(Math.ceil(finalAmount / 1000) * i * 1000);
+      amounts.push(Math.ceil(finalAmount / 1000) * i * 1000)
     }
-    return amounts.slice(0, 4);
-  }, [finalAmount]);
+    return amounts.slice(0, 4)
+  }, [finalAmount])
 
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
-      setAmountPaid((Math.ceil(finalAmount / 1000) * 1000).toString()); // Round up to nearest 1000
-      setDiscount(0);
+      setAmountPaid((Math.ceil(finalAmount / 1000) * 1000).toString()) // Round up to nearest 1000
+      setDiscount(0)
     }
-  }, [isOpen, finalAmount]);
+  }, [isOpen, finalAmount])
 
   const handlePayment = async () => {
-    if (isProcessing) return;
+    if (isProcessing) return
 
-    const currentMethod = paymentMethods.find(m => m.id === paymentMethod);
-    if (!currentMethod) return;
+    const currentMethod = paymentMethods.find(m => m.id === paymentMethod)
+    if (!currentMethod) return
 
     // Validation
     if (currentMethod.requiresAmount && amountPaidNum < finalAmount) {
-      showError('Amount paid is less than the total amount');
-      return;
+      showError('Amount paid is less than the total amount')
+      return
     }
 
-    setIsProcessing(true);
+    setIsProcessing(true)
 
     try {
       // Simulate payment processing delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1000))
 
       onPayment({
         paymentMethod,
         amountPaid: currentMethod.requiresAmount ? amountPaidNum : finalAmount,
-        discount: discount,
-        discountType: discountType,
-        change: currentMethod.requiresAmount ? change : 0
-      });
+        discount,
+        discountType,
+        change: currentMethod.requiresAmount ? change : 0,
+      })
 
-      showSuccess('Payment completed successfully');
+      showSuccess('Payment completed successfully')
     } catch (error) {
-      showError('Payment failed. Please try again.');
+      showError('Payment failed. Please try again.')
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
   const handleQuickCash = (amount: number) => {
-    setAmountPaid(amount.toString());
-  };
+    setAmountPaid(amount.toString())
+  }
 
   const handleDiscountChange = (value: number) => {
     if (discountType === 'percentage') {
       // Ensure percentage doesn't exceed 100
-      if (value > 100) value = 100;
+      if (value > 100) value = 100
     } else {
       // Ensure amount doesn't exceed total
-      if (value > totalAmount) value = totalAmount;
+      if (value > totalAmount) value = totalAmount
     }
-    setDiscount(Math.max(0, value));
-  };
+    setDiscount(Math.max(0, value))
+  }
 
   const getKeyboardShortcuts = () => {
     const shortcuts = [
@@ -172,13 +172,13 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
       { key: 'F1', action: 'Cash' },
       { key: 'F2', action: 'Card' },
       { key: 'F3', action: 'QRIS' },
-    ];
-    return shortcuts;
-  };
+    ]
+    return shortcuts
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
-  const currentMethod = paymentMethods.find(m => m.id === paymentMethod);
+  const currentMethod = paymentMethods.find(m => m.id === paymentMethod)
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -228,14 +228,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 <h3 className="font-semibold text-gray-900 mb-3">Payment Method</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {paymentMethods.map((method) => {
-                    const Icon = method.icon;
+                    const Icon = method.icon
                     return (
                       <button
                         key={method.id}
                         onClick={() => setPaymentMethod(method.id)}
                         className={`p-4 rounded-lg border-2 transition-all text-left ${
                           paymentMethod === method.id
-                            ? method.bgColor + ' border-current'
+                            ? `${method.bgColor  } border-current`
                             : 'bg-white border-gray-200 hover:border-gray-300'
                         }`}
                       >
@@ -249,7 +249,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                           </div>
                         </div>
                       </button>
-                    );
+                    )
                   })}
                 </div>
               </div>
@@ -459,7 +459,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default PaymentModal;
+export default PaymentModal

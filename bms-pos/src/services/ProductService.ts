@@ -3,8 +3,9 @@
  * Handles product-related API calls
  */
 
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { sessionManager } from './SessionManager';
+import axios, { AxiosInstance, AxiosResponse } from 'axios'
+import { sessionManager } from './SessionManager'
+import { Logger } from '../utils/logger'
 
 export interface Product {
   id: string;
@@ -34,7 +35,7 @@ export interface ProductSearchParams {
   branchId?: string;
 }
 
-export interface ProductApiResponse<T = any> {
+export interface ProductApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -49,96 +50,102 @@ export interface ProductListResponse {
     limit: number;
     totalPages: number;
   };
-  meta?: any;
+  meta?: Record<string, unknown>;
 }
 
 class ProductService {
-  private api: AxiosInstance;
-  private baseURL: string;
+  private api: AxiosInstance
+  private baseURL: string
 
   constructor() {
-    this.baseURL = this.detectApiEndpoint();
+    this.baseURL = this.detectApiEndpoint()
     
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 15000,
       headers: {
         'Content-Type': 'application/json',
-        'X-Client-Info': 'BMS-POS-PWA/1.0'
+        'X-Client-Info': 'BMS-POS-PWA/1.0',
       },
-    });
+    })
 
-    this.setupInterceptors();
+    this.setupInterceptors()
   }
 
   private detectApiEndpoint(): string {
-    const savedEndpoint = localStorage.getItem('bms_api_endpoint');
+    const savedEndpoint = localStorage.getItem('bms_api_endpoint')
     if (savedEndpoint) {
-      return savedEndpoint;
+      return savedEndpoint
     }
 
-    const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
-    const port = window.location.port;
+    const {hostname} = window.location
+    const {port} = window.location
     
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       if (port && ['5173', '5174', '4173'].includes(port)) {
-        return 'http://localhost:3001/api';
+        return 'http://localhost:3001/api'
       }
       if (port === '3000') {
-        return 'http://localhost:3001/api';
+        return 'http://localhost:3001/api'
       }
-      return 'http://localhost:3001/api';
+      return 'http://localhost:3001/api'
     }
     
-    return 'http://localhost:3001/api';
+    return 'http://localhost:3001/api'
   }
 
   private setupInterceptors(): void {
     this.api.interceptors.request.use(
       (config) => {
-        const session = sessionManager.getSession();
+        const session = sessionManager.getSession()
         if (session?.token) {
-          config.headers.Authorization = `Bearer ${session.token}`;
+          config.headers.Authorization = `Bearer ${session.token}`
         }
-        return config;
+        return config
       },
-      (error) => Promise.reject(error)
-    );
+      (error) => Promise.reject(error),
+    )
 
     this.api.interceptors.response.use(
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          sessionManager.clearSession();
-          window.dispatchEvent(new CustomEvent('pos-logout'));
+          sessionManager.clearSession()
+          window.dispatchEvent(new CustomEvent('pos-logout'))
         }
-        return Promise.reject(error);
-      }
-    );
+        return Promise.reject(error)
+      },
+    )
   }
 
-  private async makeRequestWithRetry(requestFn: () => Promise<any>, maxRetries: number = 3): Promise<any> {
-    let lastError: any;
+  private async makeRequestWithRetry<T>(requestFn: () => Promise<T>, maxRetries: number = 3): Promise<T> {
+    let lastError: unknown
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return await requestFn();
-      } catch (error: any) {
-        lastError = error;
+        return await requestFn()
+      } catch (error: unknown) {
+        lastError = error
         
-        if (error.response?.status === 401) {
-          throw error;
+        // Check if error is an AxiosError with 401 status
+        const axiosError = error as any
+        if (axiosError.response?.status === 401) {
+          throw error
         }
         
-        if ((error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR' || !error.response) && attempt < maxRetries) {
-          console.warn(`Product request failed (attempt ${attempt}/${maxRetries}), retrying...`);
-          continue;
+        // Check for network errors and retry if not max attempts
+        const hasNetworkError = axiosError.code === 'ECONNREFUSED' || 
+                               axiosError.code === 'NETWORK_ERROR' || 
+                               !axiosError.response
+        
+        if (hasNetworkError && attempt < maxRetries) {
+          Logger.warn(`Product request failed (attempt ${attempt}/${maxRetries}), retrying...`)
+          continue
         }
       }
     }
     
-    throw lastError;
+    throw lastError
   }
 
   /**
@@ -147,31 +154,31 @@ class ProductService {
   async getProducts(params: ProductSearchParams = {}): Promise<ProductApiResponse<ProductListResponse>> {
     try {
       return await this.makeRequestWithRetry(async () => {
-        const response = await this.api.get('/products', { params });
-        const data = response.data.data;
+        const response = await this.api.get('/products', { params })
+        const {data} = response.data
         
         // Log branch filtering info for debugging
         if (data.meta?.filters?.isFilteredByBranch) {
-          console.log(`🔍 Branch filtering active:`, {
+          Logger.info('🔍 Branch filtering active:', {
             userRole: data.meta.filters.userRole,
             userBranchId: data.meta.filters.userBranchId,
             appliedBranchId: data.meta.filters.branchId,
             totalInDatabase: data.meta.summary.totalInDatabase,
             returned: data.meta.summary.returned,
-            filteredOut: data.meta.summary.branchFilteredOut
-          });
+            filteredOut: data.meta.summary.branchFilteredOut,
+          })
         }
         
         return {
           success: true,
-          data: data
-        };
-      });
-    } catch (error: any) {
-      console.warn('Product API call failed, using fallback data:', error.message);
+          data,
+        }
+      })
+    } catch (_error: unknown) {
+      Logger.warn('Product API call failed, using fallback data:', _error)
       
       // Return fallback data if API completely fails
-      return await this.getFallbackProducts();
+      return await this.getFallbackProducts()
     }
   }
 
@@ -190,7 +197,7 @@ class ProductService {
         unit: 'pcs',
         barcode: '123456789',
         description: 'Sample product for testing',
-        category: { id: 'cat1', name: 'Beverages' }
+        category: { id: 'cat1', name: 'Beverages' },
       },
       {
         id: '2',
@@ -202,7 +209,7 @@ class ProductService {
         unit: 'pcs',
         barcode: '987654321',
         description: 'Another sample product',
-        category: { id: 'cat2', name: 'Food' }
+        category: { id: 'cat2', name: 'Food' },
       },
       {
         id: '3',
@@ -214,9 +221,9 @@ class ProductService {
         unit: 'cups',
         barcode: '555123789',
         description: 'Fresh brewed coffee',
-        category: { id: 'cat1', name: 'Beverages' }
-      }
-    ];
+        category: { id: 'cat1', name: 'Beverages' },
+      },
+    ]
 
     return {
       success: true,
@@ -226,10 +233,10 @@ class ProductService {
           total: mockProducts.length,
           page: 1,
           limit: 500,
-          totalPages: 1
-        }
-      }
-    };
+          totalPages: 1,
+        },
+      },
+    }
   }
 
   /**
@@ -237,27 +244,27 @@ class ProductService {
    */
   async getProduct(id: string): Promise<ProductApiResponse<{ product: Product }>> {
     try {
-      const response = await this.api.get(`/products/${id}`);
+      const response = await this.api.get(`/products/${id}`)
       return {
         success: true,
-        data: response.data.data
-      };
-    } catch (error: any) {
+        data: response.data.data,
+      }
+    } catch (_error: unknown) {
       // Return fallback product data
       const mockProduct: Product = {
-        id: id,
+        id,
         sku: `PROD${id.padStart(3, '0')}`,
         name: `Product ${id}`,
         price: 10000,
         cost: 8000,
         stock: 100,
-        unit: 'pcs'
-      };
+        unit: 'pcs',
+      }
       
       return {
         success: true,
-        data: { product: mockProduct }
-      };
+        data: { product: mockProduct },
+      }
     }
   }
 
@@ -266,22 +273,22 @@ class ProductService {
    */
   async searchProduct(query: string): Promise<ProductApiResponse<{ product: Product }>> {
     try {
-      const response = await this.getProducts({ search: query, limit: 1 });
+      const response = await this.getProducts({ search: query, limit: 1 })
       if (response.success && response.data?.products && response.data.products.length > 0) {
         return {
           success: true,
-          data: { product: response.data.products[0] }
-        };
+          data: { product: response.data.products[0] },
+        }
       }
       return {
         success: false,
-        error: 'Product not found'
-      };
-    } catch (error: any) {
+        error: 'Product not found',
+      }
+    } catch (_error: unknown) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Product search failed'
-      };
+        error: _error && typeof _error === 'object' && 'response' in _error && _error.response && typeof _error.response === 'object' && 'data' in _error.response && _error.response.data && typeof _error.response.data === 'object' && 'error' in _error.response.data ? _error.response.data.error as string : 'Product search failed',
+      }
     }
   }
 
@@ -290,17 +297,17 @@ class ProductService {
    */
   async createProduct(productData: Partial<Product>): Promise<ProductApiResponse<{ product: Product }>> {
     try {
-      const response = await this.api.post('/products', productData);
+      const response = await this.api.post('/products', productData)
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Product created successfully'
-      };
-    } catch (error: any) {
+        message: response.data.message ?? 'Product created successfully',
+      }
+    } catch (_error: unknown) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to create product'
-      };
+        error: _error && typeof _error === 'object' && 'response' in _error && _error.response && typeof _error.response === 'object' && 'data' in _error.response && _error.response.data && typeof _error.response.data === 'object' && 'error' in _error.response.data ? _error.response.data.error as string : 'Failed to create product',
+      }
     }
   }
 
@@ -309,17 +316,17 @@ class ProductService {
    */
   async updateProduct(id: string, productData: Partial<Product>): Promise<ProductApiResponse<{ product: Product }>> {
     try {
-      const response = await this.api.put(`/products/${id}`, productData);
+      const response = await this.api.put(`/products/${id}`, productData)
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Product updated successfully'
-      };
-    } catch (error: any) {
+        message: response.data.message ?? 'Product updated successfully',
+      }
+    } catch (_error: unknown) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to update product'
-      };
+        error: _error && typeof _error === 'object' && 'response' in _error && _error.response && typeof _error.response === 'object' && 'data' in _error.response && _error.response.data && typeof _error.response.data === 'object' && 'error' in _error.response.data ? _error.response.data.error as string : 'Failed to update product',
+      }
     }
   }
 
@@ -328,16 +335,16 @@ class ProductService {
    */
   async deleteProduct(id: string): Promise<ProductApiResponse> {
     try {
-      const response = await this.api.delete(`/products/${id}`);
+      const response = await this.api.delete(`/products/${id}`)
       return {
         success: true,
-        message: response.data.message || 'Product deleted successfully'
-      };
-    } catch (error: any) {
+        message: response.data.message ?? 'Product deleted successfully',
+      }
+    } catch (_error: unknown) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to delete product'
-      };
+        error: _error && typeof _error === 'object' && 'response' in _error && _error.response && typeof _error.response === 'object' && 'data' in _error.response && _error.response.data && typeof _error.response.data === 'object' && 'error' in _error.response.data ? _error.response.data.error as string : 'Failed to delete product',
+      }
     }
   }
 
@@ -346,17 +353,17 @@ class ProductService {
    */
   async importProducts(products: Partial<Product>[]): Promise<ProductApiResponse<{ imported: number; failed: number }>> {
     try {
-      const response = await this.api.post('/products/import', { products });
+      const response = await this.api.post('/products/import', { products })
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Products imported successfully'
-      };
-    } catch (error: any) {
+        message: response.data.message ?? 'Products imported successfully',
+      }
+    } catch (_error: unknown) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to import products'
-      };
+        error: _error && typeof _error === 'object' && 'response' in _error && _error.response && typeof _error.response === 'object' && 'data' in _error.response && _error.response.data && typeof _error.response.data === 'object' && 'error' in _error.response.data ? _error.response.data.error as string : 'Failed to import products',
+      }
     }
   }
 
@@ -366,11 +373,12 @@ class ProductService {
   async exportProducts(format: 'csv' | 'xlsx' = 'csv'): Promise<Blob> {
     try {
       const response = await this.api.get(`/products/export?format=${format}`, {
-        responseType: 'blob'
-      });
-      return response.data;
-    } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to export products');
+        responseType: 'blob',
+      })
+      return response.data
+    } catch (_error: unknown) {
+      const errorMessage = _error && typeof _error === 'object' && 'response' in _error && _error.response && typeof _error.response === 'object' && 'data' in _error.response && _error.response.data && typeof _error.response.data === 'object' && 'error' in _error.response.data ? _error.response.data.error as string : 'Failed to export products'
+      throw new Error(errorMessage)
     }
   }
 
@@ -379,16 +387,16 @@ class ProductService {
    */
   async checkAvailability(productIds: string[]): Promise<ProductApiResponse<{ available: boolean; products: any[] }>> {
     try {
-      const response = await this.api.post('/products/availability', { productIds });
+      const response = await this.api.post('/products/availability', { productIds })
       return {
         success: true,
-        data: response.data.data
-      };
-    } catch (error: any) {
+        data: response.data.data,
+      }
+    } catch (_error: unknown) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to check product availability'
-      };
+        error: _error && typeof _error === 'object' && 'response' in _error && _error.response && typeof _error.response === 'object' && 'data' in _error.response && _error.response.data && typeof _error.response.data === 'object' && 'error' in _error.response.data ? _error.response.data.error as string : 'Failed to check product availability',
+      }
     }
   }
 
@@ -397,19 +405,19 @@ class ProductService {
    */
   async getLowStockProducts(): Promise<ProductApiResponse<{ products: Product[] }>> {
     try {
-      const response = await this.api.get('/products/low-stock');
+      const response = await this.api.get('/products/low-stock')
       return {
         success: true,
-        data: response.data.data
-      };
-    } catch (error: any) {
+        data: response.data.data,
+      }
+    } catch (_error: unknown) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch low stock products'
-      };
+        error: _error && typeof _error === 'object' && 'response' in _error && _error.response && typeof _error.response === 'object' && 'data' in _error.response && _error.response.data && typeof _error.response.data === 'object' && 'error' in _error.response.data ? _error.response.data.error as string : 'Failed to fetch low stock products',
+      }
     }
   }
 }
 
-export const productService = new ProductService();
-export default productService;
+export const productService = new ProductService()
+export default productService

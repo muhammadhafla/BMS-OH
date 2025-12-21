@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Customer, customerService, CreateCustomerData } from '@/services/CustomerService';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/useToast';
-import Validator, { ValidationResult } from '@/utils/validation';
-import { formatCurrency } from '@/lib/utils';
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { Customer, customerService, CreateCustomerData } from '@/services/CustomerService'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useToast } from '@/hooks/useToast'
+import Validator, { ValidationResult } from '@/utils/validation'
+import { formatCurrency } from '@/lib/utils'
 
 interface CustomerSearchProps {
   onCustomerSelect: (customer: Customer | null) => void;
@@ -26,99 +26,99 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
   className = '',
 }) => {
   // State management
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Customer[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<Customer[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
+  const [showNewCustomerForm, setShowNewCustomerForm] = useState(false)
   const [newCustomer, setNewCustomer] = useState<NewCustomerForm>({
     name: '',
     phone: '',
     email: '',
     address: '',
-  });
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  })
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
 
   // Hooks
-  const { showSuccess, showError, showLoading, dismiss } = useToast();
+  const { showSuccess, showError, showLoading, dismiss } = useToast()
 
   // Debounced search function
   const debounce = useCallback((func: Function, delay: number) => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout
     return (...args: any[]) => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => func(...args), delay);
-    };
-  }, []);
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => func(...args), delay)
+    }
+  }, [])
 
   // Search customers with debouncing
   const performSearch = useCallback(
     debounce(async (query: string) => {
       if (!query.trim()) {
-        setSearchResults([]);
-        return;
+        setSearchResults([])
+        return
       }
 
-      setIsSearching(true);
+      setIsSearching(true)
       try {
         const results = await customerService.searchCustomers({ 
           query: query.trim(),
-          isActive: true 
-        });
-        setSearchResults(results);
+          isActive: true, 
+        })
+        setSearchResults(results)
       } catch (error) {
-        console.error('Search error:', error);
-        showError('Failed to search customers');
+        console.error('Search error:', error)
+        showError('Failed to search customers')
       } finally {
-        setIsSearching(false);
+        setIsSearching(false)
       }
     }, 300),
-    [showError]
-  );
+    [showError],
+  )
 
   // Effect for search query changes
   useEffect(() => {
-    performSearch(searchQuery);
-  }, [searchQuery, performSearch]);
+    performSearch(searchQuery)
+  }, [searchQuery, performSearch])
 
   // Handle customer selection
   const handleCustomerSelect = (customer: Customer) => {
-    onCustomerSelect(customer);
-    setSearchQuery('');
-    setSearchResults([]);
-  };
+    onCustomerSelect(customer)
+    setSearchQuery('')
+    setSearchResults([])
+  }
 
   // Handle clearing customer selection
   const handleClearSelection = () => {
-    onCustomerSelect(null);
-  };
+    onCustomerSelect(null)
+  }
 
   // Handle new customer form changes
   const handleNewCustomerChange = (field: keyof NewCustomerForm, value: string) => {
-    setNewCustomer(prev => ({ ...prev, [field]: value }));
+    setNewCustomer(prev => ({ ...prev, [field]: value }))
     // Clear validation error when user starts typing
     if (validationErrors[field]) {
-      setValidationErrors(prev => ({ ...prev, [field]: '' }));
+      setValidationErrors(prev => ({ ...prev, [field]: '' }))
     }
-  };
+  }
 
   // Validate new customer form
   const validateNewCustomer = (): ValidationResult => {
-    const result = Validator.validate(newCustomer, Validator.createCustomerValidation());
-    return result;
-  };
+    const result = Validator.validate(newCustomer, Validator.createCustomerValidation())
+    return result
+  }
 
   // Handle new customer creation
   const handleCreateCustomer = async () => {
     // Validate form
-    const validation = validateNewCustomer();
+    const validation = validateNewCustomer()
     if (!validation.isValid) {
-      setValidationErrors(Validator.flattenErrors(validation.errors));
-      return;
+      setValidationErrors(Validator.flattenErrors(validation.errors))
+      return
     }
 
-    setIsCreating(true);
-    const loadingToast = showLoading('Creating customer...');
+    setIsCreating(true)
+    const loadingToast = showLoading('Creating customer...')
 
     try {
       const customerData: CreateCustomerData = {
@@ -126,43 +126,43 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
         phone: newCustomer.phone.trim() || undefined,
         email: newCustomer.email.trim() || undefined,
         address: newCustomer.address.trim() || undefined,
-      };
+      }
 
-      const createdCustomer = await customerService.createCustomer(customerData);
+      const createdCustomer = await customerService.createCustomer(customerData)
       
-      dismiss(loadingToast);
-      showSuccess(`Customer "${createdCustomer.name}" created successfully`);
+      dismiss(loadingToast)
+      showSuccess(`Customer "${createdCustomer.name}" created successfully`)
       
       // Select the newly created customer
-      onCustomerSelect(createdCustomer);
+      onCustomerSelect(createdCustomer)
       
       // Reset form
-      setNewCustomer({ name: '', phone: '', email: '', address: '' });
-      setShowNewCustomerForm(false);
-      setValidationErrors({});
+      setNewCustomer({ name: '', phone: '', email: '', address: '' })
+      setShowNewCustomerForm(false)
+      setValidationErrors({})
     } catch (error) {
-      dismiss(loadingToast);
-      showError(error instanceof Error ? error.message : 'Failed to create customer');
+      dismiss(loadingToast)
+      showError(error instanceof Error ? error.message : 'Failed to create customer')
     } finally {
-      setIsCreating(false);
+      setIsCreating(false)
     }
-  };
+  }
 
   // Handle cancel new customer form
   const handleCancelNewCustomer = () => {
-    setNewCustomer({ name: '', phone: '', email: '', address: '' });
-    setShowNewCustomerForm(false);
-    setValidationErrors({});
-  };
+    setNewCustomer({ name: '', phone: '', email: '', address: '' })
+    setShowNewCustomerForm(false)
+    setValidationErrors({})
+  }
 
   // Format customer display info
   const formatCustomerInfo = (customer: Customer) => {
-    const parts = [];
-    if (customer.phone) parts.push(customer.phone);
-    if (customer.email) parts.push(customer.email);
-    if (customer.loyaltyPoints > 0) parts.push(`${customer.loyaltyPoints} points`);
-    return parts.join(' • ');
-  };
+    const parts = []
+    if (customer.phone) parts.push(customer.phone)
+    if (customer.email) parts.push(customer.email)
+    if (customer.loyaltyPoints > 0) parts.push(`${customer.loyaltyPoints} points`)
+    return parts.join(' • ')
+  }
 
   // Memoized components
   const searchInput = useMemo(() => (
@@ -181,10 +181,10 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
         </div>
       )}
     </div>
-  ), [searchQuery, isSearching]);
+  ), [searchQuery, isSearching])
 
   const selectedCustomerDisplay = useMemo(() => {
-    if (!selectedCustomer) return null;
+    if (!selectedCustomer) return null
 
     return (
       <Card className="mb-4">
@@ -220,11 +220,11 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
           </div>
         </CardContent>
       </Card>
-    );
-  }, [selectedCustomer]);
+    )
+  }, [selectedCustomer])
 
   const newCustomerForm = useMemo(() => {
-    if (!showNewCustomerForm) return null;
+    if (!showNewCustomerForm) return null
 
     return (
       <Card className="mb-4">
@@ -305,8 +305,8 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
           </div>
         </CardContent>
       </Card>
-    );
-  }, [showNewCustomerForm, newCustomer, validationErrors, isCreating]);
+    )
+  }, [showNewCustomerForm, newCustomer, validationErrors, isCreating])
 
   const searchResultsList = useMemo(() => {
     if (searchQuery.trim() && searchResults.length > 0) {
@@ -342,7 +342,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
             </div>
           </CardContent>
         </Card>
-      );
+      )
     }
 
     if (searchQuery.trim() && !isSearching && searchResults.length === 0) {
@@ -360,11 +360,11 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
             </Button>
           </CardContent>
         </Card>
-      );
+      )
     }
 
-    return null;
-  }, [searchQuery, searchResults, isSearching, showNewCustomerForm]);
+    return null
+  }, [searchQuery, searchResults, isSearching, showNewCustomerForm])
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -400,7 +400,7 @@ const CustomerSearch: React.FC<CustomerSearchProps> = ({
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default CustomerSearch;
+export default CustomerSearch

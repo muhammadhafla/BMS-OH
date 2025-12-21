@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Card } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import React, { useState, useEffect } from 'react'
+import { Card } from './ui/card'
+import { Button } from './ui/button'
+import { Badge } from './ui/badge'
 import {
   X,
   Database,
@@ -19,9 +19,9 @@ import {
   History,
   FileText,
   AlertCircle,
-  Settings
-} from 'lucide-react';
-import { SyncStatus, syncService } from '../services/SyncService';
+  Settings,
+} from 'lucide-react'
+import { SyncStatus, syncService } from '../services/SyncService'
 
 interface SyncHistoryEntry {
   id: string;
@@ -57,23 +57,23 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
   isOpen, 
   onClose, 
   syncStatus, 
-  onSync 
+  onSync, 
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'queue' | 'errors' | 'settings'>('overview');
-  const [syncHistory, setSyncHistory] = useState<SyncHistoryEntry[]>([]);
-  const [pendingTransactions, setPendingTransactions] = useState<PendingTransaction[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [syncProgress, setSyncProgress] = useState(0);
-  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
-  const [syncInterval, setSyncInterval] = useState(5);
+  const [activeTab, setActiveTab] = useState<'overview' | 'history' | 'queue' | 'errors' | 'settings'>('overview')
+  const [syncHistory, setSyncHistory] = useState<SyncHistoryEntry[]>([])
+  const [pendingTransactions, setPendingTransactions] = useState<PendingTransaction[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [syncProgress, setSyncProgress] = useState(0)
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true)
+  const [syncInterval, setSyncInterval] = useState(5)
 
   // Mock data for demonstration - in real implementation, this would come from SyncService
   useEffect(() => {
     if (isOpen) {
-      loadSyncHistory();
-      loadPendingTransactions();
+      loadSyncHistory()
+      loadPendingTransactions()
     }
-  }, [isOpen]);
+  }, [isOpen])
 
   const loadSyncHistory = () => {
     // Mock sync history data
@@ -85,7 +85,7 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
         status: 'success',
         productsSynced: 150,
         transactionsSynced: 12,
-        duration: 45000
+        duration: 45000,
       },
       {
         id: '2',
@@ -94,7 +94,7 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
         status: 'success',
         productsSynced: 150,
         transactionsSynced: 8,
-        duration: 32000
+        duration: 32000,
       },
       {
         id: '3',
@@ -104,11 +104,11 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
         productsSynced: 145,
         transactionsSynced: 10,
         errors: ['Failed to sync 5 products - connection timeout'],
-        duration: 60000
-      }
-    ];
-    setSyncHistory(mockHistory);
-  };
+        duration: 60000,
+      },
+    ]
+    setSyncHistory(mockHistory)
+  }
 
   const loadPendingTransactions = () => {
     // Mock pending transactions data
@@ -120,7 +120,7 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
         amount: 250000,
         items: 3,
         status: 'pending',
-        retryCount: 0
+        retryCount: 0,
       },
       {
         id: '2',
@@ -131,35 +131,35 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
         status: 'failed',
         error: 'Server error 500',
         retryCount: 2,
-        lastAttempt: new Date(Date.now() - 120000)
-      }
-    ];
-    setPendingTransactions(mockPending);
-  };
+        lastAttempt: new Date(Date.now() - 120000),
+      },
+    ]
+    setPendingTransactions(mockPending)
+  }
 
   const handleSyncNow = async () => {
-    setIsLoading(true);
-    setSyncProgress(0);
+    setIsLoading(true)
+    setSyncProgress(0)
 
     // Simulate sync progress
     const progressInterval = setInterval(() => {
       setSyncProgress(prev => {
         if (prev >= 100) {
-          clearInterval(progressInterval);
-          setIsLoading(false);
-          onSync?.();
-          return 100;
+          clearInterval(progressInterval)
+          setIsLoading(false)
+          onSync?.()
+          return 100
         }
-        return prev + 10;
-      });
-    }, 500);
+        return prev + 10
+      })
+    }, 500)
 
     // In real implementation, this would call syncService.syncNow()
     try {
-      const result = await syncService.syncNow();
-      clearInterval(progressInterval);
-      setIsLoading(false);
-      setSyncProgress(100);
+      const result = await syncService.syncNow()
+      clearInterval(progressInterval)
+      setIsLoading(false)
+      setSyncProgress(100)
       
       // Add to history
       const newEntry: SyncHistoryEntry = {
@@ -170,14 +170,14 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
         productsSynced: result.productsSynced,
         transactionsSynced: result.transactionsSynced,
         errors: result.errors,
-        duration: 30000 // Mock duration
-      };
-      setSyncHistory(prev => [newEntry, ...prev]);
+        duration: 30000, // Mock duration
+      }
+      setSyncHistory(prev => [newEntry, ...prev])
     } catch (error) {
-      clearInterval(progressInterval);
-      setIsLoading(false);
+      clearInterval(progressInterval)
+      setIsLoading(false)
     }
-  };
+  }
 
   const retryFailedTransaction = async (transactionId: string) => {
     // In real implementation, this would retry the specific transaction
@@ -185,29 +185,29 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
       prev.map(t => 
         t.id === transactionId 
           ? { ...t, retryCount: t.retryCount + 1, lastAttempt: new Date(), status: 'pending' as const }
-          : t
-      )
-    );
-  };
+          : t,
+      ),
+    )
+  }
 
   const clearAllErrors = () => {
-    syncService.clearSyncErrors();
-  };
+    syncService.clearSyncErrors()
+  }
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-green-500" />
       case 'error':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-red-500" />
       case 'partial':
-        return <AlertTriangle className="h-4 w-4 text-orange-500" />;
+        return <AlertTriangle className="h-4 w-4 text-orange-500" />
       case 'in_progress':
-        return <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />;
+        return <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return <Clock className="h-4 w-4 text-gray-500" />
     }
-  };
+  }
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -216,12 +216,12 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
       partial: 'bg-orange-100 text-orange-800',
       pending: 'bg-yellow-100 text-yellow-800',
       failed: 'bg-red-100 text-red-800',
-      retry: 'bg-blue-100 text-blue-800'
-    };
-    return variants[status as keyof typeof variants] || variants.pending;
-  };
+      retry: 'bg-blue-100 text-blue-800',
+    }
+    return variants[status as keyof typeof variants] || variants.pending
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -261,7 +261,7 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
               { id: 'history', label: 'History', icon: History },
               { id: 'queue', label: 'Queue', icon: FileText },
               { id: 'errors', label: 'Errors', icon: AlertCircle },
-              { id: 'settings', label: 'Settings', icon: Settings }
+              { id: 'settings', label: 'Settings', icon: Settings },
             ].map(tab => (
               <button
                 key={tab.id}
@@ -531,7 +531,7 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
                           onClick={() => {
                             // In real implementation, this would remove specific error
                             // For now, clear all errors
-                            clearAllErrors();
+                            clearAllErrors()
                           }}
                         >
                           <X className="h-4 w-4" />
@@ -557,7 +557,7 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
                       <p className="text-sm text-gray-600">Automatically sync data at regular intervals</p>
                     </div>
                     <Button
-                      variant={autoSyncEnabled ? "default" : "outline"}
+                      variant={autoSyncEnabled ? 'default' : 'outline'}
                       onClick={() => setAutoSyncEnabled(!autoSyncEnabled)}
                     >
                       {autoSyncEnabled ? 'Enabled' : 'Disabled'}
@@ -621,7 +621,7 @@ const SyncStatusModal: React.FC<SyncStatusModalProps> = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default SyncStatusModal;
+export default SyncStatusModal

@@ -3,8 +3,8 @@
  * Handles category-related API calls
  */
 
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { sessionManager } from './SessionManager';
+import axios, { AxiosInstance, AxiosResponse } from 'axios'
+import { sessionManager } from './SessionManager'
 
 export interface Category {
   id: string;
@@ -25,92 +25,92 @@ export interface CategoryApiResponse<T = any> {
 }
 
 class CategoryService {
-  private api: AxiosInstance;
-  private baseURL: string;
+  private api: AxiosInstance
+  private baseURL: string
 
   constructor() {
-    this.baseURL = this.detectApiEndpoint();
+    this.baseURL = this.detectApiEndpoint()
     
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 15000,
       headers: {
         'Content-Type': 'application/json',
-        'X-Client-Info': 'BMS-POS-PWA/1.0'
+        'X-Client-Info': 'BMS-POS-PWA/1.0',
       },
-    });
+    })
 
-    this.setupInterceptors();
+    this.setupInterceptors()
   }
 
   private detectApiEndpoint(): string {
-    const savedEndpoint = localStorage.getItem('bms_api_endpoint');
+    const savedEndpoint = localStorage.getItem('bms_api_endpoint')
     if (savedEndpoint) {
-      return savedEndpoint;
+      return savedEndpoint
     }
 
-    const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
-    const port = window.location.port;
+    const {hostname} = window.location
+    const {protocol: _protocol} = window.location
+    const {port} = window.location
     
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       if (port && ['5173', '5174', '4173'].includes(port)) {
-        return 'http://localhost:3001/api';
+        return 'http://localhost:3001/api'
       }
       if (port === '3000') {
-        return 'http://localhost:3001/api';
+        return 'http://localhost:3001/api'
       }
-      return 'http://localhost:3001/api';
+      return 'http://localhost:3001/api'
     }
     
-    return 'http://localhost:3001/api';
+    return 'http://localhost:3001/api'
   }
 
   private setupInterceptors(): void {
     this.api.interceptors.request.use(
       (config) => {
-        const session = sessionManager.getSession();
+        const session = sessionManager.getSession()
         if (session?.token) {
-          config.headers.Authorization = `Bearer ${session.token}`;
+          config.headers.Authorization = `Bearer ${session.token}`
         }
-        return config;
+        return config
       },
-      (error) => Promise.reject(error)
-    );
+      (error) => Promise.reject(error),
+    )
 
     this.api.interceptors.response.use(
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          sessionManager.clearSession();
-          window.dispatchEvent(new CustomEvent('pos-logout'));
+          sessionManager.clearSession()
+          window.dispatchEvent(new CustomEvent('pos-logout'))
         }
-        return Promise.reject(error);
-      }
-    );
+        return Promise.reject(error)
+      },
+    )
   }
 
   private async makeRequestWithRetry(requestFn: () => Promise<any>, maxRetries: number = 3): Promise<any> {
-    let lastError: any;
+    let lastError: any
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return await requestFn();
+        return await requestFn()
       } catch (error: any) {
-        lastError = error;
+        lastError = error
         
         if (error.response?.status === 401) {
-          throw error;
+          throw error
         }
         
         if ((error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR' || !error.response) && attempt < maxRetries) {
-          console.warn(`Category request failed (attempt ${attempt}/${maxRetries}), retrying...`);
-          continue;
+          console.warn(`Category request failed (attempt ${attempt}/${maxRetries}), retrying...`)
+          continue
         }
       }
     }
     
-    throw lastError;
+    throw lastError
   }
 
   /**
@@ -119,13 +119,13 @@ class CategoryService {
   async getCategories(): Promise<CategoryApiResponse<Category[]>> {
     try {
       return await this.makeRequestWithRetry(async () => {
-        const response = await this.api.get('/categories');
+        const response = await this.api.get('/categories')
         return {
           success: true,
-          data: response.data.data?.categories || []
-        };
-      });
-    } catch (error: any) {
+          data: response.data.data?.categories ?? [],
+        }
+      })
+    } catch (_error: any) {
       // Return fallback categories
       const fallbackCategories: Category[] = [
         {
@@ -135,7 +135,7 @@ class CategoryService {
           isActive: true,
           productCount: 25,
           createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
+          updatedAt: '2024-01-01T00:00:00Z',
         },
         {
           id: 'cat2',
@@ -144,7 +144,7 @@ class CategoryService {
           isActive: true,
           productCount: 42,
           createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
+          updatedAt: '2024-01-01T00:00:00Z',
         },
         {
           id: 'cat3',
@@ -153,14 +153,14 @@ class CategoryService {
           isActive: true,
           productCount: 18,
           createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z'
-        }
-      ];
+          updatedAt: '2024-01-01T00:00:00Z',
+        },
+      ]
 
       return {
         success: true,
-        data: fallbackCategories
-      };
+        data: fallbackCategories,
+      }
     }
   }
 
@@ -169,16 +169,16 @@ class CategoryService {
    */
   async getCategory(id: string): Promise<CategoryApiResponse<Category>> {
     try {
-      const response = await this.api.get(`/categories/${id}`);
+      const response = await this.api.get(`/categories/${id}`)
       return {
         success: true,
-        data: response.data.data
-      };
+        data: response.data.data,
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch category'
-      };
+        error: error.response?.data?.error ?? 'Failed to fetch category',
+      }
     }
   }
 
@@ -187,17 +187,17 @@ class CategoryService {
    */
   async createCategory(categoryData: Partial<Category>): Promise<CategoryApiResponse<Category>> {
     try {
-      const response = await this.api.post('/categories', categoryData);
+      const response = await this.api.post('/categories', categoryData)
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Category created successfully'
-      };
+        message: response.data.message ?? 'Category created successfully',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to create category'
-      };
+        error: error.response?.data?.error ?? 'Failed to create category',
+      }
     }
   }
 
@@ -206,17 +206,17 @@ class CategoryService {
    */
   async updateCategory(id: string, categoryData: Partial<Category>): Promise<CategoryApiResponse<Category>> {
     try {
-      const response = await this.api.put(`/categories/${id}`, categoryData);
+      const response = await this.api.put(`/categories/${id}`, categoryData)
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Category updated successfully'
-      };
+        message: response.data.message ?? 'Category updated successfully',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to update category'
-      };
+        error: error.response?.data?.error ?? 'Failed to update category',
+      }
     }
   }
 
@@ -225,16 +225,16 @@ class CategoryService {
    */
   async deleteCategory(id: string): Promise<CategoryApiResponse> {
     try {
-      const response = await this.api.delete(`/categories/${id}`);
+      const response = await this.api.delete(`/categories/${id}`)
       return {
         success: true,
-        message: response.data.message || 'Category deleted successfully'
-      };
+        message: response.data.message ?? 'Category deleted successfully',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to delete category'
-      };
+        error: error.response?.data?.error ?? 'Failed to delete category',
+      }
     }
   }
 
@@ -243,16 +243,16 @@ class CategoryService {
    */
   async getCategoryTree(): Promise<CategoryApiResponse<Category[]>> {
     try {
-      const response = await this.api.get('/categories/tree');
+      const response = await this.api.get('/categories/tree')
       return {
         success: true,
-        data: response.data.data
-      };
+        data: response.data.data,
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch category tree'
-      };
+        error: error.response?.data?.error ?? 'Failed to fetch category tree',
+      }
     }
   }
 
@@ -261,16 +261,16 @@ class CategoryService {
    */
   async getCategoriesWithCounts(): Promise<CategoryApiResponse<Array<Category & { productCount: number }>>> {
     try {
-      const response = await this.api.get('/categories/with-counts');
+      const response = await this.api.get('/categories/with-counts')
       return {
         success: true,
-        data: response.data.data
-      };
+        data: response.data.data,
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch categories with counts'
-      };
+        error: error.response?.data?.error ?? 'Failed to fetch categories with counts',
+      }
     }
   }
 
@@ -280,17 +280,17 @@ class CategoryService {
   async searchCategories(query: string): Promise<CategoryApiResponse<Category[]>> {
     try {
       const response = await this.api.get('/categories/search', {
-        params: { q: query }
-      });
+        params: { q: query },
+      })
       return {
         success: true,
-        data: response.data.data
-      };
+        data: response.data.data,
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to search categories'
-      };
+        error: error.response?.data?.error ?? 'Failed to search categories',
+      }
     }
   }
 
@@ -299,17 +299,17 @@ class CategoryService {
    */
   async toggleCategoryStatus(id: string, isActive: boolean): Promise<CategoryApiResponse<Category>> {
     try {
-      const response = await this.api.patch(`/categories/${id}/status`, { isActive });
+      const response = await this.api.patch(`/categories/${id}/status`, { isActive })
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Category status updated successfully'
-      };
+        message: response.data.message ?? 'Category status updated successfully',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to update category status'
-      };
+        error: error.response?.data?.error ?? 'Failed to update category status',
+      }
     }
   }
 
@@ -321,17 +321,17 @@ class CategoryService {
     failed: Array<{ data: Partial<Category>; error: string }>;
   }>> {
     try {
-      const response = await this.api.post('/categories/bulk', { categories });
+      const response = await this.api.post('/categories/bulk', { categories })
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Categories created successfully'
-      };
+        message: response.data.message ?? 'Categories created successfully',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to create categories'
-      };
+        error: error.response?.data?.error ?? 'Failed to create categories',
+      }
     }
   }
 
@@ -340,16 +340,16 @@ class CategoryService {
    */
   async reorderCategories(categoryIds: string[]): Promise<CategoryApiResponse> {
     try {
-      const response = await this.api.patch('/categories/reorder', { categoryIds });
+      const response = await this.api.patch('/categories/reorder', { categoryIds })
       return {
         success: true,
-        message: response.data.message || 'Categories reordered successfully'
-      };
+        message: response.data.message ?? 'Categories reordered successfully',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to reorder categories'
-      };
+        error: error.response?.data?.error ?? 'Failed to reorder categories',
+      }
     }
   }
 
@@ -368,19 +368,19 @@ class CategoryService {
     }>;
   }>> {
     try {
-      const response = await this.api.get('/categories/stats');
+      const response = await this.api.get('/categories/stats')
       return {
         success: true,
-        data: response.data.data
-      };
+        data: response.data.data,
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch category statistics'
-      };
+        error: error.response?.data?.error ?? 'Failed to fetch category statistics',
+      }
     }
   }
 }
 
-export const categoryService = new CategoryService();
-export default categoryService;
+export const categoryService = new CategoryService()
+export default categoryService

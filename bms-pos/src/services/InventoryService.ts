@@ -3,9 +3,10 @@
  * Handles inventory-related API calls
  */
 
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-import { sessionManager } from './SessionManager';
-import { Product } from './ProductService';
+import axios, { AxiosInstance, AxiosResponse } from 'axios'
+import { sessionManager } from './SessionManager'
+import { Product } from './ProductService'
+import { Logger } from '../utils/logger'
 
 export interface InventoryLog {
   id: string;
@@ -74,92 +75,92 @@ export interface InventoryApiResponse<T = any> {
 }
 
 class InventoryService {
-  private api: AxiosInstance;
-  private baseURL: string;
+  private api: AxiosInstance
+  private baseURL: string
 
   constructor() {
-    this.baseURL = this.detectApiEndpoint();
+    this.baseURL = this.detectApiEndpoint()
     
     this.api = axios.create({
       baseURL: this.baseURL,
       timeout: 15000,
       headers: {
         'Content-Type': 'application/json',
-        'X-Client-Info': 'BMS-POS-PWA/1.0'
+        'X-Client-Info': 'BMS-POS-PWA/1.0',
       },
-    });
+    })
 
-    this.setupInterceptors();
+    this.setupInterceptors()
   }
 
   private detectApiEndpoint(): string {
-    const savedEndpoint = localStorage.getItem('bms_api_endpoint');
+    const savedEndpoint = localStorage.getItem('bms_api_endpoint')
     if (savedEndpoint) {
-      return savedEndpoint;
+      return savedEndpoint
     }
 
-    const hostname = window.location.hostname;
-    const protocol = window.location.protocol;
-    const port = window.location.port;
+    const {hostname} = window.location
+    const {protocol: _protocol} = window.location
+    const {port} = window.location
     
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       if (port && ['5173', '5174', '4173'].includes(port)) {
-        return 'http://localhost:3001/api';
+        return 'http://localhost:3001/api'
       }
       if (port === '3000') {
-        return 'http://localhost:3001/api';
+        return 'http://localhost:3001/api'
       }
-      return 'http://localhost:3001/api';
+      return 'http://localhost:3001/api'
     }
     
-    return 'http://localhost:3001/api';
+    return 'http://localhost:3001/api'
   }
 
   private setupInterceptors(): void {
     this.api.interceptors.request.use(
       (config) => {
-        const session = sessionManager.getSession();
+        const session = sessionManager.getSession()
         if (session?.token) {
-          config.headers.Authorization = `Bearer ${session.token}`;
+          config.headers.Authorization = `Bearer ${session.token}`
         }
-        return config;
+        return config
       },
-      (error) => Promise.reject(error)
-    );
+      (error) => Promise.reject(error),
+    )
 
     this.api.interceptors.response.use(
       (response: AxiosResponse) => response,
       (error) => {
         if (error.response?.status === 401) {
-          sessionManager.clearSession();
-          window.dispatchEvent(new CustomEvent('pos-logout'));
+          sessionManager.clearSession()
+          window.dispatchEvent(new CustomEvent('pos-logout'))
         }
-        return Promise.reject(error);
-      }
-    );
+        return Promise.reject(error)
+      },
+    )
   }
 
   private async makeRequestWithRetry(requestFn: () => Promise<any>, maxRetries: number = 3): Promise<any> {
-    let lastError: any;
+    let lastError: any
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return await requestFn();
+        return await requestFn()
       } catch (error: any) {
-        lastError = error;
+        lastError = error
         
         if (error.response?.status === 401) {
-          throw error;
+          throw error
         }
         
         if ((error.code === 'ECONNREFUSED' || error.code === 'NETWORK_ERROR' || !error.response) && attempt < maxRetries) {
-          console.warn(`Inventory request failed (attempt ${attempt}/${maxRetries}), retrying...`);
-          continue;
+          Logger.warn(`Inventory request failed (attempt ${attempt}/${maxRetries}), retrying...`)
+          continue
         }
       }
     }
     
-    throw lastError;
+    throw lastError
   }
 
   /**
@@ -168,17 +169,17 @@ class InventoryService {
   async getInventoryOverview(params: InventoryParams = {}): Promise<InventoryApiResponse<InventoryOverview>> {
     try {
       return await this.makeRequestWithRetry(async () => {
-        const response = await this.api.get('/inventory/overview', { params });
+        const response = await this.api.get('/inventory/overview', { params })
         return {
           success: true,
-          data: response.data.data
-        };
-      });
+          data: response.data.data,
+        }
+      })
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch inventory overview'
-      };
+        error: error.response?.data?.error ?? 'Failed to fetch inventory overview',
+      }
     }
   }
 
@@ -187,16 +188,16 @@ class InventoryService {
    */
   async getLowStockProducts(): Promise<InventoryApiResponse<{ lowStockProducts: LowStockProduct[]; summary: any }>> {
     try {
-      const response = await this.api.get('/inventory/low-stock');
+      const response = await this.api.get('/inventory/low-stock')
       return {
         success: true,
-        data: response.data.data
-      };
+        data: response.data.data,
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch low stock products'
-      };
+        error: error.response?.data?.error ?? 'Failed to fetch low stock products',
+      }
     }
   }
 
@@ -212,16 +213,16 @@ class InventoryService {
     limit?: number;
   } = {}): Promise<InventoryApiResponse<{ logs: InventoryLog[]; pagination: any }>> {
     try {
-      const response = await this.api.get('/inventory/logs', { params });
+      const response = await this.api.get('/inventory/logs', { params })
       return {
         success: true,
-        data: response.data.data
-      };
+        data: response.data.data,
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch inventory logs'
-      };
+        error: error.response?.data?.error ?? 'Failed to fetch inventory logs',
+      }
     }
   }
 
@@ -230,17 +231,17 @@ class InventoryService {
    */
   async adjustStock(adjustmentData: StockAdjustment): Promise<InventoryApiResponse<{ product: Product; log: InventoryLog }>> {
     try {
-      const response = await this.api.post('/inventory/adjust', adjustmentData);
+      const response = await this.api.post('/inventory/adjust', adjustmentData)
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Stock adjusted successfully'
-      };
+        message: response.data.message ?? 'Stock adjusted successfully',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to adjust stock'
-      };
+        error: error.response?.data?.error ?? 'Failed to adjust stock',
+      }
     }
   }
 
@@ -256,17 +257,17 @@ class InventoryService {
     };
   }>> {
     try {
-      const response = await this.api.post('/inventory/adjust/bulk', { adjustments });
+      const response = await this.api.post('/inventory/adjust/bulk', { adjustments })
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Bulk stock adjustment completed'
-      };
+        message: response.data.message ?? 'Bulk stock adjustment completed',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to perform bulk stock adjustment'
-      };
+        error: error.response?.data?.error ?? 'Failed to perform bulk stock adjustment',
+      }
     }
   }
 
@@ -283,16 +284,16 @@ class InventoryService {
     }>;
   }>> {
     try {
-      const response = await this.api.post('/inventory/check-availability', { requests });
+      const response = await this.api.post('/inventory/check-availability', { requests })
       return {
         success: true,
-        data: response.data.data
-      };
+        data: response.data.data,
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to check stock availability'
-      };
+        error: error.response?.data?.error ?? 'Failed to check stock availability',
+      }
     }
   }
 
@@ -322,16 +323,16 @@ class InventoryService {
     }>;
   }>> {
     try {
-      const response = await this.api.get('/inventory/analytics');
+      const response = await this.api.get('/inventory/analytics')
       return {
         success: true,
-        data: response.data.data
-      };
+        data: response.data.data,
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch inventory statistics'
-      };
+        error: error.response?.data?.error ?? 'Failed to fetch inventory statistics',
+      }
     }
   }
 
@@ -340,16 +341,16 @@ class InventoryService {
    */
   async setMinStockLevels(levels: Array<{ productId: string; minStock: number }>): Promise<InventoryApiResponse> {
     try {
-      const response = await this.api.post('/inventory/set-min-levels', { levels });
+      const response = await this.api.post('/inventory/set-min-levels', { levels })
       return {
         success: true,
-        message: response.data.message || 'Minimum stock levels set successfully'
-      };
+        message: response.data.message ?? 'Minimum stock levels set successfully',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to set minimum stock levels'
-      };
+        error: error.response?.data?.error ?? 'Failed to set minimum stock levels',
+      }
     }
   }
 
@@ -369,11 +370,11 @@ class InventoryService {
     try {
       const response = await this.api.get('/inventory/reports', {
         params,
-        responseType: 'blob'
-      });
-      return response.data;
+        responseType: 'blob',
+      })
+      return response.data
     } catch (error: any) {
-      throw new Error(error.response?.data?.error || 'Failed to generate inventory report');
+      throw new Error(error.response?.data?.error ?? 'Failed to generate inventory report')
     }
   }
 
@@ -388,17 +389,17 @@ class InventoryService {
     reference?: string;
   }): Promise<InventoryApiResponse<{ transfer: any; logs: InventoryLog[] }>> {
     try {
-      const response = await this.api.post('/inventory/transfer', transferData);
+      const response = await this.api.post('/inventory/transfer', transferData)
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Stock transferred successfully'
-      };
+        message: response.data.message ?? 'Stock transferred successfully',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to transfer stock'
-      };
+        error: error.response?.data?.error ?? 'Failed to transfer stock',
+      }
     }
   }
 
@@ -424,17 +425,17 @@ class InventoryService {
   }>> {
     try {
       const response = await this.api.get(`/inventory/movement/${productId}`, {
-        params: { days }
-      });
+        params: { days },
+      })
       return {
         success: true,
-        data: response.data.data
-      };
+        data: response.data.data,
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to fetch stock movement'
-      };
+        error: error.response?.data?.error ?? 'Failed to fetch stock movement',
+      }
     }
   }
 
@@ -448,20 +449,20 @@ class InventoryService {
     adjustments?: StockAdjustment[];
   }): Promise<InventoryApiResponse<{ audit: any; adjustments: InventoryLog[] }>> {
     try {
-      const response = await this.api.post('/inventory/audit', auditData);
+      const response = await this.api.post('/inventory/audit', auditData)
       return {
         success: true,
         data: response.data.data,
-        message: response.data.message || 'Inventory audit completed successfully'
-      };
+        message: response.data.message ?? 'Inventory audit completed successfully',
+      }
     } catch (error: any) {
       return {
         success: false,
-        error: error.response?.data?.error || 'Failed to complete inventory audit'
-      };
+        error: error.response?.data?.error ?? 'Failed to complete inventory audit',
+      }
     }
   }
 }
 
-export const inventoryService = new InventoryService();
-export default inventoryService;
+export const inventoryService = new InventoryService()
+export default inventoryService

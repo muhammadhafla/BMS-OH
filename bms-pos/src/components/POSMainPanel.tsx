@@ -1,8 +1,8 @@
-import React from 'react';
-import SearchPanel from './SearchPanel';
-import CartTable from './CartTable';
-import InventoryOverview from './inventory/InventoryOverview';
-import StockAdjustment from './inventory/StockAdjustment';
+import React from 'react'
+import SearchPanel from './SearchPanel'
+import CartTable from './CartTable'
+import InventoryOverview from './inventory/InventoryOverview'
+import StockAdjustment from './inventory/StockAdjustment'
 
 interface Product {
   id: string;
@@ -28,10 +28,10 @@ interface CartItem {
 interface POSMainPanelProps {
   activeView: 'pos' | 'inventory' | 'adjustment' | 'alerts';
   cart: CartItem[];
-  onAddToCart: (product: Product, quantity?: number) => void;
-  onUpdateCartItem: (productId: string, quantity: number) => void;
-  onUpdateCartDiscount: (productId: string, discount: number) => void;
-  onRemoveFromCart: (productId: string) => void;
+  onAddToCart: (product: Product, quantity?: number) => void;  
+  onUpdateCartItem: (productId: string, quantity: number) => void;  
+  onUpdateCartDiscount: (productId: string, discount: number) => void;  
+  onRemoveFromCart: (productId: string) => void;  
   onClearCart: () => void;
   onStockAlert: () => void;
   onPayment: () => void;
@@ -45,7 +45,7 @@ const POSMainPanel: React.FC<POSMainPanelProps> = ({
   onUpdateCartDiscount,
   onRemoveFromCart,
   onClearCart,
-  onStockAlert
+  onStockAlert,
 }) => {
   // Render different views based on activeView
   if (activeView === 'inventory') {
@@ -56,7 +56,7 @@ const POSMainPanel: React.FC<POSMainPanelProps> = ({
           onProductEdit={(productId) => console.log('Edit:', productId)}
         />
       </div>
-    );
+    )
   }
 
   if (activeView === 'adjustment') {
@@ -64,13 +64,13 @@ const POSMainPanel: React.FC<POSMainPanelProps> = ({
       <div className="h-full bg-white">
         <StockAdjustment
           onSuccess={(adjustment) => {
-            console.log('Stock adjusted:', adjustment);
-            onStockAlert();
+            console.log('Stock adjusted:', adjustment)
+            onStockAlert()
           }}
           onClose={() => {}}
         />
       </div>
-    );
+    )
   }
 
   // Default POS view
@@ -95,7 +95,7 @@ const POSMainPanel: React.FC<POSMainPanelProps> = ({
         />
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default POSMainPanel;
+export default POSMainPanel

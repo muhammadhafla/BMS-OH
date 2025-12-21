@@ -1,8 +1,8 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { X, Printer, CheckCircle } from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
+import React from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Button } from './ui/button'
+import { X, Printer, CheckCircle } from 'lucide-react'
+import { formatCurrency } from '../lib/utils'
 
 interface CartItem {
   productId: string;
@@ -42,7 +42,7 @@ const Receipt: React.FC<ReceiptProps> = ({
   cashier,
   branch,
   onPrint,
-  onClose
+  onClose,
 }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString('id-ID', {
@@ -51,18 +51,18 @@ const Receipt: React.FC<ReceiptProps> = ({
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
-    });
-  };
+      second: '2-digit',
+    })
+  }
 
   const getPaymentMethodLabel = (method: string) => {
     switch (method) {
-      case 'cash': return 'Tunai';
-      case 'card': return 'Kartu';
-      case 'digital': return 'Dompet Digital';
-      default: return method;
+      case 'cash': return 'Tunai'
+      case 'card': return 'Kartu'
+      case 'digital': return 'Dompet Digital'
+      default: return method
     }
-  };
+  }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -176,7 +176,7 @@ const Receipt: React.FC<ReceiptProps> = ({
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default Receipt;
+export default Receipt

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Card } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import React, { useState, useEffect } from 'react'
+import { Card } from './ui/card'
+import { Button } from './ui/button'
+import { Badge } from './ui/badge'
 import {
   CheckCircle,
   Info,
@@ -12,9 +12,9 @@ import {
   Database,
   Clock,
   AlertTriangle,
-  XCircle
-} from 'lucide-react';
-import { SyncStatus } from '../services/SyncService';
+  XCircle,
+} from 'lucide-react'
+import { SyncStatus } from '../services/SyncService'
 
 interface Notification {
   id: string;
@@ -42,14 +42,14 @@ const SyncNotifications: React.FC<SyncNotificationsProps> = ({
   syncStatus, 
   onSync, 
   onDismiss,
-  onClearAll 
+  onClearAll, 
 }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [isExpanded, setIsExpanded] = useState(false)
 
   // Auto-generate notifications based on sync status changes
   useEffect(() => {
-    const now = new Date();
+    const now = new Date()
     
     // Connection status notifications
     if (syncStatus.isOnline) {
@@ -58,8 +58,8 @@ const SyncNotifications: React.FC<SyncNotificationsProps> = ({
         title: 'Connection Restored',
         message: 'Internet connection is now available',
         autoClose: true,
-        duration: 3000
-      });
+        duration: 3000,
+      })
     }
 
     // Sync progress notifications
@@ -68,8 +68,8 @@ const SyncNotifications: React.FC<SyncNotificationsProps> = ({
         type: 'sync',
         title: 'Synchronization Started',
         message: 'Syncing data with server...',
-        autoClose: false
-      });
+        autoClose: false,
+      })
     }
 
     // Sync completion notifications (would be triggered externally)
@@ -86,15 +86,15 @@ const SyncNotifications: React.FC<SyncNotificationsProps> = ({
           {
             label: 'View Details',
             onClick: () => setIsExpanded(true),
-            variant: 'outline'
+            variant: 'outline',
           },
           {
             label: 'Retry',
             onClick: () => onSync?.(),
-            variant: 'default'
-          }
-        ]
-      });
+            variant: 'default',
+          },
+        ],
+      })
     }
 
     // Pending transactions notification
@@ -109,16 +109,16 @@ const SyncNotifications: React.FC<SyncNotificationsProps> = ({
           {
             label: 'Sync Now',
             onClick: () => onSync?.(),
-            variant: 'default'
-          }
-        ]
-      });
+            variant: 'default',
+          },
+        ],
+      })
     }
 
     // Recent sync notification
     if (syncStatus.lastSync && syncStatus.isOnline && !syncStatus.isSyncing) {
-      const timeSinceSync = now.getTime() - syncStatus.lastSync.getTime();
-      const minutesSinceSync = Math.floor(timeSinceSync / 60000);
+      const timeSinceSync = now.getTime() - syncStatus.lastSync.getTime()
+      const minutesSinceSync = Math.floor(timeSinceSync / 60000)
       
       if (minutesSinceSync < 5) {
         addNotification({
@@ -126,77 +126,77 @@ const SyncNotifications: React.FC<SyncNotificationsProps> = ({
           title: 'Sync Completed',
           message: 'Data synchronized successfully',
           autoClose: true,
-          duration: 3000
-        });
+          duration: 3000,
+        })
       }
     }
 
-  }, [syncStatus, onSync]);
+  }, [syncStatus, onSync])
 
   const addNotification = (notificationData: Omit<Notification, 'id' | 'timestamp'>) => {
     const notification: Notification = {
       ...notificationData,
       id: Math.random().toString(36).substr(2, 9),
-      timestamp: new Date()
-    };
+      timestamp: new Date(),
+    }
 
-    setNotifications(prev => [notification, ...prev.slice(0, 4)]); // Keep max 5 notifications
+    setNotifications(prev => [notification, ...prev.slice(0, 4)]) // Keep max 5 notifications
 
     // Auto-close if specified
     if (notification.autoClose && notification.duration) {
       setTimeout(() => {
-        dismissNotification(notification.id);
-      }, notification.duration);
+        dismissNotification(notification.id)
+      }, notification.duration)
     }
-  };
+  }
 
   const dismissNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    onDismiss?.(id);
-  };
+    setNotifications(prev => prev.filter(n => n.id !== id))
+    onDismiss?.(id)
+  }
 
   const getNotificationIcon = (type: Notification['type']) => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className="h-5 w-5 text-green-500" />
       case 'error':
-        return <XCircle className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-5 w-5 text-red-500" />
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-orange-500" />;
+        return <AlertTriangle className="h-5 w-5 text-orange-500" />
       case 'info':
-        return <Info className="h-5 w-5 text-blue-500" />;
+        return <Info className="h-5 w-5 text-blue-500" />
       case 'sync':
-        return <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />;
+        return <RefreshCw className="h-5 w-5 text-blue-500 animate-spin" />
       case 'connection':
         return syncStatus.isOnline 
           ? <Wifi className="h-5 w-5 text-green-500" />
-          : <WifiOff className="h-5 w-5 text-red-500" />;
+          : <WifiOff className="h-5 w-5 text-red-500" />
       default:
-        return <Info className="h-5 w-5 text-gray-500" />;
+        return <Info className="h-5 w-5 text-gray-500" />
     }
-  };
+  }
 
   const getNotificationBorderColor = (type: Notification['type']) => {
     switch (type) {
       case 'success':
-        return 'border-l-green-500';
+        return 'border-l-green-500'
       case 'error':
-        return 'border-l-red-500';
+        return 'border-l-red-500'
       case 'warning':
-        return 'border-l-orange-500';
+        return 'border-l-orange-500'
       case 'info':
-        return 'border-l-blue-500';
+        return 'border-l-blue-500'
       case 'sync':
-        return 'border-l-blue-500';
+        return 'border-l-blue-500'
       case 'connection':
-        return syncStatus.isOnline ? 'border-l-green-500' : 'border-l-red-500';
+        return syncStatus.isOnline ? 'border-l-green-500' : 'border-l-red-500'
       default:
-        return 'border-l-gray-500';
+        return 'border-l-gray-500'
     }
-  };
+  }
 
   if (notifications.length === 0) {
-    return null;
+    return null
   }
 
   return (
@@ -221,8 +221,8 @@ const SyncNotifications: React.FC<SyncNotificationsProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => {
-                setNotifications([]);
-                onClearAll?.();
+                setNotifications([])
+                onClearAll?.()
               }}
               className="text-xs text-red-600 hover:text-red-700"
             >
@@ -343,7 +343,7 @@ const SyncNotifications: React.FC<SyncNotificationsProps> = ({
         </Card>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default SyncNotifications;
+export default SyncNotifications

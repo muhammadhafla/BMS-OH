@@ -1,6 +1,6 @@
-import { Component, ReactNode } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Component, ReactNode } from 'react'
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 
 interface ErrorInfo {
   componentStack: string;
@@ -21,38 +21,38 @@ interface ErrorBoundaryProps {
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
-    super(props);
+    super(props)
     this.state = {
       hasError: false,
       error: null,
       errorInfo: null,
-    };
+    }
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return {
       hasError: true,
       error,
-    };
+    }
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    const { onError } = this.props;
+    const { onError } = this.props
     
     // Log error to console in development mode
     if (process.env.NODE_ENV === 'development') {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
+      console.error('ErrorBoundary caught an error:', error, errorInfo)
     }
 
     // Call custom error handler if provided
     if (onError) {
-      onError(error, errorInfo);
+      onError(error, errorInfo)
     }
 
     // Set error info in state
     this.setState({
       errorInfo,
-    });
+    })
 
     // In production, you would send error to monitoring service
     if (process.env.NODE_ENV === 'production') {
@@ -66,25 +66,25 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
       hasError: false,
       error: null,
       errorInfo: null,
-    });
-  };
+    })
+  }
 
   handleRefresh = () => {
-    window.location.reload();
-  };
+    window.location.reload()
+  }
 
   render() {
-    const { hasError, error, errorInfo } = this.state;
-    const { children, fallback, showDetails = false } = this.props;
+    const { hasError, error, errorInfo } = this.state
+    const { children, fallback, showDetails = false } = this.props
 
     if (hasError) {
       // Use custom fallback if provided
       if (fallback) {
-        return fallback;
+        return fallback
       }
 
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const shouldShowDetails = showDetails || isDevelopment;
+      const isDevelopment = process.env.NODE_ENV === 'development'
+      const shouldShowDetails = showDetails || isDevelopment
 
       return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -190,11 +190,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             </CardFooter>
           </Card>
         </div>
-      );
+      )
     }
 
-    return children;
+    return children
   }
 }
 
-export default ErrorBoundary;
+export default ErrorBoundary

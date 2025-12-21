@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
-import { Badge } from './ui/badge';
-import { Search, Package, Plus, X, Filter } from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
-import { useToast } from '../hooks/useToast';
+import React, { useState, useEffect, useMemo } from 'react'
+import { Card, CardContent } from './ui/card'
+import { Button } from './ui/button'
+import { Input } from './ui/input'
+import { Badge } from './ui/badge'
+import { Search, Package, Plus, X, Filter } from 'lucide-react'
+import { formatCurrency } from '../lib/utils'
+import { useToast } from '../hooks/useToast'
 
 interface Product {
   id: string;
@@ -30,44 +30,44 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
   isOpen,
   onClose,
   onProductSelect,
-  searchQuery = ''
+  searchQuery = '',
 }) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState(searchQuery);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [categories, setCategories] = useState<string[]>([]);
-  const { showSuccess, showError } = useToast();
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState(searchQuery)
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [categories, setCategories] = useState<string[]>([])
+  const { showSuccess, showError } = useToast()
 
   // Load products when modal opens
   useEffect(() => {
     if (isOpen) {
-      loadProducts();
-      setSearchTerm(searchQuery);
+      loadProducts()
+      setSearchTerm(searchQuery)
     }
-  }, [isOpen, searchQuery]);
+  }, [isOpen, searchQuery])
 
   // Load products from API or fallback data
   const loadProducts = async () => {
-    setLoading(true);
+    setLoading(true)
     try {
       // Check if webAPI is available
-      if (window.webAPI && window.webAPI.getProducts) {
-        const result = await window.webAPI.getProducts({ limit: 500 });
+      if (window.webAPI?.getProducts) {
+        const result = await window.webAPI.getProducts({ limit: 500 })
         if (result.success) {
-          setProducts(result.data);
+          setProducts(result.data)
           // Extract unique categories
-          const uniqueCategories = [...new Set(result.data.map((p: Product) => p.category).filter(Boolean))];
-          setCategories(uniqueCategories as string[]);
+          const uniqueCategories = [...new Set(result.data.map((p: Product) => p.category).filter(Boolean))]
+          setCategories(uniqueCategories as string[])
         } else {
-          throw new Error(result.error || 'Failed to load products');
+          throw new Error(result.error || 'Failed to load products')
         }
       } else {
         // Fallback to sample data when webAPI is not available
-        throw new Error('webAPI not available');
+        throw new Error('webAPI not available')
       }
     } catch (error) {
-      console.warn('Using fallback sample data:', error);
+      console.warn('Using fallback sample data:', error)
       // Fallback sample data
       const sampleProducts: Product[] = [
         {
@@ -79,7 +79,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
           stock: 25,
           unit: 'pack',
           barcode: '123456789',
-          category: 'Beverage'
+          category: 'Beverage',
         },
         {
           id: '2',
@@ -90,7 +90,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
           stock: 50,
           unit: 'box',
           barcode: '987654321',
-          category: 'Beverage'
+          category: 'Beverage',
         },
         {
           id: '3',
@@ -101,7 +101,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
           stock: 15,
           unit: 'loaf',
           barcode: '555123456',
-          category: 'Bakery'
+          category: 'Bakery',
         },
         {
           id: '4',
@@ -112,60 +112,60 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
           stock: 30,
           unit: 'pack',
           barcode: '789123456',
-          category: 'Dairy'
-        }
-      ];
-      setProducts(sampleProducts);
-      setCategories(['Beverage', 'Bakery', 'Dairy']);
+          category: 'Dairy',
+        },
+      ]
+      setProducts(sampleProducts)
+      setCategories(['Beverage', 'Bakery', 'Dairy'])
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // Filter products based on search and category
   const filteredProducts = useMemo(() => {
-    let filtered = products;
+    let filtered = products
 
     // Filter by search term
     if (searchTerm.trim()) {
-      const search = searchTerm.toLowerCase().trim();
+      const search = searchTerm.toLowerCase().trim()
       filtered = filtered.filter(product => 
         product.name.toLowerCase().includes(search) ||
         product.sku.toLowerCase().includes(search) ||
-        (product.barcode && product.barcode.includes(search)) ||
-        (product.category && product.category.toLowerCase().includes(search))
-      );
+        (product.barcode?.includes(search)) ||
+        (product.category?.toLowerCase().includes(search)),
+      )
     }
 
     // Filter by category
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
+      filtered = filtered.filter(product => product.category === selectedCategory)
     }
 
-    return filtered.sort((a, b) => a.name.localeCompare(b.name));
-  }, [products, searchTerm, selectedCategory]);
+    return filtered.sort((a, b) => a.name.localeCompare(b.name))
+  }, [products, searchTerm, selectedCategory])
 
   const handleProductSelect = (product: Product) => {
     if (product.stock <= 0) {
-      showError('Produk sedang tidak tersedia');
-      return;
+      showError('Produk sedang tidak tersedia')
+      return
     }
     
-    onProductSelect(product);
-    showSuccess(`${product.name} ditambahkan ke keranjang`);
-  };
+    onProductSelect(product)
+    showSuccess(`${product.name} ditambahkan ke keranjang`)
+  }
 
   const getStockStatusBadge = (stock: number) => {
     if (stock <= 0) {
-      return <Badge variant="destructive" className="text-xs">Habis</Badge>;
+      return <Badge variant="destructive" className="text-xs">Habis</Badge>
     } else if (stock <= 10) {
-      return <Badge variant="secondary" className="text-xs">Stok Menipis</Badge>;
+      return <Badge variant="secondary" className="text-xs">Stok Menipis</Badge>
     } else {
-      return <Badge variant="default" className="text-xs">Tersedia</Badge>;
+      return <Badge variant="default" className="text-xs">Tersedia</Badge>
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -286,8 +286,8 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                             size="sm"
                             variant="ghost"
                             onClick={(e) => {
-                              e.stopPropagation();
-                              handleProductSelect(product);
+                              e.stopPropagation()
+                              handleProductSelect(product)
                             }}
                             disabled={product.stock <= 0}
                             className="h-8 w-8 p-0"
@@ -324,7 +324,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ProductSearchModal;
+export default ProductSearchModal

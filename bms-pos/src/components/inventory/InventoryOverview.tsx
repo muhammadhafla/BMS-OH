@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { LoadingSpinner } from '../ui/loading-spinner';
-import { useToast } from '../../hooks/useToast';
-import { inventoryService, InventoryItem, StockMovement, InventoryStats } from '../../services/InventoryService';
+import React, { useState, useEffect, useMemo } from 'react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { LoadingSpinner } from '../ui/loading-spinner'
+import { useToast } from '../../hooks/useToast'
+import { inventoryService, InventoryItem, StockMovement, InventoryStats } from '../../services/InventoryService'
 import { 
   Package, 
   TrendingUp, 
@@ -16,8 +16,8 @@ import {
   BarChart3,
   FileText,
   Eye,
-  Edit
-} from 'lucide-react';
+  Edit,
+} from 'lucide-react'
 
 interface InventoryOverviewProps {
   onProductSelect?: (productId: string) => void;
@@ -39,30 +39,30 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({
   onProductEdit,
   showActions = true,
   maxItems = 100,
-  initialFilter = {}
+  initialFilter = {},
 }) => {
   // State
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [recentMovements, setRecentMovements] = useState<StockMovement[]>([]);
-  const [stats, setStats] = useState<InventoryStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const [inventory, setInventory] = useState<InventoryItem[]>([])
+  const [recentMovements, setRecentMovements] = useState<StockMovement[]>([])
+  const [stats, setStats] = useState<InventoryStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [exporting, setExporting] = useState(false)
   
   // Filters and search
-  const [searchTerm, setSearchTerm] = useState(initialFilter.search || '');
-  const [stockFilter, setStockFilter] = useState(initialFilter.stockLevel || 'all');
+  const [searchTerm, setSearchTerm] = useState(initialFilter.search || '')
+  const [stockFilter, setStockFilter] = useState(initialFilter.stockLevel || 'all')
   // const [categoryFilter, setCategoryFilter] = useState(initialFilter.category || '');
   
   // Sorting
-  const [sortField, setSortField] = useState<SortField>('name');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [sortField, setSortField] = useState<SortField>('name')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc')
   
   // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 20
   
-  const { showSuccess, showError, showInfo } = useToast();
+  const { showSuccess, showError, showInfo } = useToast()
 
   // Load inventory data
   const loadData = async () => {
@@ -70,66 +70,66 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({
       const [inventoryData, statsData, movementsData] = await Promise.all([
         inventoryService.getAllInventory(),
         inventoryService.getInventoryStats(),
-        inventoryService.getStockMovements({ limit: 50 })
-      ]);
+        inventoryService.getStockMovements({ limit: 50 }),
+      ])
       
-      setInventory(inventoryData);
-      setStats(statsData);
-      setRecentMovements(movementsData);
+      setInventory(inventoryData)
+      setStats(statsData)
+      setRecentMovements(movementsData)
     } catch (error) {
-      console.error('Error loading inventory data:', error);
-      showError('Failed to load inventory data');
+      console.error('Error loading inventory data:', error)
+      showError('Failed to load inventory data')
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      setLoading(false)
+      setRefreshing(false)
     }
-  };
+  }
 
   // Refresh data
   const refreshData = async () => {
-    setRefreshing(true);
-    await loadData();
-    showInfo('Inventory data refreshed');
-  };
+    setRefreshing(true)
+    await loadData()
+    showInfo('Inventory data refreshed')
+  }
 
   // Export inventory data
   const handleExport = async () => {
     try {
-      setExporting(true);
-      const data = await inventoryService.exportInventoryData();
+      setExporting(true)
+      const data = await inventoryService.exportInventoryData()
       
       // Create and download file
-      const blob = new Blob([data], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `inventory-export-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      const blob = new Blob([data], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `inventory-export-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
       
-      showSuccess('Inventory data exported successfully');
+      showSuccess('Inventory data exported successfully')
     } catch (error) {
-      console.error('Error exporting data:', error);
-      showError('Failed to export inventory data');
+      console.error('Error exporting data:', error)
+      showError('Failed to export inventory data')
     } finally {
-      setExporting(false);
+      setExporting(false)
     }
-  };
+  }
 
   // Sort and filter inventory
   const filteredAndSortedInventory = useMemo(() => {
-    let filtered = [...inventory];
+    let filtered = [...inventory]
 
     // Apply search filter
     if (searchTerm.trim()) {
-      const search = searchTerm.toLowerCase();
+      const search = searchTerm.toLowerCase()
       filtered = filtered.filter(item => 
         item.productId.toLowerCase().includes(search) ||
         // In real app, would also search product name
-        item.productId.includes(search)
-      );
+        item.productId.includes(search),
+      )
     }
 
     // Apply stock level filter
@@ -137,87 +137,87 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({
       switch (stockFilter) {
         case 'low':
           filtered = filtered.filter(item => 
-            item.currentStock > 0 && item.currentStock <= item.reorderLevel
-          );
-          break;
+            item.currentStock > 0 && item.currentStock <= item.reorderLevel,
+          )
+          break
         case 'out':
-          filtered = filtered.filter(item => item.currentStock === 0);
-          break;
+          filtered = filtered.filter(item => item.currentStock === 0)
+          break
         case 'normal':
-          filtered = filtered.filter(item => item.currentStock > item.reorderLevel);
-          break;
+          filtered = filtered.filter(item => item.currentStock > item.reorderLevel)
+          break
       }
     }
 
     // Apply sorting
     filtered.sort((a, b) => {
-      let comparison = 0;
+      let comparison = 0
       
       switch (sortField) {
         case 'name':
-          comparison = a.productId.localeCompare(b.productId);
-          break;
+          comparison = a.productId.localeCompare(b.productId)
+          break
         case 'stock':
-          comparison = a.currentStock - b.currentStock;
-          break;
+          comparison = a.currentStock - b.currentStock
+          break
         case 'value':
-          comparison = (a.totalValue || 0) - (b.totalValue || 0);
-          break;
+          comparison = (a.totalValue || 0) - (b.totalValue || 0)
+          break
         case 'lastUpdate':
-          const aTime = a.movements[a.movements.length - 1]?.timestamp.getTime() || 0;
-          const bTime = b.movements[b.movements.length - 1]?.timestamp.getTime() || 0;
-          comparison = aTime - bTime;
-          break;
+          const aTime = a.movements[a.movements.length - 1]?.timestamp.getTime() || 0
+          const bTime = b.movements[b.movements.length - 1]?.timestamp.getTime() || 0
+          comparison = aTime - bTime
+          break
         case 'movements':
-          comparison = a.movements.length - b.movements.length;
-          break;
+          comparison = a.movements.length - b.movements.length
+          break
       }
       
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
+      return sortDirection === 'asc' ? comparison : -comparison
+    })
 
-    return filtered.slice(0, maxItems);
-  }, [inventory, searchTerm, stockFilter, sortField, sortDirection, maxItems]);
+    return filtered.slice(0, maxItems)
+  }, [inventory, searchTerm, stockFilter, sortField, sortDirection, maxItems])
 
   // Paginated data
   const paginatedInventory = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredAndSortedInventory.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedInventory, currentPage]);
+    const startIndex = (currentPage - 1) * itemsPerPage
+    return filteredAndSortedInventory.slice(startIndex, startIndex + itemsPerPage)
+  }, [filteredAndSortedInventory, currentPage])
 
-  const totalPages = Math.ceil(filteredAndSortedInventory.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredAndSortedInventory.length / itemsPerPage)
 
   // Handle sorting
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
-      setSortField(field);
-      setSortDirection('asc');
+      setSortField(field)
+      setSortDirection('asc')
     }
-  };
+  }
 
   // Get stock level badge
   const getStockLevelBadge = (item: InventoryItem) => {
     if (item.currentStock === 0) {
-      return <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded">Out of Stock</span>;
+      return <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded">Out of Stock</span>
     } else if (item.currentStock <= item.reorderLevel) {
-      return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">Low Stock</span>;
+      return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">Low Stock</span>
     } else if (item.currentStock <= item.reorderLevel * 2) {
-      return <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">Medium</span>;
+      return <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">Medium</span>
     } else {
-      return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">Good</span>;
+      return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">Good</span>
     }
-  };
+  }
 
   // Format currency
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
+      minimumFractionDigits: 0,
+    }).format(amount)
+  }
 
   // Format date
   const formatDate = (date: Date) => {
@@ -226,13 +226,13 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
-  };
+      minute: '2-digit',
+    }).format(date)
+  }
 
   useEffect(() => {
-    loadData();
-  }, []);
+    loadData()
+  }, [])
 
   if (loading) {
     return (
@@ -242,7 +242,7 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({
           <span className="ml-2">Loading inventory data...</span>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -473,7 +473,7 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({
                         {item.movements.length > 0 && (
                           <div className="flex items-center space-x-1 text-xs text-muted-foreground">
                             {item.movements.slice(-3).map((movement) => {
-                              const isIncrease = movement.quantity > 0;
+                              const isIncrease = movement.quantity > 0
                               return (
                                 <div
                                   key={movement.id}
@@ -482,7 +482,7 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({
                                   }`}
                                   title={`${movement.type}: ${movement.quantity}`}
                                 />
-                              );
+                              )
                             })}
                           </div>
                         )}
@@ -591,7 +591,7 @@ const InventoryOverview: React.FC<InventoryOverviewProps> = ({
         </Card>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default InventoryOverview;
+export default InventoryOverview

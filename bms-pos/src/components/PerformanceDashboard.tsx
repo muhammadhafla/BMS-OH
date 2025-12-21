@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Badge } from './ui/badge';
-import { Button } from './ui/button';
+import React, { useState, useEffect, useMemo } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
 import {
   Activity,
   Zap,
@@ -13,8 +13,8 @@ import {
   MemoryStick,
   Cpu,
   HardDrive,
-  Network
-} from 'lucide-react';
+  Network,
+} from 'lucide-react'
 
 interface PerformanceMetrics {
   timestamp: Date;
@@ -60,126 +60,204 @@ interface QualityMetrics {
   maintainabilityIndex: number;
 }
 
+// Utility functions
+const collectPerformanceData = (): PerformanceMetrics => {
+  const memoryInfo = (performance as any).memory ? {
+    used: (performance as any).memory.usedJSHeapSize,
+    total: (performance as any).memory.totalJSHeapSize,
+    percentage: ((performance as any).memory.usedJSHeapSize / (performance as any).memory.totalJSHeapSize) * 100,
+  } : {
+    used: 0,
+    total: 0,
+    percentage: 0,
+  }
+
+  return {
+    timestamp: new Date(),
+    memory: memoryInfo,
+    cpu: {
+      usage: Math.random() * 100,
+      loadAverage: [Math.random() * 2, Math.random() * 2, Math.random() * 2],
+    },
+    network: {
+      latency: Math.random() * 100 + 10,
+      downloadSpeed: Math.random() * 1000,
+      uploadSpeed: Math.random() * 100,
+      online: navigator.onLine,
+    },
+    websocket: {
+      connected: true,
+      latency: Math.random() * 50 + 5,
+      messageCount: Math.floor(Math.random() * 1000),
+      errorCount: Math.floor(Math.random() * 10),
+    },
+    render: {
+      componentCount: document.querySelectorAll('*').length,
+      lastRenderTime: performance.now(),
+      memoryLeaks: Math.floor(Math.random() * 5),
+    },
+    bundle: {
+      size: 2.5 * 1024 * 1024,
+      chunks: 12,
+      loadTime: Math.random() * 2000 + 500,
+    },
+  }
+}
+
+const collectQualityMetrics = (): QualityMetrics => ({
+  complexity: Math.random() * 20 + 5,
+  testCoverage: Math.random() * 40 + 60,
+  technicalDebt: Math.random() * 10 + 2,
+  codeSmells: Math.floor(Math.random() * 15 + 5),
+  duplicatedLines: Math.floor(Math.random() * 50 + 10),
+  maintainabilityIndex: Math.random() * 30 + 70,
+})
+
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`
+}
+
+const getPercentageColor = (value: number, thresholds = { warning: 70, error: 90 }) => {
+  if (value >= thresholds.error) return 'text-red-600'
+  if (value >= thresholds.warning) return 'text-yellow-600'
+  return 'text-green-600'
+}
+
+const formatPercentage = (value: number, thresholds = { warning: 70, error: 90 }) => (
+  <span className={getPercentageColor(value, thresholds)}>{value.toFixed(1)}%</span>
+)
+
+const calculateMemoryScore = (percentage: number) => Math.max(0, 100 - percentage)
+const calculateCpuScore = (usage: number) => Math.max(0, 100 - usage)
+const calculateNetworkScore = (online: boolean, latency: number) => online ? Math.max(0, 100 - latency / 2) : 0
+const calculateWebSocketScore = (connected: boolean, latency: number) => connected ? Math.max(0, 100 - latency * 2) : 0
+
+// Performance Score Component
+const PerformanceScoreCard = ({ performanceScore }: { performanceScore: number }) => (
+  <Card>
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Zap className="h-5 w-5" />
+        Overall Performance Score
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      <div className="flex items-center justify-between">
+        <div className="text-4xl font-bold">
+          {performanceScore}
+          <span className="text-lg text-gray-500 ml-1">/100</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {performanceScore >= 80 ? (
+            <CheckCircle className="h-6 w-6 text-green-600" />
+          ) : performanceScore >= 60 ? (
+            <AlertTriangle className="h-6 w-6 text-yellow-600" />
+          ) : (
+            <AlertTriangle className="h-6 w-6 text-red-600" />
+          )}
+          <span className="text-sm text-gray-600">
+            {performanceScore >= 80 ? 'Excellent' : performanceScore >= 60 ? 'Good' : 'Needs Improvement'}
+          </span>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+)
+
+// Loading State Component
+const LoadingState = () => (
+  <div className="p-6">
+    <div className="animate-pulse space-y-4">
+      <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="h-32 bg-gray-200 rounded"></div>
+        ))}
+      </div>
+    </div>
+  </div>
+)
+
 const PerformanceDashboard: React.FC = () => {
-  const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
-  const [qualityMetrics, setQualityMetrics] = useState<QualityMetrics | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null)
+  const [qualityMetrics, setQualityMetrics] = useState<QualityMetrics | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [autoRefresh, setAutoRefresh] = useState(true)
 
-  // Simulated performance data collection
-  const collectPerformanceData = (): PerformanceMetrics => {
-    // Get browser performance metrics if available
-    const memoryInfo = (performance as any).memory ? {
-      used: (performance as any).memory.usedJSHeapSize,
-      total: (performance as any).memory.totalJSHeapSize,
-      percentage: ((performance as any).memory.usedJSHeapSize / (performance as any).memory.totalJSHeapSize) * 100
-    } : {
-      used: 0,
-      total: 0,
-      percentage: 0
-    };
-
-    return {
-      timestamp: new Date(),
-      memory: memoryInfo,
-      cpu: {
-        usage: Math.random() * 100,
-        loadAverage: [Math.random() * 2, Math.random() * 2, Math.random() * 2]
-      },
-      network: {
-        latency: Math.random() * 100 + 10,
-        downloadSpeed: Math.random() * 1000,
-        uploadSpeed: Math.random() * 100,
-        online: navigator.onLine
-      },
-      websocket: {
-        connected: true, // This would come from actual WebSocket service
-        latency: Math.random() * 50 + 5,
-        messageCount: Math.floor(Math.random() * 1000),
-        errorCount: Math.floor(Math.random() * 10)
-      },
-      render: {
-        componentCount: document.querySelectorAll('*').length,
-        lastRenderTime: performance.now(),
-        memoryLeaks: Math.floor(Math.random() * 5)
-      },
-      bundle: {
-        size: 2.5 * 1024 * 1024, // 2.5MB simulated
-        chunks: 12,
-        loadTime: Math.random() * 2000 + 500
-      }
-    };
-  };
-
-  // Collect quality metrics (would be from actual analysis)
-  const collectQualityMetrics = (): QualityMetrics => {
-    return {
-      complexity: Math.random() * 20 + 5,
-      testCoverage: Math.random() * 40 + 60,
-      technicalDebt: Math.random() * 10 + 2,
-      codeSmells: Math.floor(Math.random() * 15 + 5),
-      duplicatedLines: Math.floor(Math.random() * 50 + 10),
-      maintainabilityIndex: Math.random() * 30 + 70
-    };
-  };
+  // Performance score calculation
+  const performanceScore = useMemo(() => {
+    if (!metrics) return 0
+    
+    const memoryScore = calculateMemoryScore(metrics.memory.percentage)
+    const cpuScore = calculateCpuScore(metrics.cpu.usage)
+    const networkScore = calculateNetworkScore(metrics.network.online, metrics.network.latency)
+    const websocketScore = calculateWebSocketScore(metrics.websocket.connected, metrics.websocket.latency)
+    
+    return Math.round((memoryScore + cpuScore + networkScore + websocketScore) / 4)
+  }, [metrics])
 
   // Update metrics periodically
   useEffect(() => {
     const updateMetrics = () => {
-      setMetrics(collectPerformanceData());
-      setQualityMetrics(collectQualityMetrics());
-      setIsLoading(false);
-    };
+      setMetrics(collectPerformanceData())
+      setQualityMetrics(collectQualityMetrics())
+      setIsLoading(false)
+    }
 
-    updateMetrics();
+    const initializeMetrics = () => {
+      updateMetrics()
+    }
+
+    initializeMetrics()
 
     if (autoRefresh) {
-      const interval = setInterval(updateMetrics, 5000); // Update every 5 seconds
-      return () => clearInterval(interval);
+      const interval = setInterval(updateMetrics, 5000)
+      return () => clearInterval(interval)
     }
-  }, [autoRefresh]);
+  }, [autoRefresh])
 
-  // Format bytes to human readable
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  // Format percentage with color
-  const formatPercentage = (value: number, thresholds = { warning: 70, error: 90 }) => {
-    const color = value >= thresholds.error ? 'text-red-600' : 
-                 value >= thresholds.warning ? 'text-yellow-600' : 'text-green-600';
-    return <span className={color}>{value.toFixed(1)}%</span>;
-  };
-
-  // Performance score calculation
-  const performanceScore = useMemo(() => {
-    if (!metrics) return 0;
-    
-    const memoryScore = Math.max(0, 100 - metrics.memory.percentage);
-    const cpuScore = Math.max(0, 100 - metrics.cpu.usage);
-    const networkScore = metrics.network.online ? Math.max(0, 100 - metrics.network.latency / 2) : 0;
-    const websocketScore = metrics.websocket.connected ? Math.max(0, 100 - metrics.websocket.latency * 2) : 0;
-    
-    return Math.round((memoryScore + cpuScore + networkScore + websocketScore) / 4);
-  }, [metrics]);
+  // Action handlers
+  const handleForceGC = () => {
+    if (window.gc) {
+      window.gc()
+    }
+    setMetrics(collectPerformanceData())
+  }
+  
+  const handleClearMarks = () => {
+    performance.clearMarks()
+    performance.clearMeasures()
+    console.log('Performance marks cleared')
+  }
+  
+  const handleRefreshQuality = () => {
+    const analysis = collectQualityMetrics()
+    setQualityMetrics(analysis)
+    console.log('Quality metrics updated:', analysis)
+  }
+  
+  const handleExportData = () => {
+    const exportData = {
+      performance: metrics,
+      quality: qualityMetrics,
+      timestamp: new Date().toISOString(),
+    }
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], 
+      { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `performance-metrics-${Date.now()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState />
   }
 
   return (
@@ -194,7 +272,7 @@ const PerformanceDashboard: React.FC = () => {
           <p className="text-gray-600 mt-1">Real-time monitoring and quality metrics</p>
         </div>
         <div className="flex items-center gap-4">
-          <Badge variant={autoRefresh ? "default" : "outline"} className="cursor-pointer" 
+          <Badge variant={autoRefresh ? 'default' : 'outline'} className="cursor-pointer" 
                  onClick={() => setAutoRefresh(!autoRefresh)}>
             {autoRefresh ? 'Live' : 'Paused'}
           </Badge>
@@ -205,34 +283,7 @@ const PerformanceDashboard: React.FC = () => {
       </div>
 
       {/* Performance Score */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5" />
-            Overall Performance Score
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="text-4xl font-bold">
-              {performanceScore}
-              <span className="text-lg text-gray-500 ml-1">/100</span>
-            </div>
-            <div className="flex items-center gap-2">
-              {performanceScore >= 80 ? (
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              ) : performanceScore >= 60 ? (
-                <AlertTriangle className="h-6 w-6 text-yellow-600" />
-              ) : (
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              )}
-              <span className="text-sm text-gray-600">
-                {performanceScore >= 80 ? 'Excellent' : performanceScore >= 60 ? 'Good' : 'Needs Improvement'}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <PerformanceScoreCard performanceScore={performanceScore} />
 
       {/* Performance Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -305,7 +356,7 @@ const PerformanceDashboard: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Status</span>
-                <Badge variant={metrics?.network.online ? "default" : "destructive"}>
+                <Badge variant={metrics?.network.online ? 'default' : 'destructive'}>
                   {metrics?.network.online ? 'Online' : 'Offline'}
                 </Badge>
               </div>
@@ -337,7 +388,7 @@ const PerformanceDashboard: React.FC = () => {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm">Connection</span>
-                <Badge variant={metrics?.websocket.connected ? "default" : "destructive"}>
+                <Badge variant={metrics?.websocket.connected ? 'default' : 'destructive'}>
                   {metrics?.websocket.connected ? 'Connected' : 'Disconnected'}
                 </Badge>
               </div>
@@ -461,70 +512,23 @@ const PerformanceDashboard: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                // Trigger garbage collection if available
-                if (window.gc) {
-                  window.gc();
-                }
-                setMetrics(collectPerformanceData());
-              }}
-            >
+            <Button variant="outline" size="sm" onClick={handleForceGC}>
               Force GC
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                // Clear performance marks and measures
-                performance.clearMarks();
-                performance.clearMeasures();
-                console.log('Performance marks cleared');
-              }}
-            >
+            <Button variant="outline" size="sm" onClick={handleClearMarks}>
               Clear Marks
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                // Run quality analysis
-                const analysis = collectQualityMetrics();
-                setQualityMetrics(analysis);
-                console.log('Quality metrics updated:', analysis);
-              }}
-            >
+            <Button variant="outline" size="sm" onClick={handleRefreshQuality}>
               Refresh Quality
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                // Export metrics
-                const exportData = {
-                  performance: metrics,
-                  quality: qualityMetrics,
-                  timestamp: new Date().toISOString()
-                };
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], 
-                  { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `performance-metrics-${Date.now()}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
+            <Button variant="outline" size="sm" onClick={handleExportData}>
               Export Data
             </Button>
           </div>
         </CardContent>
       </Card>
     </div>
-  );
-};
+  )
+}
 
-export default PerformanceDashboard;
+export default PerformanceDashboard

@@ -1,7 +1,7 @@
-import { toast as sonnerToast } from "sonner"
-import { useCallback } from "react"
+import { toast as sonnerToast } from 'sonner'
+import { useCallback } from 'react'
 
-export type ToastType = "success" | "error" | "warning" | "info" | "loading"
+export type ToastType = 'success' | 'error' | 'warning' | 'info' | 'loading'
 
 export interface ToastOptions {
   duration?: number
@@ -20,21 +20,21 @@ export const useToast = () => {
   const showToast = useCallback(
     (type: ToastType, title: string, options?: ToastOptions) => {
       switch (type) {
-        case "success":
+        case 'success':
           return sonnerToast.success(title, options)
-        case "error":
+        case 'error':
           return sonnerToast.error(title, options)
-        case "warning":
+        case 'warning':
           return sonnerToast.warning(title, options)
-        case "info":
+        case 'info':
           return sonnerToast.info(title, options)
-        case "loading":
+        case 'loading':
           return sonnerToast.loading(title, options)
         default:
           return sonnerToast(title, options)
       }
     },
-    []
+    [],
   )
 
   const dismiss = useCallback((toastId?: string | number) => {
@@ -42,28 +42,28 @@ export const useToast = () => {
   }, [])
 
   const showSuccess = useCallback(
-    (title: string, options?: ToastOptions) => showToast("success", title, options),
-    [showToast]
+    (title: string, options?: ToastOptions) => showToast('success', title, options),
+    [showToast],
   )
 
   const showError = useCallback(
-    (title: string, options?: ToastOptions) => showToast("error", title, options),
-    [showToast]
+    (title: string, options?: ToastOptions) => showToast('error', title, options),
+    [showToast],
   )
 
   const showWarning = useCallback(
-    (title: string, options?: ToastOptions) => showToast("warning", title, options),
-    [showToast]
+    (title: string, options?: ToastOptions) => showToast('warning', title, options),
+    [showToast],
   )
 
   const showInfo = useCallback(
-    (title: string, options?: ToastOptions) => showToast("info", title, options),
-    [showToast]
+    (title: string, options?: ToastOptions) => showToast('info', title, options),
+    [showToast],
   )
 
   const showLoading = useCallback(
-    (title: string, options?: ToastOptions) => showToast("loading", title, options),
-    [showToast]
+    (title: string, options?: ToastOptions) => showToast('loading', title, options),
+    [showToast],
   )
 
   const showPromise = useCallback(
@@ -78,7 +78,7 @@ export const useToast = () => {
         loading: string
         success: string | ((data: T) => string)
         error: string | ((error: any) => string)
-      } & Omit<ToastOptions, "description">
+      } & Omit<ToastOptions, 'description'>,
     ) => {
       return sonnerToast.promise(promise, {
         loading,
@@ -87,7 +87,7 @@ export const useToast = () => {
         ...options,
       })
     },
-    []
+    [],
   )
 
   return {

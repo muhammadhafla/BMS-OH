@@ -1,22 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { authService } from '../services/AuthService';
-import { useToast } from '../hooks/useToast';
-import { syncService, SyncStatus } from '../services/SyncService';
-import { inventoryService } from '../services/InventoryService';
-import { formatCurrency, generateTransactionCode } from '../lib/utils';
+import React, { useState, useEffect } from 'react'
+import { authService } from '../services/AuthService'
+import { useToast } from '../hooks/useToast'
+import { syncService, SyncStatus } from '../services/SyncService'
+import { inventoryService } from '../services/InventoryService'
+import { generateTransactionCode } from '../lib/utils'
+import { Logger } from '../utils/logger'
 
 // Components
-import POSHeader from './POSHeader';
-import POSMainPanel from './POSMainPanel';
-import POSSidePanel from './POSSidePanel';
-import PaymentModal from './PaymentModal';
-import Receipt from './Receipt';
-import StockAlerts from './inventory/StockAlerts';
-import SyncStatusHeader from './SyncStatusHeader';
-import SyncNotifications from './SyncNotifications';
-import SyncStatusModal from './SyncStatusModal';
-import { Button } from './ui/button';
-import { AlertTriangle } from 'lucide-react';
+import POSHeader from './POSHeader'
+import POSMainPanel from './POSMainPanel'
+import POSSidePanel from './POSSidePanel'
+import PaymentModal from './PaymentModal'
+import Receipt from './Receipt'
+import StockAlerts from './inventory/StockAlerts'
+import SyncStatusHeader from './SyncStatusHeader'
+import SyncNotifications from './SyncNotifications'
+import SyncStatusModal from './SyncStatusModal'
+import { Button } from './ui/button'
+import { AlertTriangle } from 'lucide-react'
 
 interface Product {
   id: string;
@@ -58,39 +59,39 @@ interface POSLayoutProps {
 }
 
 const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
-  const [activeView, setActiveView] = useState<'pos' | 'inventory' | 'adjustment' | 'alerts'>('pos');
-  const [showStockAlerts, setShowStockAlerts] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'online' | 'offline'>('online');
-  const [isInventoryDropdownOpen, setIsInventoryDropdownOpen] = useState(false);
-  const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
-  const [isSyncStatusModalOpen, setIsSyncStatusModalOpen] = useState(false);
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null)
+  const [activeView, setActiveView] = useState<'pos' | 'inventory' | 'adjustment' | 'alerts'>('pos')
+  const [showStockAlerts, setShowStockAlerts] = useState(false)
+  const [connectionStatus, setConnectionStatus] = useState<'online' | 'offline'>('online')
+  const [isInventoryDropdownOpen, setIsInventoryDropdownOpen] = useState(false)
+  const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false)
+  const [isSyncStatusModalOpen, setIsSyncStatusModalOpen] = useState(false)
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     lastSync: null,
     isOnline: false,
     isSyncing: false,
     pendingTransactions: 0,
     pendingProducts: 0,
-    syncErrors: []
-  });
-  const { showSuccess, showError, showWarning } = useToast();
+    syncErrors: [],
+  })
+  const { showSuccess, showError, showWarning } = useToast()
   
-  const currentUser = propUser || authService.getCurrentUser();
+  const currentUser = propUser || authService.getCurrentUser()
   
   const cashier = {
     name: currentUser?.username || 'Admin',
     id: currentUser?.id || '1',
     role: currentUser?.role || 'admin',
-    lastLogin: currentUser?.lastLogin
-  };
+    lastLogin: currentUser?.lastLogin,
+  }
   
   const branch = {
     name: 'BMS Store',
     address: 'Jl. Example No. 123',
-    phone: '(021) 1234567'
-  };
+    phone: '(021) 1234567',
+  }
 
   // Stock validation before adding to cart
   const validateStockAvailability = async (product: Product, requestedQuantity: number): Promise<{
@@ -100,44 +101,44 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
   }> => {
     try {
       const result = await inventoryService.checkStockAvailability([
-        { productId: product.id, quantity: requestedQuantity }
-      ]);
+        { productId: product.id, quantity: requestedQuantity },
+      ])
       
       if (result.success && result.data && !result.data.available) {
-        const issue = result.data.issues.find(i => i.productId === product.id);
+        const issue = result.data.issues.find(i => i.productId === product.id)
         return {
           available: false,
           availableStock: issue?.available || 0,
-          error: issue ? `Only ${issue.available} units available` : 'Insufficient stock'
-        };
+          error: issue ? `Only ${issue.available} units available` : 'Insufficient stock',
+        }
       }
       
       return {
         available: true,
-        availableStock: requestedQuantity
-      };
+        availableStock: requestedQuantity,
+      }
     } catch (error) {
-      console.error('Error validating stock:', error);
+      Logger.error('Error validating stock:', error)
       return {
         available: false,
         availableStock: 0,
-        error: 'Error checking stock availability'
-      };
+        error: 'Error checking stock availability',
+      }
     }
-  };
+  }
 
   const addToCart = async (product: Product, quantity: number = 1) => {
     // Validate stock availability first
-    const validation = await validateStockAvailability(product, quantity);
+    const validation = await validateStockAvailability(product, quantity)
     
     if (!validation.available) {
-      showError(validation.error || 'Insufficient stock');
-      setShowStockAlerts(true);
-      return;
+      showError(validation.error || 'Insufficient stock')
+      setShowStockAlerts(true)
+      return
     }
     
     setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.productId === product.id);
+      const existingItem = prevCart.find(item => item.productId === product.id)
 
       if (existingItem) {
         return prevCart.map(item =>
@@ -145,10 +146,10 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
             ? {
                 ...item,
                 quantity: item.quantity + quantity,
-                total: (item.quantity + quantity) * item.unitPrice
+                total: (item.quantity + quantity) * item.unitPrice,
               }
-            : item
-        );
+            : item,
+        )
       } else {
         return [...prevCart, {
           productId: product.id,
@@ -157,18 +158,18 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
           quantity,
           unitPrice: product.price,
           discount: 0,
-          total: product.price * quantity
-        }];
+          total: product.price * quantity,
+        }]
       }
-    });
+    })
     
-    showSuccess(`Added ${quantity} ${product.name} to cart`);
-  };
+    showSuccess(`Added ${quantity} ${product.name} to cart`)
+  }
 
   const updateCartItem = (productId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
+      removeFromCart(productId)
+      return
     }
 
     setCart(prevCart =>
@@ -177,12 +178,12 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
           ? {
               ...item,
               quantity,
-              total: quantity * item.unitPrice
+              total: quantity * item.unitPrice,
             }
-          : item
-      )
-    );
-  };
+          : item,
+      ),
+    )
+  }
 
   const updateCartDiscount = (productId: string, discount: number) => {
     setCart(prevCart =>
@@ -191,30 +192,30 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
           ? {
               ...item,
               discount,
-              total: (item.quantity * item.unitPrice) - discount
+              total: (item.quantity * item.unitPrice) - discount,
             }
-          : item
-      )
-    );
-  };
+          : item,
+      ),
+    )
+  }
 
   const removeFromCart = (productId: string) => {
-    setCart(prevCart => prevCart.filter(item => item.productId !== productId));
-  };
+    setCart(prevCart => prevCart.filter(item => item.productId !== productId))
+  }
 
   const clearCart = () => {
-    setCart([]);
-  };
+    setCart([])
+  }
 
   const getTotalAmount = () => {
-    return cart.reduce((_total, item) => item.total, 0);
-  };
+    return cart.reduce((_total, item) => item.total, 0)
+  }
 
   // Real-time stock update during sales
   const updateInventoryForSale = async (cartItems: CartItem[], transactionId: string): Promise<boolean> => {
     if (!currentUser) {
-      showError('User not authenticated');
-      return false;
+      showError('User not authenticated')
+      return false
     }
 
     try {
@@ -223,30 +224,30 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
         quantity: -item.quantity, // Negative for sales (stock reduction)
         type: 'OUT' as const,
         notes: `Sale transaction ${transactionId}`,
-        reference: `Sale-${transactionId}`
-      }));
+        reference: `Sale-${transactionId}`,
+      }))
 
-      const result = await inventoryService.bulkAdjustStock(stockUpdates);
+      const result = await inventoryService.bulkAdjustStock(stockUpdates)
       
       if (result.success && result.data) {
-        const { successful, failed } = result.data.summary;
+        const { successful, failed } = result.data.summary
         if (failed === 0) {
-          showSuccess(`Stock updated for ${successful} items`);
-          return true;
+          showSuccess(`Stock updated for ${successful} items`)
+          return true
         } else {
-          showWarning(`Stock updated for ${successful}/${cartItems.length} items`);
-          return true; // Partial success is still acceptable
+          showWarning(`Stock updated for ${successful}/${cartItems.length} items`)
+          return true // Partial success is still acceptable
         }
       } else {
-        showError('Failed to update inventory');
-        return false;
+        showError('Failed to update inventory')
+        return false
       }
     } catch (error) {
-      console.error('Error updating inventory:', error);
-      showError('Error updating inventory');
-      return false;
+      Logger.error('Error updating inventory:', error)
+      showError('Error updating inventory')
+      return false
     }
-  };
+  }
 
   const handlePayment = async (paymentData: {
     paymentMethod: string;
@@ -254,14 +255,14 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
     discount: number;
   }) => {
     if (!window.webAPI) {
-      showError('Web API not available');
-      return;
+      showError('Web API not available')
+      return
     }
 
-    const totalAmount = getTotalAmount();
-    const finalAmount = totalAmount - paymentData.discount;
-    const change = paymentData.amountPaid - finalAmount;
-    const transactionId = Date.now().toString();
+    const totalAmount = getTotalAmount()
+    const finalAmount = totalAmount - paymentData.discount
+    const change = paymentData.amountPaid - finalAmount
+    const transactionId = Date.now().toString()
 
     const transactionData = {
       id: transactionId,
@@ -271,44 +272,44 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         discount: item.discount,
-        total: item.total
+        total: item.total,
       })),
       totalAmount,
       discount: paymentData.discount,
       finalAmount,
       paymentMethod: paymentData.paymentMethod,
       amountPaid: paymentData.amountPaid,
-      change
-    };
+      change,
+    }
 
     try {
       // First, update inventory for the sale
-      const inventoryUpdated = await updateInventoryForSale(cart, transactionId);
+      const inventoryUpdated = await updateInventoryForSale(cart, transactionId)
       
       if (!inventoryUpdated) {
-        showError('Cannot complete sale due to inventory update failure');
-        return;
+        showError('Cannot complete sale due to inventory update failure')
+        return
       }
 
       // Then create the transaction
-      const result = await window.webAPI.createTransaction(transactionData);
+      const result = await window.webAPI.createTransaction(transactionData)
 
       if (result.success) {
         const transaction: Transaction = {
           ...transactionData,
           status: 'COMPLETED',
-          createdAt: new Date().toISOString()
-        };
+          createdAt: new Date().toISOString(),
+        }
 
-        setCurrentTransaction(transaction);
-        setIsPaymentModalOpen(false);
-        clearCart();
+        setCurrentTransaction(transaction)
+        setIsPaymentModalOpen(false)
+        clearCart()
         
         // Show success notification
-        showSuccess('Sale completed and inventory updated');
+        showSuccess('Sale completed and inventory updated')
         
         // Refresh ProductSearch to show updated stock levels
-        window.location.reload(); // Simple refresh for demo
+        window.location.reload() // Simple refresh for demo
       } else {
         // Rollback inventory if transaction failed
         try {
@@ -317,132 +318,132 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
             quantity: item.quantity, // Positive for rollback
             type: 'ADJUSTMENT' as const,
             notes: `Transaction rollback ${transactionId}`,
-            reference: `Rollback-${transactionId}`
-          }));
+            reference: `Rollback-${transactionId}`,
+          }))
           
           if (currentUser) {
-            const rollbackResult = await inventoryService.bulkAdjustStock(rollbackUpdates);
+            const rollbackResult = await inventoryService.bulkAdjustStock(rollbackUpdates)
             if (!rollbackResult.success) {
-              console.error('Rollback failed:', rollbackResult.error);
+              Logger.error('Rollback failed:', rollbackResult.error)
             }
           }
-          showWarning('Sale cancelled - inventory rolled back');
+          showWarning('Sale cancelled - inventory rolled back')
         } catch (rollbackError) {
-          console.error('Rollback failed:', rollbackError);
-          showError('Sale failed and rollback incomplete - manual correction required');
+          Logger.error('Rollback failed:', rollbackError)
+          showError('Sale failed and rollback incomplete - manual correction required')
         }
         
-        alert('Failed to create transaction: ' + result.error);
+        showError(`Failed to create transaction: ${result.error}`)
       }
     } catch (error) {
-      console.error('Payment error:', error);
-      alert('Payment failed. Please try again.');
+      Logger.error('Payment error:', error)
+      showError('Payment failed. Please try again.')
     }
-  };
+  }
 
   const printReceipt = async () => {
-    if (!currentTransaction || !window.webAPI) return;
+    if (!currentTransaction || !window.webAPI) return
 
     try {
       const receiptData = {
         transaction: currentTransaction,
         items: cart,
         cashier,
-        branch
-      };
+        branch,
+      }
 
-      await window.webAPI.printReceipt(receiptData);
+      await window.webAPI.printReceipt(receiptData)
     } catch (error) {
-      console.error('Print error:', error);
-      alert('Failed to print receipt');
+      Logger.error('Print error:', error)
+      showError('Failed to print receipt')
     }
-  };
+  }
 
   const handleLogout = () => {
     // This will be handled by the parent component
-    window.dispatchEvent(new CustomEvent('pos-logout'));
-  };
+    window.dispatchEvent(new CustomEvent('pos-logout'))
+  }
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       // Only handle shortcuts if not typing in an input
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-        return;
+        return
       }
 
       switch (event.key) {
         case 'F2':
-          event.preventDefault();
-          setIsPaymentModalOpen(true);
-          break;
+          event.preventDefault()
+          setIsPaymentModalOpen(true)
+          break
         case 'F3':
-          event.preventDefault();
-          clearCart();
-          break;
+          event.preventDefault()
+          clearCart()
+          break
         case 'F4':
-          event.preventDefault();
-          setActiveView(activeView === 'pos' ? 'inventory' : 'pos');
-          break;
+          event.preventDefault()
+          setActiveView(activeView === 'pos' ? 'inventory' : 'pos')
+          break
         case 'F5':
-          event.preventDefault();
-          window.location.reload();
-          break;
+          event.preventDefault()
+          window.location.reload()
+          break
         case 'F11':
-          event.preventDefault();
-          handleLogout();
-          break;
+          event.preventDefault()
+          handleLogout()
+          break
         default:
-          break;
+          break
       }
-    };
+    }
 
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [activeView]);
+    window.addEventListener('keydown', handleKeyPress)
+    return () => window.removeEventListener('keydown', handleKeyPress)
+  }, [activeView])
 
   // Connection status monitoring and sync setup
   useEffect(() => {
     const checkConnection = () => {
-      setConnectionStatus(navigator.onLine ? 'online' : 'offline');
-    };
+      setConnectionStatus(navigator.onLine ? 'online' : 'offline')
+    }
 
-    window.addEventListener('online', checkConnection);
-    window.addEventListener('offline', checkConnection);
+    window.addEventListener('online', checkConnection)
+    window.addEventListener('offline', checkConnection)
     
-    checkConnection(); // Initial check
+    checkConnection() // Initial check
 
     // Start sync service
-    syncService.startAutoSync(5); // 5 minute intervals
+    syncService.startAutoSync(5) // 5 minute intervals
     const updateSyncStatus = () => {
-      setSyncStatus(syncService.getSyncStatus());
-    };
+      setSyncStatus(syncService.getSyncStatus())
+    }
 
     // Update sync status every 30 seconds
-    const statusInterval = setInterval(updateSyncStatus, 30000);
+    const statusInterval = setInterval(updateSyncStatus, 30000)
 
     return () => {
-      window.removeEventListener('online', checkConnection);
-      window.removeEventListener('offline', checkConnection);
-      clearInterval(statusInterval);
-      syncService.stopAutoSync();
-    };
-  }, []);
+      window.removeEventListener('online', checkConnection)
+      window.removeEventListener('offline', checkConnection)
+      clearInterval(statusInterval)
+      syncService.stopAutoSync()
+    }
+  }, [])
 
   const handleSync = async () => {
-    showSuccess('Starting synchronization...');
+    showSuccess('Starting synchronization...')
     try {
-      const result = await syncService.syncNow();
+      const result = await syncService.syncNow()
       if (result.success) {
-        showSuccess(result.message || 'Sync completed successfully');
-        setSyncStatus(syncService.getSyncStatus());
+        showSuccess(result.message || 'Sync completed successfully')
+        setSyncStatus(syncService.getSyncStatus())
       } else {
-        showError('Sync failed: ' + (result.message || 'Unknown error'));
+        showError(`Sync failed: ${  result.message || 'Unknown error'}`)
       }
     } catch (error) {
-      showError('Sync failed: ' + (error as Error).message);
+      showError(`Sync failed: ${  (error as Error).message}`)
     }
-  };
+  }
 
   return (
     <div className="h-screen flex flex-col bg-gray-50">
@@ -538,13 +539,13 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
             <div className="p-6 overflow-y-auto max-h-[60vh]">
               <StockAlerts
                 onRestock={(productId, quantity) => {
-                  console.log('Restock:', productId, quantity);
-                  setShowStockAlerts(false);
-                  setIsAlertsModalOpen(false);
+                  Logger.info('Restock:', productId, quantity)
+                  setShowStockAlerts(false)
+                  setIsAlertsModalOpen(false)
                 }}
                 onViewDetails={(productId) => {
-                  console.log('View details:', productId);
-                  setIsAlertsModalOpen(false);
+                  Logger.info('View details:', productId)
+                  setIsAlertsModalOpen(false)
                 }}
               />
             </div>
@@ -571,7 +572,7 @@ const POSLayout: React.FC<POSLayoutProps> = ({ user: propUser }) => {
         onSync={handleSync}
       />
     </div>
-  );
-};
+  )
+}
 
-export default POSLayout;
+export default POSLayout

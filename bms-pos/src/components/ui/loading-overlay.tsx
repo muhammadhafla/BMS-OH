@@ -1,6 +1,6 @@
-import React from "react"
-import { cn } from "../../lib/utils"
-import { LoadingSpinner } from "./loading-spinner"
+import React from 'react'
+import { cn } from '../../lib/utils'
+import { LoadingSpinner } from './loading-spinner'
 
 export interface LoadingOverlayProps extends React.HTMLAttributes<HTMLDivElement> {
   isLoading: boolean
@@ -13,7 +13,7 @@ export interface LoadingOverlayProps extends React.HTMLAttributes<HTMLDivElement
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   isLoading,
-  message = "Loading...",
+  message = 'Loading...',
   showSpinner = true,
   backdrop = true,
   blur = true,
@@ -27,14 +27,14 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   }
 
   return (
-    <div className={cn("relative", className)} {...props}>
+    <div className={cn('relative', className)} {...props}>
       {children}
       <div
         className={cn(
-          "absolute inset-0 z-50 flex items-center justify-center",
-          backdrop && "bg-black/20",
-          blur && "backdrop-blur-sm",
-          centerContent && "items-center"
+          'absolute inset-0 z-50 flex items-center justify-center',
+          backdrop && 'bg-black/20',
+          blur && 'backdrop-blur-sm',
+          centerContent && 'items-center',
         )}
         aria-live="polite"
         aria-busy="true"

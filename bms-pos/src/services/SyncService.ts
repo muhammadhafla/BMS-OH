@@ -1,7 +1,8 @@
-import { apiService } from './ApiService';
+import { apiService } from './ApiService'
+import { Logger } from '../utils/logger'
 
 // PRODUCTION OFFLINE-FIRST MODE (Uncomment these lines for Electron/offline mode)
-import DatabaseService from '../database/DatabaseService';
+import DatabaseService from '../database/DatabaseService'
 
 export interface SyncStatus {
   lastSync: Date | null;
@@ -22,7 +23,7 @@ export interface SyncResult {
 
 class SyncService {
   // PRODUCTION OFFLINE-FIRST MODE: Uncomment for Electron
-  private dbService: DatabaseService;
+  private dbService: DatabaseService
   
   private syncStatus: SyncStatus = {
     lastSync: null,
@@ -30,41 +31,41 @@ class SyncService {
     isSyncing: false,
     pendingTransactions: 0,
     pendingProducts: 0,
-    syncErrors: []
-  };
+    syncErrors: [],
+  }
 
-  private syncInterval: NodeJS.Timeout | null = null;
-  private syncInProgress = false;
+  private syncInterval: NodeJS.Timeout | null = null
+  private syncInProgress = false
 
   constructor() {
     // PRODUCTION OFFLINE-FIRST MODE: Uncomment for Electron
-    this.dbService = new DatabaseService();
-    this.initializeDatabase();
-    this.setupOnlineListener();
+    this.dbService = new DatabaseService()
+    void this.initializeDatabase()
+    this.setupOnlineListener()
   }
 
   private async initializeDatabase(): Promise<void> {
     try {
       // PRODUCTION OFFLINE-FIRST MODE: Uncomment for Electron
-      await this.dbService.init();
-      console.log('✅ SyncService initialized - Offline-first mode with SQLite');
+      await this.dbService.init()
+      Logger.syncSuccess('SyncService initialized - Offline-first mode with SQLite')
     } catch (error) {
-      console.error('❌ Failed to initialize sync service:', error);
+      Logger.syncError('Failed to initialize sync service:', error)
     }
   }
 
   private setupOnlineListener(): void {
     window.addEventListener('online', () => {
-      this.syncStatus.isOnline = true;
-      this.autoSync();
-    });
+      this.syncStatus.isOnline = true
+      void this.autoSync()
+    })
 
     window.addEventListener('offline', () => {
-      this.syncStatus.isOnline = false;
-    });
+      this.syncStatus.isOnline = false
+    })
 
     // Initial online status
-    this.syncStatus.isOnline = navigator.onLine;
+    this.syncStatus.isOnline = navigator.onLine
   }
 
   /**
@@ -72,14 +73,14 @@ class SyncService {
    */
   startAutoSync(intervalMinutes: number = 5): void {
     if (this.syncInterval) {
-      clearInterval(this.syncInterval);
+      clearInterval(this.syncInterval)
     }
 
     this.syncInterval = setInterval(() => {
-      this.autoSync();
-    }, intervalMinutes * 60 * 1000);
+      void this.autoSync()
+    }, intervalMinutes * 60 * 1000)
 
-    console.log(`🔄 Auto-sync started with ${intervalMinutes} minute interval`);
+    Logger.syncStart(`Auto-sync started with ${intervalMinutes} minute interval`)
   }
 
   /**
@@ -87,9 +88,9 @@ class SyncService {
    */
   stopAutoSync(): void {
     if (this.syncInterval) {
-      clearInterval(this.syncInterval);
-      this.syncInterval = null;
-      console.log('⏹️ Auto-sync stopped');
+      clearInterval(this.syncInterval)
+      this.syncInterval = null
+      Logger.info('⏹️ Auto-sync stopped')
     }
   }
 
@@ -98,11 +99,11 @@ class SyncService {
    */
   private async autoSync(): Promise<void> {
     if (!this.syncStatus.isOnline || this.syncInProgress) {
-      return;
+      return
     }
 
-    console.log('🔄 Starting automatic sync...');
-    await this.performFullSync();
+    Logger.syncStart('Starting automatic sync...')
+    await this.performFullSync()
   }
 
   /**
@@ -112,52 +113,52 @@ class SyncService {
     if (this.syncInProgress) {
       return {
         success: false,
-        message: 'Sync already in progress'
-      };
+        message: 'Sync already in progress',
+      }
     }
 
-    this.syncInProgress = true;
-    this.syncStatus.isSyncing = true;
-    this.syncStatus.syncErrors = [];
+    this.syncInProgress = true
+    this.syncStatus.isSyncing = true
+    this.syncStatus.syncErrors = []
 
     try {
-      console.log('🔄 Starting full synchronization...');
+      Logger.syncStart('Starting full synchronization...')
 
       // 1. Sync products from server to local (API mode - direct server)
-      const productSyncResult = await this.syncProducts();
+      const productSyncResult = await this.syncProducts()
       
       // 2. Sync transactions from local to server (API mode - direct server)
-      const transactionSyncResult = await this.syncTransactions();
+      const transactionSyncResult = await this.syncTransactions()
 
       // 3. Update sync status
-      this.syncStatus.lastSync = new Date();
-      this.updatePendingCounts();
+      this.syncStatus.lastSync = new Date()
+      await this.updatePendingCounts()
 
       const result: SyncResult = {
         success: true,
         productsSynced: productSyncResult,
         transactionsSynced: transactionSyncResult,
-        message: 'Full sync completed successfully'
-      };
+        message: 'Full sync completed successfully',
+      }
 
-      console.log('✅ Full synchronization completed:', result);
-      return result;
+      Logger.syncSuccess('Full synchronization completed:', result)
+      return result
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown sync error';
-      this.syncStatus.syncErrors.push(errorMessage);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown sync error'
+      this.syncStatus.syncErrors.push(errorMessage)
       
-      console.error('❌ Full synchronization failed:', error);
+      Logger.syncError('Full synchronization failed:', error)
       
       return {
         success: false,
         errors: [errorMessage],
-        message: 'Sync failed'
-      };
+        message: 'Sync failed',
+      }
 
     } finally {
-      this.syncStatus.isSyncing = false;
-      this.syncInProgress = false;
+      this.syncStatus.isSyncing = false
+      this.syncInProgress = false
     }
   }
 
@@ -166,31 +167,31 @@ class SyncService {
    */
   private async syncProducts(): Promise<number> {
     try {
-      console.log('📦 Syncing products from server...');
+      Logger.syncStart('Syncing products from server...')
       
-      const response = await apiService.getProducts({ limit: 1000 });
+      const response = await apiService.getProducts({ limit: 1000 })
       
       if (!response.success || !response.data?.products) {
-        throw new Error(response.error || 'Failed to fetch products from server');
+        throw new Error(response.error ?? 'Failed to fetch products from server')
       }
 
-      const products = response.data.products;
+      const {products} = response.data
       
       // PRODUCTION OFFLINE-FIRST MODE: For local storage, uncomment and replace below
-      const syncResult = await this.dbService.syncProductsFromServer(products);
+      const syncResult = await this.dbService.syncProductsFromServer(products)
       
       if (syncResult.success) {
-        console.log(`✅ Retrieved ${products.length} products from server and synced to local database`);
-        return products.length;
+        Logger.syncSuccess(`Retrieved ${products.length} products from server and synced to local database`)
+        return products.length
       } else {
-        throw new Error(syncResult.error || 'Failed to sync products to local database');
+        throw new Error(syncResult.error ?? 'Failed to sync products to local database')
       }
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Product sync failed';
-      this.syncStatus.syncErrors.push(errorMessage);
-      console.error('❌ Product sync failed:', error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Product sync failed'
+      this.syncStatus.syncErrors.push(errorMessage)
+      Logger.syncError('Product sync failed:', error)
+      throw error
     }
   }
 
@@ -199,40 +200,40 @@ class SyncService {
    */
   private async syncTransactions(): Promise<number> {
     try {
-      console.log('💳 Syncing transactions to server...');
+      Logger.syncStart('Syncing transactions to server...')
       
       // PRODUCTION OFFLINE-FIRST MODE: For local storage, uncomment and replace below
       // Get unsynced transactions from local database
-      const unsyncedResult = await this.dbService.getUnsyncedTransactions();
+      const unsyncedResult = await this.dbService.getUnsyncedTransactions()
       
       if (!unsyncedResult.success || !unsyncedResult.data) {
-        throw new Error('Failed to get unsynced transactions');
+        throw new Error('Failed to get unsynced transactions')
       }
 
-      const unsyncedTransactions = unsyncedResult.data;
-      let syncedCount = 0;
+      const unsyncedTransactions = unsyncedResult.data
+      let syncedCount = 0
 
       for (const transaction of unsyncedTransactions) {
         try {
           // PRODUCTION OFFLINE-FIRST MODE: Uncomment for local storage
           // Get transaction items
-          const transactionResult = await this.dbService.getTransaction(transaction.id);
+          const transactionResult = await this.dbService.getTransaction(transaction.id)
           
           if (!transactionResult.success || !transactionResult.data) {
-            console.warn(`⚠️ Failed to get transaction ${transaction.id} items`);
-            continue;
+            Logger.syncWarning(`Failed to get transaction ${transaction.id} items`)
+            continue
           }
 
-          const transactionData = transactionResult.data;
+          const transactionData = transactionResult.data
 
           // Prepare transaction data for server
           const serverTransactionData = {
-            items: transactionData.items.map((item: any) => ({
+            items: transactionData.items.map((item: { product_id: string; quantity: number; unit_price: number; discount: number; total: number }) => ({
               productId: item.product_id,
               quantity: item.quantity,
               unitPrice: item.unit_price,
               discount: item.discount,
-              total: item.total
+              total: item.total,
             })),
             totalAmount: transaction.total_amount,
             discount: transaction.discount,
@@ -240,36 +241,36 @@ class SyncService {
             paymentMethod: transaction.payment_method,
             amountPaid: transaction.amount_paid,
             change: transaction.change,
-            notes: `Synced from POS - ${transaction.transaction_code}`
-          };
+            notes: `Synced from POS - ${transaction.transaction_code}`,
+          }
 
           // Send to server
-          const serverResponse = await apiService.createTransaction(serverTransactionData);
+          const serverResponse = await apiService.createTransaction(serverTransactionData)
           
           if (serverResponse.success) {
             // Mark as synced in local database
-            await this.dbService.markTransactionAsSynced(transaction.id);
-            syncedCount++;
-            console.log(`✅ Synced transaction ${transaction.transaction_code}`);
+            await this.dbService.markTransactionAsSynced(transaction.id)
+            syncedCount++
+            Logger.syncSuccess(`Synced transaction ${transaction.transaction_code}`)
           } else {
-            console.error(`❌ Failed to sync transaction ${transaction.transaction_code}:`, serverResponse.error);
+            Logger.syncError(`Failed to sync transaction ${transaction.transaction_code}:`, serverResponse.error)
           }
 
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown transaction sync error';
-          console.error(`❌ Transaction ${transaction.id} sync failed:`, error);
-          this.syncStatus.syncErrors.push(errorMessage);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown transaction sync error'
+          Logger.syncError(`Transaction ${transaction.id} sync failed:`, error)
+          this.syncStatus.syncErrors.push(errorMessage)
         }
       }
 
-      console.log(`✅ Synced ${syncedCount}/${unsyncedTransactions.length} transactions to server (API mode)`);
-      return syncedCount;
+      Logger.syncSuccess(`Synced ${syncedCount}/${unsyncedTransactions.length} transactions to server (API mode)`)
+      return syncedCount
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Transaction sync failed';
-      this.syncStatus.syncErrors.push(errorMessage);
-      console.error('❌ Transaction sync failed:', error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Transaction sync failed'
+      this.syncStatus.syncErrors.push(errorMessage)
+      Logger.syncError('Transaction sync failed:', error)
+      throw error
     }
   }
 
@@ -280,15 +281,15 @@ class SyncService {
     try {
       // PRODUCTION OFFLINE-FIRST MODE: For local storage, uncomment below
       // Get pending transactions count
-      const unsyncedResult = await this.dbService.getUnsyncedTransactions();
-      this.syncStatus.pendingTransactions = unsyncedResult.success ? unsyncedResult.data?.length || 0 : 0;
+      const unsyncedResult = await this.dbService.getUnsyncedTransactions()
+      this.syncStatus.pendingTransactions = unsyncedResult.success ? (unsyncedResult.data?.length ?? 0) : 0
 
       // Get pending products count (products that need to be synced from server)
       // This is a simplified approach - in reality, you might want to track this more precisely
-      this.syncStatus.pendingProducts = 0;
+      this.syncStatus.pendingProducts = 0
 
     } catch (error) {
-      console.error('❌ Failed to update pending counts:', error);
+      Logger.syncError('Failed to update pending counts:', error)
     }
   }
 
@@ -296,45 +297,45 @@ class SyncService {
    * Manual sync trigger
    */
   async syncNow(): Promise<SyncResult> {
-    console.log('🔄 Manual sync triggered');
-    return await this.performFullSync();
+    Logger.syncStart('Manual sync triggered')
+    return await this.performFullSync()
   }
 
   /**
    * Force sync products only
    */
   async syncProductsOnly(): Promise<number> {
-    return await this.syncProducts();
+    return await this.syncProducts()
   }
 
   /**
    * Force sync transactions only
    */
   async syncTransactionsOnly(): Promise<number> {
-    return await this.syncTransactions();
+    return await this.syncTransactions()
   }
 
   /**
    * Get current sync status
    */
   getSyncStatus(): SyncStatus {
-    return { ...this.syncStatus };
+    return { ...this.syncStatus }
   }
 
   /**
    * Check if system is ready for sync
    */
   isReadyForSync(): boolean {
-    return this.syncStatus.isOnline && !this.syncInProgress;
+    return this.syncStatus.isOnline && !this.syncInProgress
   }
 
   /**
    * Get connection status
    */
   async checkConnection(): Promise<boolean> {
-    const isConnected = await apiService.checkHealth();
-    this.syncStatus.isOnline = isConnected;
-    return isConnected;
+    const isConnected = await apiService.checkHealth()
+    this.syncStatus.isOnline = isConnected
+    return isConnected
   }
 
   /**
@@ -343,20 +344,20 @@ class SyncService {
   async exportData(): Promise<string> {
     try {
       // PRODUCTION OFFLINE-FIRST MODE: For local storage, uncomment below
-      const productsResult = await this.dbService.getProducts();
-      const transactionsResult = await this.dbService.getUnsyncedTransactions();
+      const productsResult = await this.dbService.getProducts()
+      const transactionsResult = await this.dbService.getUnsyncedTransactions()
 
       const exportData = {
         products: productsResult.success ? productsResult.data : [],
         unsyncedTransactions: transactionsResult.success ? transactionsResult.data : [],
         exportedAt: new Date().toISOString(),
-        version: '1.0'
-      };
+        version: '1.0',
+      }
 
-      return JSON.stringify(exportData, null, 2);
+      return JSON.stringify(exportData, null, 2)
     } catch (error) {
-      console.error('❌ Failed to export data:', error);
-      throw error;
+      Logger.syncError('Failed to export data:', error)
+      throw error
     }
   }
 
@@ -365,21 +366,21 @@ class SyncService {
    */
   async importData(jsonData: string): Promise<void> {
     try {
-      const data = JSON.parse(jsonData);
+      const data = JSON.parse(jsonData)
       
       if (data.products && Array.isArray(data.products)) {
         // PRODUCTION OFFLINE-FIRST MODE: For local storage, uncomment below
-        await this.dbService.syncProductsFromServer(data.products);
-        console.log('✅ Products imported and stored in local database');
+        await this.dbService.syncProductsFromServer(data.products)
+        Logger.syncSuccess('Products imported and stored in local database')
       }
 
       // Note: Importing transactions would require more complex logic
       // to avoid duplicates and handle dependencies
 
-      console.log('✅ Data imported successfully');
+      Logger.syncSuccess('Data imported successfully')
     } catch (error) {
-      console.error('❌ Failed to import data:', error);
-      throw error;
+      Logger.syncError('Failed to import data:', error)
+      throw error
     }
   }
 
@@ -387,19 +388,19 @@ class SyncService {
    * Clear all sync errors
    */
   clearSyncErrors(): void {
-    this.syncStatus.syncErrors = [];
+    this.syncStatus.syncErrors = []
   }
 
   /**
    * Cleanup resources
    */
   cleanup(): void {
-    this.stopAutoSync();
+    this.stopAutoSync()
     // PRODUCTION OFFLINE-FIRST MODE: Uncomment for Electron
     if (this.dbService) {
-      this.dbService.close();
+      this.dbService.close()
     }
   }
 }
 
-export const syncService = new SyncService();
+export const syncService = new SyncService()

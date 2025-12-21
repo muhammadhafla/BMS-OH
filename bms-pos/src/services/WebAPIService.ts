@@ -3,6 +3,8 @@
  * Replaces Electron IPC calls with web-compatible implementations
  */
 
+import { Logger } from '../utils/logger'
+
 interface Product {
   id: string;
   name: string;
@@ -12,22 +14,35 @@ interface Product {
   barcode?: string;
 }
 
-interface Transaction {
-  id: string;
-  items: any[];
-  total: number;
-  paymentMethod: string;
-  timestamp: Date;
+interface ReceiptItem {
+  name: string;
+  quantity: number;
+  price: number;
+}
+
+interface ReceiptData {
+  storeName?: string;
+  items?: ReceiptItem[];
+  subtotal?: number;
+  tax?: number;
+  total?: number;
+}
+
+interface TransactionData {
+  [key: string]: unknown;
+  id?: string;
+  offline?: boolean;
+  timestamp?: string;
 }
 
 class WebAPIService {
-  private baseUrl: string = 'http://localhost:3001/api'; // BMS API base URL
-  private isOnline: boolean = navigator.onLine;
+  private baseUrl: string = 'http://localhost:3001/api' // BMS API base URL
+  private isOnline: boolean = navigator.onLine
 
   constructor() {
     // Monitor online/offline status
-    window.addEventListener('online', () => this.isOnline = true);
-    window.addEventListener('offline', () => this.isOnline = false);
+    window.addEventListener('online', () => { this.isOnline = true })
+    window.addEventListener('offline', () => { this.isOnline = false })
   }
 
   // Platform and version info
@@ -35,46 +50,46 @@ class WebAPIService {
     return {
       platform: navigator.platform,
       versions: {
-        node: process.versions?.node || 'N/A',
-        chrome: navigator.userAgent.split('Chrome/')[1]?.split(' ')[0] || 'N/A',
-      }
-    };
+        node: process.versions?.node ?? 'N/A',
+        chrome: navigator.userAgent.split('Chrome/')[1]?.split(' ')[0] ?? 'N/A',
+      },
+    }
   }
 
   // Product operations
   async getProducts(args?: { limit?: number; search?: string }) {
     try {
       if (!this.isOnline) {
-        return this.getOfflineProducts(args);
+        return this.getOfflineProducts(args)
       }
 
-      const params = new URLSearchParams();
-      if (args?.limit) params.append('limit', args.limit.toString());
-      if (args?.search) params.append('search', args.search);
+      const params = new URLSearchParams()
+      if (args?.limit) params.append('limit', args.limit.toString())
+      if (args?.search) params.append('search', args.search)
 
       const response = await fetch(`${this.baseUrl}/products?${params}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-      });
+      })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data = await response.json();
-      return { success: true, data: data.products || data };
+      const data = await response.json()
+      return { success: true, data: data.products || data }
     } catch (error) {
-      console.error('Error fetching products:', error);
-      return this.getOfflineProducts(args);
+      Logger.error('Error fetching products:', error)
+      return this.getOfflineProducts(args)
     }
   }
 
   async searchProduct(searchTerm: string) {
     try {
       if (!this.isOnline) {
-        return this.searchOfflineProducts(searchTerm);
+        return this.searchOfflineProducts(searchTerm)
       }
 
       const response = await fetch(`${this.baseUrl}/products/search?q=${encodeURIComponent(searchTerm)}`, {
@@ -82,25 +97,25 @@ class WebAPIService {
         headers: {
           'Content-Type': 'application/json',
         },
-      });
+      })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data = await response.json();
-      return { success: true, data: data.products || data };
+      const data = await response.json()
+      return { success: true, data: data.products || data }
     } catch (error) {
-      console.error('Error searching product:', error);
-      return this.searchOfflineProducts(searchTerm);
+      Logger.error('Error searching product:', error)
+      return this.searchOfflineProducts(searchTerm)
     }
   }
 
   // Transaction operations
-  async createTransaction(transactionData: any) {
+  async createTransaction(transactionData: TransactionData) {
     try {
       if (!this.isOnline) {
-        return this.saveOfflineTransaction(transactionData);
+        return this.saveOfflineTransaction(transactionData)
       }
 
       const response = await fetch(`${this.baseUrl}/transactions`, {
@@ -109,24 +124,24 @@ class WebAPIService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(transactionData),
-      });
+      })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data = await response.json();
-      return { success: true, data };
+      const data = await response.json()
+      return { success: true, data }
     } catch (error) {
-      console.error('Error creating transaction:', error);
-      return this.saveOfflineTransaction(transactionData);
+      Logger.error('Error creating transaction:', error)
+      return this.saveOfflineTransaction(transactionData)
     }
   }
 
   async getTransaction(transactionId: string) {
     try {
       if (!this.isOnline) {
-        return this.getOfflineTransaction(transactionId);
+        return this.getOfflineTransaction(transactionId)
       }
 
       const response = await fetch(`${this.baseUrl}/transactions/${transactionId}`, {
@@ -134,27 +149,27 @@ class WebAPIService {
         headers: {
           'Content-Type': 'application/json',
         },
-      });
+      })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const data = await response.json();
-      return { success: true, data };
+      const data = await response.json()
+      return { success: true, data }
     } catch (error) {
-      console.error('Error getting transaction:', error);
-      return this.getOfflineTransaction(transactionId);
+      Logger.error('Error getting transaction:', error)
+      return this.getOfflineTransaction(transactionId)
     }
   }
 
   // Printing operations (Web-based)
-  async printReceipt(receiptData: any) {
+  async printReceipt(receiptData: ReceiptData) {
     try {
       // Create a print-friendly window
-      const printWindow = window.open('', '_blank');
+      const printWindow = window.open('', '_blank')
       if (!printWindow) {
-        throw new Error('Popup blocked. Please allow popups for printing.');
+        throw new Error('Popup blocked. Please allow popups for printing.')
       }
 
       printWindow.document.write(`
@@ -171,30 +186,30 @@ class WebAPIService {
         </head>
         <body>
           <div class="header">
-            <h2>${receiptData.storeName || 'BMS POS'}</h2>
+            <h2>${receiptData.storeName ?? 'BMS POS'}</h2>
             <p>Date: ${new Date().toLocaleDateString()}</p>
             <p>Time: ${new Date().toLocaleTimeString()}</p>
           </div>
           
-          ${receiptData.items?.map((item: any) => `
+          ${receiptData.items?.map((item: ReceiptItem) => `
             <div class="item">
               <span>${item.name} x${item.quantity}</span>
               <span>$${(item.price * item.quantity).toFixed(2)}</span>
             </div>
-          `).join('') || ''}
+          `).join('') ?? ''}
           
           <div class="total">
             <div class="item">
               <span>Subtotal:</span>
-              <span>$${receiptData.subtotal?.toFixed(2) || '0.00'}</span>
+              <span>${receiptData.subtotal?.toFixed(2) ?? '0.00'}</span>
             </div>
             <div class="item">
               <span>Tax:</span>
-              <span>$${receiptData.tax?.toFixed(2) || '0.00'}</span>
+              <span>${receiptData.tax?.toFixed(2) ?? '0.00'}</span>
             </div>
             <div class="item">
               <span>Total:</span>
-              <span>$${receiptData.total?.toFixed(2) || '0.00'}</span>
+              <span>${receiptData.total?.toFixed(2) ?? '0.00'}</span>
             </div>
           </div>
           
@@ -203,107 +218,101 @@ class WebAPIService {
           </div>
         </body>
         </html>
-      `);
+      `)
 
-      printWindow.document.close();
-      printWindow.focus();
+      printWindow.document.close()
+      printWindow.focus()
       
       // Trigger print after content is loaded
       printWindow.onload = () => {
-        printWindow.print();
-        printWindow.close();
-      };
+        printWindow.print()
+        printWindow.close()
+      }
 
-      return { success: true };
+      return { success: true }
     } catch (error) {
-      console.error('Error printing receipt:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return { success: false, error: errorMessage };
+      Logger.error('Error printing receipt:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      return { success: false, error: errorMessage }
     }
   }
 
   async getPrinters() {
-    try {
-      // Web browsers don't have direct printer access for security reasons
-      // We'll return a list of common printers as fallbacks
-      return {
-        success: true,
-        data: [
-          { name: 'Default Printer', isDefault: true },
-          { name: 'PDF Printer', isDefault: false }
-        ]
-      };
-    } catch (error) {
-      console.error('Error getting printers:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      return { success: false, error: errorMessage };
+    // Web browsers don't have direct printer access for security reasons
+    // We'll return a list of common printers as fallbacks
+    return {
+      success: true,
+      data: [
+        { name: 'Default Printer', isDefault: true },
+        { name: 'PDF Printer', isDefault: false },
+      ],
     }
   }
 
   // Offline storage methods using localStorage
   private getOfflineProducts(args?: { limit?: number; search?: string }) {
     try {
-      const products = JSON.parse(localStorage.getItem('offline_products') || '[]');
-      let filtered = products;
+      const products = JSON.parse(localStorage.getItem('offline_products') ?? '[]')
+      let filtered = products
 
       if (args?.search) {
-        const searchLower = args.search.toLowerCase();
+        const searchLower = args.search.toLowerCase()
         filtered = products.filter((p: Product) => 
-          p.name.toLowerCase().includes(searchLower) ||
-          p.barcode?.toLowerCase().includes(searchLower)
-        );
+          p.name.toLowerCase().includes(searchLower) ??
+          p.barcode?.toLowerCase().includes(searchLower),
+        )
       }
 
       if (args?.limit) {
-        filtered = filtered.slice(0, args.limit);
+        filtered = filtered.slice(0, args.limit)
       }
 
-      return { success: true, data: filtered };
-    } catch (error) {
-      return { success: false, error: 'Failed to load offline products' };
+      return { success: true, data: filtered }
+    } catch (_error) {
+      return { success: false, error: 'Failed to load offline products' }
     }
   }
 
   private searchOfflineProducts(searchTerm: string) {
-    return this.getOfflineProducts({ search: searchTerm });
+    return this.getOfflineProducts({ search: searchTerm })
   }
 
-  private saveOfflineTransaction(transactionData: any) {
+  private saveOfflineTransaction(transactionData: TransactionData) {
     try {
-      const transactions = JSON.parse(localStorage.getItem('offline_transactions') || '[]');
+      const transactions = JSON.parse(localStorage.getItem('offline_transactions') || '[]')
       const transaction = {
         ...transactionData,
         id: Date.now().toString(),
         offline: true,
-        timestamp: new Date().toISOString()
-      };
-      transactions.push(transaction);
-      localStorage.setItem('offline_transactions', JSON.stringify(transactions));
+        timestamp: new Date().toISOString(),
+      }
+      transactions.push(transaction)
+      localStorage.setItem('offline_transactions', JSON.stringify(transactions))
       
-      return { success: true, data: transaction, offline: true };
-    } catch (error) {
-      return { success: false, error: 'Failed to save offline transaction' };
+      return { success: true, data: transaction, offline: true }
+    } catch (_error) {
+      return { success: false, error: 'Failed to save offline transaction' }
     }
   }
 
   private getOfflineTransaction(transactionId: string) {
     try {
-      const transactions = JSON.parse(localStorage.getItem('offline_transactions') || '[]');
-      const transaction = transactions.find((t: any) => t.id === transactionId);
+      const transactions = JSON.parse(localStorage.getItem('offline_transactions') || '[]')
+      const transaction = transactions.find((t: TransactionData) => t.id === transactionId)
       
       if (transaction) {
-        return { success: true, data: transaction };
+        return { success: true, data: transaction }
       } else {
-        return { success: false, error: 'Transaction not found' };
+        return { success: false, error: 'Transaction not found' }
       }
-    } catch (error) {
-      return { success: false, error: 'Failed to load offline transaction' };
+    } catch (_error) {
+      return { success: false, error: 'Failed to load offline transaction' }
     }
   }
 }
 
 // Create and export singleton instance
-const webAPIService = new WebAPIService();
+const webAPIService = new WebAPIService()
 
 // Expose to window for compatibility
 if (typeof window !== 'undefined') {
@@ -314,8 +323,8 @@ if (typeof window !== 'undefined') {
     getTransaction: (transactionId) => webAPIService.getTransaction(transactionId),
     printReceipt: (receiptData) => webAPIService.printReceipt(receiptData),
     getPrinters: () => webAPIService.getPrinters(),
-    ...webAPIService.getPlatformInfo()
-  };
+    ...webAPIService.getPlatformInfo(),
+  }
 }
 
-export default webAPIService;
+export default webAPIService

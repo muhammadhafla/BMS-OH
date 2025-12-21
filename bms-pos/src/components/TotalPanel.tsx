@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
+import React, { useMemo } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
+import { Button } from './ui/button'
+import { Badge } from './ui/badge'
 import { 
   ShoppingCart, 
   CreditCard, 
@@ -18,9 +18,9 @@ import {
   RefreshCw,
   Zap,
   Target,
-  Award
-} from 'lucide-react';
-import { formatCurrency } from '../lib/utils';
+  Award,
+} from 'lucide-react'
+import { formatCurrency } from '../lib/utils'
 
 interface CartItem {
   productId: string;
@@ -58,17 +58,17 @@ interface CartStatistics {
 const TotalPanel: React.FC<TotalPanelProps> = ({ cart, onPayment, onClearCart }) => {
   // Enhanced statistics calculation
   const statistics: CartStatistics = useMemo(() => {
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const totalAmount = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const totalDiscount = cart.reduce((sum, item) => sum + item.discount, 0);
-    const finalAmount = totalAmount - totalDiscount;
-    const averagePrice = totalItems > 0 ? totalAmount / totalItems : 0;
-    const uniqueProducts = cart.length;
-    const popularItems = cart.filter(item => item.isPopular).length;
-    const categories = [...new Set(cart.map(item => item.category).filter(Boolean))] as string[];
-    const itemValues = cart.map(item => item.total);
-    const highestValue = itemValues.length > 0 ? Math.max(...itemValues) : 0;
-    const lowestValue = itemValues.length > 0 ? Math.min(...itemValues) : 0;
+    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0)
+    const totalAmount = cart.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
+    const totalDiscount = cart.reduce((sum, item) => sum + item.discount, 0)
+    const finalAmount = totalAmount - totalDiscount
+    const averagePrice = totalItems > 0 ? totalAmount / totalItems : 0
+    const uniqueProducts = cart.length
+    const popularItems = cart.filter(item => item.isPopular).length
+    const categories = [...new Set(cart.map(item => item.category).filter(Boolean))] as string[]
+    const itemValues = cart.map(item => item.total)
+    const highestValue = itemValues.length > 0 ? Math.max(...itemValues) : 0
+    const lowestValue = itemValues.length > 0 ? Math.min(...itemValues) : 0
 
     return {
       totalItems,
@@ -81,9 +81,9 @@ const TotalPanel: React.FC<TotalPanelProps> = ({ cart, onPayment, onClearCart })
       popularItems,
       categories,
       highestValue,
-      lowestValue
-    };
-  }, [cart]);
+      lowestValue,
+    }
+  }, [cart])
 
   // Get cart status and recommendations
   const getCartStatus = () => {
@@ -92,8 +92,8 @@ const TotalPanel: React.FC<TotalPanelProps> = ({ cart, onPayment, onClearCart })
         status: 'empty',
         message: 'Cart is empty',
         color: 'text-gray-500',
-        bgColor: 'bg-gray-50'
-      };
+        bgColor: 'bg-gray-50',
+      }
     }
 
     if (statistics.finalAmount > 100000) {
@@ -101,8 +101,8 @@ const TotalPanel: React.FC<TotalPanelProps> = ({ cart, onPayment, onClearCart })
         status: 'high_value',
         message: 'High value transaction',
         color: 'text-green-600',
-        bgColor: 'bg-green-50'
-      };
+        bgColor: 'bg-green-50',
+      }
     }
 
     if (statistics.popularItems > 0) {
@@ -110,37 +110,37 @@ const TotalPanel: React.FC<TotalPanelProps> = ({ cart, onPayment, onClearCart })
         status: 'has_popular',
         message: 'Contains popular items',
         color: 'text-blue-600',
-        bgColor: 'bg-blue-50'
-      };
+        bgColor: 'bg-blue-50',
+      }
     }
 
     return {
       status: 'normal',
       message: 'Ready to checkout',
       color: 'text-gray-700',
-      bgColor: 'bg-gray-50'
-    };
-  };
+      bgColor: 'bg-gray-50',
+    }
+  }
 
   // Get quick action suggestions
   const getQuickActions = () => {
-    const actions = [];
+    const actions = []
     
     if (statistics.totalDiscount === 0 && statistics.finalAmount > 50000) {
-      actions.push({ id: 'discount', label: 'Apply Discount', icon: Percent, color: 'bg-red-500' });
+      actions.push({ id: 'discount', label: 'Apply Discount', icon: Percent, color: 'bg-red-500' })
     }
     
     if (statistics.categories.length > 1) {
-      actions.push({ id: 'print', label: 'Print Receipt', icon: FileText, color: 'bg-blue-500' });
+      actions.push({ id: 'print', label: 'Print Receipt', icon: FileText, color: 'bg-blue-500' })
     }
     
-    actions.push({ id: 'save', label: 'Save Draft', icon: RefreshCw, color: 'bg-gray-500' });
+    actions.push({ id: 'save', label: 'Save Draft', icon: RefreshCw, color: 'bg-gray-500' })
     
-    return actions.slice(0, 3);
-  };
+    return actions.slice(0, 3)
+  }
 
-  const cartStatus = getCartStatus();
-  const quickActions = getQuickActions();
+  const cartStatus = getCartStatus()
+  const quickActions = getQuickActions()
 
   if (cart.length === 0) {
     return (
@@ -161,7 +161,7 @@ const TotalPanel: React.FC<TotalPanelProps> = ({ cart, onPayment, onClearCart })
           </div>
         </CardContent>
       </Card>
-    );
+    )
   }
 
   return (
@@ -323,7 +323,7 @@ const TotalPanel: React.FC<TotalPanelProps> = ({ cart, onPayment, onClearCart })
             </h4>
             <div className="grid grid-cols-3 gap-2">
               {quickActions.map((action) => {
-                const Icon = action.icon;
+                const Icon = action.icon
                 return (
                   <Button
                     key={action.id}
@@ -335,7 +335,7 @@ const TotalPanel: React.FC<TotalPanelProps> = ({ cart, onPayment, onClearCart })
                     <Icon className="h-3 w-3 mr-1" />
                     {action.label}
                   </Button>
-                );
+                )
               })}
             </div>
           </div>
@@ -420,7 +420,7 @@ const TotalPanel: React.FC<TotalPanelProps> = ({ cart, onPayment, onClearCart })
         </div>
       </div>
     </Card>
-  );
-};
+  )
+}
 
-export default TotalPanel;
+export default TotalPanel

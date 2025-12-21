@@ -1,10 +1,9 @@
-import React from 'react';
-import { Button } from './ui/button';
+import React from 'react'
+import { Button } from './ui/button'
 import {
   User,
   LogOut,
   Package,
-  AlertTriangle,
   Settings,
   Wifi,
   Clock,
@@ -14,8 +13,8 @@ import {
   Bell,
   RefreshCw,
   CloudOff,
-  Database
-} from 'lucide-react';
+  Database,
+} from 'lucide-react'
 
 interface Cashier {
   name: string;
@@ -41,12 +40,12 @@ interface POSHeaderProps {
   branch: Branch;
   onLogout: () => void;
   activeView: 'pos' | 'inventory' | 'adjustment' | 'alerts';
-  onViewChange: (view: 'pos' | 'inventory' | 'adjustment' | 'alerts') => void;
+  onViewChange: (_view: 'pos' | 'inventory' | 'adjustment' | 'alerts') => void;  
   showStockAlerts: boolean;
   connectionStatus: 'online' | 'offline';
   isInventoryDropdownOpen: boolean;
-  setIsInventoryDropdownOpen: (open: boolean) => void;
-  setIsAlertsModalOpen: (open: boolean) => void;
+  setIsInventoryDropdownOpen: (_open: boolean) => void;  
+  setIsAlertsModalOpen: (_open: boolean) => void;  
   syncStatus: SyncStatus;
   onSync: () => void;
 }
@@ -63,7 +62,7 @@ const POSHeader: React.FC<POSHeaderProps> = ({
   setIsInventoryDropdownOpen,
   setIsAlertsModalOpen,
   syncStatus,
-  onSync
+  onSync,
 }) => {
   return (
     <div className="bg-white border-b shadow-sm">
@@ -112,10 +111,12 @@ const POSHeader: React.FC<POSHeaderProps> = ({
               >
                 {syncStatus.isSyncing ? (
                   <RefreshCw className="h-3 w-3 animate-spin" />
-                ) : syncStatus.isOnline ? (
-                  <Database className="h-3 w-3" />
                 ) : (
-                  <CloudOff className="h-3 w-3 text-red-500" />
+                  syncStatus.isOnline ? (
+                    <Database className="h-3 w-3" />
+                  ) : (
+                    <CloudOff className="h-3 w-3 text-red-500" />
+                  )
                 )}
                 {syncStatus.pendingTransactions > 0 && (
                   <span className="ml-1 text-xs bg-orange-100 text-orange-800 px-1 rounded">
@@ -200,8 +201,8 @@ const POSHeader: React.FC<POSHeaderProps> = ({
                   variant={activeView === 'inventory' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => {
-                    onViewChange('inventory');
-                    setIsInventoryDropdownOpen(false);
+                    onViewChange('inventory')
+                    setIsInventoryDropdownOpen(false)
                   }}
                   className="w-full justify-start text-sm font-normal rounded-none border-0"
                 >
@@ -212,8 +213,8 @@ const POSHeader: React.FC<POSHeaderProps> = ({
                   variant={activeView === 'adjustment' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => {
-                    onViewChange('adjustment');
-                    setIsInventoryDropdownOpen(false);
+                    onViewChange('adjustment')
+                    setIsInventoryDropdownOpen(false)
                   }}
                   className="w-full justify-start text-sm font-normal rounded-none border-0"
                 >
@@ -234,7 +235,7 @@ const POSHeader: React.FC<POSHeaderProps> = ({
         />
       )}
     </div>
-  );
-};
+  )
+}
 
-export default POSHeader;
+export default POSHeader

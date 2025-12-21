@@ -31,7 +31,7 @@ export const LoadingStateDemo: React.FC = () => {
       showSuccessToast: true,
       showErrorToast: true,
       successMessage: 'Product created successfully!',
-    }
+    },
   )
 
   const handleSimulateAsync = async () => {

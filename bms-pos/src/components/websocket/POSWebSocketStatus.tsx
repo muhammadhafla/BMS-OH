@@ -1,7 +1,7 @@
-import React from 'react';
-import { usePOSWebSocketConnection } from '@/hooks/useWebSocket';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import React from 'react'
+import { usePOSWebSocketConnection } from '@/hooks/useWebSocket'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Wifi,
   WifiOff,
@@ -12,10 +12,10 @@ import {
   RefreshCw,
   Database,
   Upload,
-  Download
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { ConnectionState } from '@/services/WebSocketService';
+  Download,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { ConnectionState } from '@/services/WebSocketService'
 
 interface POSWebSocketStatusProps {
   className?: string;
@@ -36,9 +36,9 @@ export const POSWebSocketStatus: React.FC<POSWebSocketStatusProps> = ({
   showSyncStatus = true,
   showReconnectButton = true,
   onReconnect,
-  onManualSync
+  onManualSync,
 }) => {
-  const { connectionState, isConnected, connectionDuration } = usePOSWebSocketConnection();
+  const { connectionState, isConnected, connectionDuration } = usePOSWebSocketConnection()
 
   // Enhanced status configuration for POS
   const getStatusConfig = (state: typeof connectionState) => {
@@ -50,8 +50,8 @@ export const POSWebSocketStatus: React.FC<POSWebSocketStatusProps> = ({
           bgColor: 'bg-green-100',
           icon: Wifi,
           text: 'Online',
-          description: 'Real-time sync active'
-        };
+          description: 'Real-time sync active',
+        }
       case 'connecting':
         return {
           variant: 'secondary' as const,
@@ -59,8 +59,8 @@ export const POSWebSocketStatus: React.FC<POSWebSocketStatusProps> = ({
           bgColor: 'bg-yellow-100',
           icon: Activity,
           text: 'Connecting...',
-          description: 'Establishing connection'
-        };
+          description: 'Establishing connection',
+        }
       case 'reconnecting':
         return {
           variant: 'secondary' as const,
@@ -68,8 +68,8 @@ export const POSWebSocketStatus: React.FC<POSWebSocketStatusProps> = ({
           bgColor: 'bg-blue-100',
           icon: RotateCcw,
           text: 'Reconnecting...',
-          description: 'Attempting to reconnect'
-        };
+          description: 'Attempting to reconnect',
+        }
       case 'error':
         return {
           variant: 'destructive' as const,
@@ -77,8 +77,8 @@ export const POSWebSocketStatus: React.FC<POSWebSocketStatusProps> = ({
           bgColor: 'bg-red-100',
           icon: AlertCircle,
           text: 'Connection Error',
-          description: 'Sync temporarily unavailable'
-        };
+          description: 'Sync temporarily unavailable',
+        }
       case 'disconnected':
       default:
         return {
@@ -87,34 +87,34 @@ export const POSWebSocketStatus: React.FC<POSWebSocketStatusProps> = ({
           bgColor: 'bg-gray-100',
           icon: WifiOff,
           text: 'Offline',
-          description: 'Offline mode - local only'
-        };
+          description: 'Offline mode - local only',
+        }
     }
-  };
+  }
 
-  const statusConfig = getStatusConfig(connectionState);
-  const StatusIcon = statusConfig.icon;
+  const statusConfig = getStatusConfig(connectionState)
+  const StatusIcon = statusConfig.icon
 
   // Handle manual reconnect
   const handleReconnect = () => {
     if (onReconnect) {
-      onReconnect();
+      onReconnect()
     } else {
       // Fallback: trigger manual sync
       if (onManualSync) {
-        onManualSync();
+        onManualSync()
       }
     }
-  };
+  }
 
   // Format connection duration
   const formatDuration = (ms: number) => {
-    if (ms < 1000) return `${ms}ms`;
-    if (ms < 60000) return `${Math.floor(ms / 1000)}s`;
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}m ${seconds}s`;
-  };
+    if (ms < 1000) return `${ms}ms`
+    if (ms < 60000) return `${Math.floor(ms / 1000)}s`
+    const minutes = Math.floor(ms / 60000)
+    const seconds = Math.floor((ms % 60000) / 1000)
+    return `${minutes}m ${seconds}s`
+  }
 
   return (
     <div className={cn('flex items-center gap-3 p-3 bg-background rounded-lg border', className)}>
@@ -124,7 +124,7 @@ export const POSWebSocketStatus: React.FC<POSWebSocketStatusProps> = ({
         className={cn(
           'flex items-center gap-1.5 font-medium',
           statusConfig.color,
-          statusConfig.bgColor
+          statusConfig.bgColor,
         )}
       >
         <StatusIcon className="h-3 w-3" />
@@ -173,38 +173,38 @@ export const POSWebSocketStatus: React.FC<POSWebSocketStatusProps> = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
 /**
  * Compact POS WebSocket Status for navigation bars
  */
 export const POSWebSocketStatusCompact: React.FC<{ className?: string }> = ({ className }) => {
-  const { connectionState, isConnected } = usePOSWebSocketConnection();
+  const { connectionState, isConnected } = usePOSWebSocketConnection()
 
   const getStatusColor = () => {
     switch (connectionState) {
-      case 'connected': return 'text-green-500';
+      case 'connected': return 'text-green-500'
       case 'connecting':
-      case 'reconnecting': return 'text-yellow-500';
-      case 'error': return 'text-red-500';
+      case 'reconnecting': return 'text-yellow-500'
+      case 'error': return 'text-red-500'
       case 'disconnected':
-      default: return 'text-gray-400';
+      default: return 'text-gray-400'
     }
-  };
+  }
 
   return (
     <div className={cn('flex items-center gap-2 px-2 py-1 rounded bg-muted/50', className)}>
       <div className={cn(
         'w-2 h-2 rounded-full transition-colors',
-        isConnected ? 'bg-green-500' : 'bg-gray-400'
+        isConnected ? 'bg-green-500' : 'bg-gray-400',
       )} />
       <span className={cn('text-xs font-medium', getStatusColor())}>
         {connectionState}
       </span>
     </div>
-  );
-};
+  )
+}
 
 /**
  * POS Sync Status Indicator
@@ -214,10 +214,10 @@ export const POSSyncStatusIndicator: React.FC<{
   className?: string;
   showDetailed?: boolean;
 }> = ({ className, showDetailed = false }) => {
-  const { syncMonitoring } = usePOSSyncMonitoring();
+  const { syncMonitoring } = usePOSSyncMonitoring()
 
   const getSyncStatusConfig = () => {
-    const { isOnline, isSyncing, pendingTransactions, pendingProducts, connectionHealth } = syncMonitoring;
+    const { isOnline, isSyncing, pendingTransactions, pendingProducts, connectionHealth } = syncMonitoring
     
     if (isSyncing) {
       return {
@@ -226,8 +226,8 @@ export const POSSyncStatusIndicator: React.FC<{
         color: 'text-blue-600',
         bgColor: 'bg-blue-100',
         text: 'Syncing...',
-        description: 'Synchronizing data'
-      };
+        description: 'Synchronizing data',
+      }
     }
     
     if (!isOnline || connectionHealth === 'offline') {
@@ -237,8 +237,8 @@ export const POSSyncStatusIndicator: React.FC<{
         color: 'text-gray-600',
         bgColor: 'bg-gray-100',
         text: 'Offline',
-        description: 'Local mode'
-      };
+        description: 'Local mode',
+      }
     }
     
     if (connectionHealth === 'unstable') {
@@ -248,8 +248,8 @@ export const POSSyncStatusIndicator: React.FC<{
         color: 'text-yellow-600',
         bgColor: 'bg-yellow-100',
         text: 'Unstable',
-        description: 'Connection issues'
-      };
+        description: 'Connection issues',
+      }
     }
     
     if (pendingTransactions > 0 || pendingProducts > 0) {
@@ -259,8 +259,8 @@ export const POSSyncStatusIndicator: React.FC<{
         color: 'text-orange-600',
         bgColor: 'bg-orange-100',
         text: 'Pending Sync',
-        description: `${pendingTransactions + pendingProducts} items pending`
-      };
+        description: `${pendingTransactions + pendingProducts} items pending`,
+      }
     }
     
     return {
@@ -269,12 +269,12 @@ export const POSSyncStatusIndicator: React.FC<{
       color: 'text-green-600',
       bgColor: 'bg-green-100',
       text: 'Synced',
-      description: 'All data synchronized'
-    };
-  };
+      description: 'All data synchronized',
+    }
+  }
 
-  const statusConfig = getSyncStatusConfig();
-  const StatusIcon = statusConfig.icon;
+  const statusConfig = getSyncStatusConfig()
+  const StatusIcon = statusConfig.icon
 
   if (!showDetailed) {
     return (
@@ -284,7 +284,7 @@ export const POSSyncStatusIndicator: React.FC<{
           {statusConfig.text}
         </span>
       </div>
-    );
+    )
   }
 
   return (
@@ -303,8 +303,8 @@ export const POSSyncStatusIndicator: React.FC<{
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
 /**
  * POS WebSocket Control Panel
@@ -314,13 +314,13 @@ export const POSWebSocketControlPanel: React.FC<{
   isOpen: boolean;
   onClose: () => void;
 }> = ({ isOpen, onClose }) => {
-  const { syncMonitoring } = usePOSSyncMonitoring();
-  const { connectionState, isConnected, connectionDuration } = usePOSWebSocketConnection();
+  const { syncMonitoring } = usePOSSyncMonitoring()
+  const { connectionState, isConnected, connectionDuration } = usePOSWebSocketConnection()
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
-  const statusConfig = getStatusConfig(connectionState);
-  const StatusIcon = statusConfig.icon;
+  const statusConfig = getStatusConfig(connectionState)
+  const StatusIcon = statusConfig.icon
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -402,8 +402,8 @@ export const POSWebSocketControlPanel: React.FC<{
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 // Helper function (duplicated to avoid import issues)
 const getStatusConfig = (state: ConnectionState) => {
@@ -415,8 +415,8 @@ const getStatusConfig = (state: ConnectionState) => {
         bgColor: 'bg-green-100',
         icon: Wifi,
         text: 'Online',
-        description: 'Real-time sync active'
-      };
+        description: 'Real-time sync active',
+      }
     case 'connecting':
       return {
         variant: 'secondary' as const,
@@ -424,8 +424,8 @@ const getStatusConfig = (state: ConnectionState) => {
         bgColor: 'bg-yellow-100',
         icon: Activity,
         text: 'Connecting...',
-        description: 'Establishing connection'
-      };
+        description: 'Establishing connection',
+      }
     case 'reconnecting':
       return {
         variant: 'secondary' as const,
@@ -433,8 +433,8 @@ const getStatusConfig = (state: ConnectionState) => {
         bgColor: 'bg-blue-100',
         icon: RotateCcw,
         text: 'Reconnecting...',
-        description: 'Attempting to reconnect'
-      };
+        description: 'Attempting to reconnect',
+      }
     case 'error':
       return {
         variant: 'destructive' as const,
@@ -442,8 +442,8 @@ const getStatusConfig = (state: ConnectionState) => {
         bgColor: 'bg-red-100',
         icon: AlertCircle,
         text: 'Connection Error',
-        description: 'Sync temporarily unavailable'
-      };
+        description: 'Sync temporarily unavailable',
+      }
     case 'disconnected':
     default:
       return {
@@ -452,10 +452,10 @@ const getStatusConfig = (state: ConnectionState) => {
         bgColor: 'bg-gray-100',
         icon: WifiOff,
         text: 'Offline',
-        description: 'Offline mode - local only'
-      };
+        description: 'Offline mode - local only',
+      }
   }
-};
+}
 
 // Re-export the usePOSSyncMonitoring hook for use in the control panel
-import { usePOSSyncMonitoring } from '@/hooks/useWebSocket';
+import { usePOSSyncMonitoring } from '@/hooks/useWebSocket'

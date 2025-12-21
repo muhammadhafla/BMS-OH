@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { authService, LoginCredentials, User } from '../../services/AuthService';
+import React, { useState } from 'react'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Button } from '../ui/button'
+import { Input } from '../ui/input'
+import { authService, LoginCredentials, User } from '../../services/AuthService'
 
 interface LoginFormProps {
   onLogin: (user: User) => void;
@@ -11,60 +11,60 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [credentials, setCredentials] = useState<LoginCredentials>({
     username: '',
-    password: ''
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    password: '',
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleInputChange = (field: keyof LoginCredentials) => (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setCredentials(prev => ({
       ...prev,
-      [field]: e.target.value
-    }));
+      [field]: e.target.value,
+    }))
     
     // Clear error when user starts typing
     if (error) {
-      setError(null);
+      setError(null)
     }
-  };
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     
     // Basic validation
     if (!credentials.username.trim() || !credentials.password.trim()) {
-      setError('Please enter both username and password');
-      return;
+      setError('Please enter both username and password')
+      return
     }
 
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     try {
-      const result = await authService.login(credentials);
+      const result = await authService.login(credentials)
       
       if (result.success && result.user && result.token) {
         // Save session
-        authService.saveSession(result.user, result.token);
+        authService.saveSession(result.user, result.token)
         
         // Notify parent component
-        onLogin(result.user);
+        onLogin(result.user)
       } else {
-        setError(result.error || 'Login failed');
+        setError(result.error || 'Login failed')
       }
     } catch (err) {
-      console.error('Login error:', err);
-      setError('An unexpected error occurred. Please try again.');
+      console.error('Login error:', err)
+      setError('An unexpected error occurred. Please try again.')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleQuickLogin = (username: string, password: string) => {
-    setCredentials({ username, password });
-  };
+    setCredentials({ username, password })
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
@@ -194,7 +194,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         </Card>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default LoginForm;
+export default LoginForm

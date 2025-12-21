@@ -3,7 +3,7 @@
  * Global test configuration and utilities
  */
 
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom'
 
 // Mock localStorage
 const localStorageMock = {
@@ -13,8 +13,8 @@ const localStorageMock = {
   clear: jest.fn(),
   length: 0,
   key: jest.fn(),
-};
-global.localStorage = localStorageMock;
+}
+global.localStorage = localStorageMock
 
 // Mock sessionStorage
 const sessionStorageMock = {
@@ -24,24 +24,24 @@ const sessionStorageMock = {
   clear: jest.fn(),
   length: 0,
   key: jest.fn(),
-};
-global.sessionStorage = sessionStorageMock;
+}
+global.sessionStorage = sessionStorageMock
 
 // Mock window events
-global.window = Object.create(window);
-global.window.dispatchEvent = jest.fn();
-global.window.addEventListener = jest.fn();
+global.window = Object.create(window)
+global.window.dispatchEvent = jest.fn()
+global.window.addEventListener = jest.fn()
 global.window.removeEventListener = jest.fn();
 
 // Mock crypto for secure token generation
 (global as any).crypto = {
   getRandomValues: jest.fn((array: any) => {
     for (let i = 0; i < array.length; i++) {
-      array[i] = Math.floor(Math.random() * 256);
+      array[i] = Math.floor(Math.random() * 256)
     }
-    return array;
+    return array
   }),
-};
+}
 
 // Mock fetch
 global.fetch = jest.fn();
@@ -63,10 +63,10 @@ global.fetch = jest.fn();
       VITE_MANAGER_USERNAME: 'manager1',
       VITE_MANAGER_PASSWORD_HASH: '',
       VITE_MOCK_MODE: 'false',
-      VITE_DEBUG_MODE: 'false'
-    }
-  }
-};
+      VITE_DEBUG_MODE: 'false',
+    },
+  },
+}
 
 // Mock console methods in tests
 global.console = {
@@ -74,24 +74,24 @@ global.console = {
   log: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
-};
+}
 
 // Setup test utilities
 beforeEach(() => {
   // Clear all mocks before each test
-  jest.clearAllMocks();
-  localStorageMock.getItem.mockReturnValue(null);
-  localStorageMock.setItem.mockImplementation(() => {});
-  localStorageMock.removeItem.mockImplementation(() => {});
-  sessionStorageMock.getItem.mockReturnValue(null);
-  sessionStorageMock.setItem.mockImplementation(() => {});
-  sessionStorageMock.removeItem.mockImplementation(() => {});
-});
+  jest.clearAllMocks()
+  localStorageMock.getItem.mockReturnValue(null)
+  localStorageMock.setItem.mockImplementation(() => {})
+  localStorageMock.removeItem.mockImplementation(() => {})
+  sessionStorageMock.getItem.mockReturnValue(null)
+  sessionStorageMock.setItem.mockImplementation(() => {})
+  sessionStorageMock.removeItem.mockImplementation(() => {})
+})
 
 afterEach(() => {
   // Clean up after each test
-  jest.restoreAllMocks();
-});
+  jest.restoreAllMocks()
+})
 
 // Test utilities
 export const createMockUser = (overrides = {}) => ({
@@ -102,7 +102,7 @@ export const createMockUser = (overrides = {}) => ({
   lastLogin: '2024-01-01T00:00:00Z',
   isActive: true,
   ...overrides,
-});
+})
 
 export const createMockProduct = (overrides = {}) => ({
   id: '1',
@@ -116,7 +116,7 @@ export const createMockProduct = (overrides = {}) => ({
   description: 'Test product description',
   category: { id: 'cat1', name: 'Test Category' },
   ...overrides,
-});
+})
 
 export const createMockTransaction = (overrides = {}) => ({
   id: '1',
@@ -139,7 +139,7 @@ export const createMockTransaction = (overrides = {}) => ({
   status: 'COMPLETED',
   createdAt: '2024-01-01T00:00:00Z',
   ...overrides,
-});
+})
 
 // Mock API responses
 export const createMockApiResponse = <T>(data: T, success = true) => ({
@@ -147,23 +147,23 @@ export const createMockApiResponse = <T>(data: T, success = true) => ({
   data,
   error: success ? undefined : 'Test error',
   message: success ? 'Success' : undefined,
-});
+})
 
 // Wait for async operations in tests
-export const waitForAsync = () => new Promise(resolve => setTimeout(resolve, 0));
+export const waitForAsync = () => new Promise(resolve => setTimeout(resolve, 0))
 
 // Helper to mock environment variables
 export const mockEnvironmentVariables = (variables: Record<string, string>) => {
   Object.keys(variables).forEach(key => {
-    process.env[key] = variables[key];
-  });
-};
+    process.env[key] = variables[key]
+  })
+}
 
 // Helper to restore environment variables
 export const restoreEnvironmentVariables = () => {
   Object.keys(process.env).forEach(key => {
     if (key.startsWith('VITE_')) {
-      delete process.env[key];
+      delete process.env[key]
     }
-  });
-};
+  })
+}
